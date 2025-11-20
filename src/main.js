@@ -24,6 +24,10 @@ import {
 import Toast, { POSITION } from "vue-toastification";
 import "vue-toastification/dist/index.css";
 
+// AlertifyJS
+import "alertifyjs/build/css/alertify.css";
+import "alertifyjs/build/css/themes/default.css";
+
 // -------------------------------------------------------
 //   CREAR UNA SOLA APP
 // -------------------------------------------------------

@@ -26,31 +26,28 @@
 
 
         <!-- Precios -->
-
-        <div class="">
-          <div class="precio-farmacia d-flex justify-content-center align-items-center">
-            <small class="text-muted">Precio Farmacia: </small>
-            <strong class="text-success"> ${{ (producto.PrecioFarmacia || 0).toLocaleString() }}</strong>
-          </div>
+        <div class="precio-linea mt-2 mb-2">
+          <span class="precio-label-inline">Precio Farmacia:</span>
+          <strong class="precio-valor-inline">
+            ${{ getParteEntera(producto.PrecioFarmacia) }}<span class="precio-decimales">.{{
+              getParteDecimal(producto.PrecioFarmacia) }}</span>
+          </strong>
         </div>
 
-        <!-- Descuento e IVA -->
-        <div class="d-flex align-items-center gap-2">
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Descuento -->
           <b-badge v-if="producto.Descuento" variant="warning">
             Desc: {{ producto.Descuento }}%
           </b-badge>
-
+          <!--IVA -->
           <b-badge v-if="producto.IVA" variant="primary">
             IVA: {{ producto.IVA }}%
           </b-badge>
-        </div>
 
-
-        <!-- Promoción -->
-        <div v-if="producto.Promocion" class="promocion mt-2 d-flex align-items-center gap-2">
-          <b-badge variant="success">
-            <small class="text-muted">Promoción: </small>
-            {{ producto.Promocion }}
+          <!-- Promoción -->
+          <b-badge v-if="producto.Promocion" variant="info">
+            Promoción: {{ producto.Promocion }}
           </b-badge>
         </div>
       </div>
@@ -114,6 +111,17 @@ const ahorro = computed(() => {
 const estaEnCarrito = computed(() => {
   return cart.value.some(item => item.ID === props.producto.ID);
 });
+
+// Métodos para formateo de precios
+const getParteEntera = (valor) => {
+  const num = Number(valor || 0).toFixed(3);
+  return num.split('.')[0];
+};
+
+const getParteDecimal = (valor) => {
+  const num = Number(valor || 0).toFixed(3);
+  return num.split('.')[1];
+};
 
 // Métodos
 const agregarAlCarrito = () => {
@@ -184,5 +192,47 @@ const verDetalle = () => {
 /* Asegurar que los iconos se vean bien */
 .bi {
   font-size: 0.9em;
+}
+
+/* Badge de promoción con mejor visibilidad */
+.promo-badge {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.promo-badge strong {
+  color: #000 !important;
+}
+
+/* Estilos para precio en línea simple */
+.precio-linea {
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.precio-label-inline {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.precio-valor-inline {
+  font-size: 1.25rem;
+  color: #28a745;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+}
+
+.precio-decimales {
+  font-size: 0.75em;
+  /* 75% del tamaño de la fuente padre */
+  opacity: 0.85;
 }
 </style>

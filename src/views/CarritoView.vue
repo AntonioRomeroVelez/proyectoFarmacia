@@ -1,11 +1,11 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="fw-bold text-primary mb-0">
-        🛒 Carrito de Compras
+  <div class="container-fluid py-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="fw-bold text-primary mb-0 m-2">
+        Productos pedidos
       </h2>
       <router-link to="/productos">
-        <b-button variant="outline-primary" size="sm">
+        <b-button variant="outline-primary" size="sm" class="m-2">
           ← Seguir comprando
         </b-button>
       </router-link>
@@ -18,70 +18,45 @@
       <p class="text-muted mb-3">Agrega productos desde la página de productos</p>
       <router-link to="/productos">
         <b-button variant="primary">
-          📦 Ver Productos
+          Ver Productos
         </b-button>
       </router-link>
     </b-card>
 
     <!-- Contenido del carrito -->
     <div v-else>
-      <!-- Información del cliente -->
-      <b-card class="shadow-sm mb-4">
-        <h5 class="mb-3">📋 Información de la Venta</h5>
-        <b-row>
-          <b-col md="6">
-            <b-form-group label="Nombre del Cliente:" label-for="cliente">
-              <b-form-input id="cliente" v-model="clienteNombre" placeholder="Ingrese nombre del cliente" size="sm" />
-            </b-form-group>
-          </b-col>
-          <b-col md="6">
-            <b-form-group label="Ciudad:" label-for="ciudad">
-              <b-form-input id="ciudad" v-model="ciudad" placeholder="Ingrese ciudad" size="sm" />
-            </b-form-group>
-          </b-col>
-          <b-col md="6">
-            <b-form-group label="Vendedor:" label-for="vendedor">
-              <b-form-select id="vendedor" v-model="vendedorNombre" :options="vendedorOptions"
-                size="sm"></b-form-select>
-            </b-form-group>
-          </b-col>
-          <b-col md="6">
-            <b-form-group label="Fecha:" label-for="fecha">
-              <b-form-input id="fecha" v-model="fecha" type="date" size="sm" />
-            </b-form-group>
-          </b-col>
-        </b-row>
-      </b-card>
-
       <!-- Resumen de totales -->
       <b-row>
         <b-col md="12">
-          <b-card class="shadow-sm bg-light">
-            <h5 class="mb-3">💰 Resumen de la Venta</h5>
+          <b-card class="shadow-sm bg-light mb-4">
+            <h5 class="mb-3">Resumen de la Venta</h5>
             <div class="d-flex justify-content-between mb-2">
               <span>Subtotal (sin IVA):</span>
-              <strong>${{ cartSubtotal.toFixed(2) }}</strong>
+              <strong>${{ cartSubtotal.toFixed(3) }}</strong>
             </div>
             <div class="d-flex justify-content-between mb-2">
               <span>Total IVA:</span>
-              <strong class="text-info">${{ cartTotalIVA.toFixed(2) }}</strong>
+              <strong class="text-info">${{ cartTotalIVA.toFixed(3) }}</strong>
             </div>
             <hr />
             <div class="d-flex justify-content-between mb-3">
               <strong class="fs-5">Total Global:</strong>
-              <strong class="fs-5 text-success">${{ cartTotal.toFixed(2) }}</strong>
+              <strong class="fs-5 text-success">${{ cartTotal.toFixed(3) }}</strong>
             </div>
-            <div class="d-flex justify-content-between mb-3 gap-2">
-              <b-button variant="success" class="w-100" @click="generarProformaExcel">
-                💾 Generar Proforma Excel
+            <div class="d-flex justify-content-center mb-3 gap-2 flex-wrap">
+              <b-button variant="btn-minimal-success" class="btn-minimal btn-minimal-success"
+                @click="prepararExportacion('proforma')">
+                Proforma Excel
               </b-button>
 
-              <b-button variant="primary" class="w-100" @click="generarPedidoExcel">
-                💾 Generar Pedido Excel
+              <b-button variant="btn-minimal-primary" class="btn-minimal btn-minimal-primary"
+                @click="prepararExportacion('pedido')">
+                Pedido Excel
               </b-button>
 
-              <b-button variant="warning" class="w-100" @click="exportarListaPrecioPDF">
-                💾 Exportar Lista Precio PDF
+              <b-button variant="btn-minimal-warning" class="btn-minimal btn-minimal-warning"
+                @click="prepararExportacion('pdf')">
+                Lista Precio PDF
               </b-button>
             </div>
           </b-card>
@@ -93,12 +68,12 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">🛍️ Productos en el Carrito ({{ cartCount }} items)</h5>
           <b-button variant="outline-danger" size="sm" @click="handleClearCart">
-            🗑️ Vaciar Carrito
+            Vaciar Producto de carrito
           </b-button>
         </div>
 
         <div class="row g-3">
-          <div v-for="item in cartItemsWithPromotions" :key="item.ID" class="col-12 col-md-12 col-lg-4">
+          <div v-for="item in cartItemsWithPromotions" :key="item.ID" class="col-12 col-md-6 col-lg-4">
             <b-card class="cart-item-card h-100">
               <!-- Header -->
               <template #header>
@@ -124,12 +99,8 @@
                 <!-- Precio unitario -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <span class="text-muted">Precio Unitario:</span>
-                  <strong class="text-success fs-5">${{ Number(item.PrecioFarmacia).toFixed(2) }}</strong>
+                  <strong class="text-success fs-5">${{ Number(item.PrecioFarmacia).toFixed(3) }}</strong>
                 </div>
-
-                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
-                  Promo: {{ item.Promocion || 'N/A' }}
-                </small>
 
                 <!-- Control de cantidad -->
                 <div class="quantity-control mb-3">
@@ -150,6 +121,9 @@
                       <br>
                       <small>({{ item.quantity }} pagados + {{ item.promotionDetails.bonus }} gratis)</small>
                     </b-badge>
+                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                      Promo: {{ item.Promocion || 'N/A' }}
+                    </small>
                   </div>
                 </div>
 
@@ -157,16 +131,16 @@
                 <div class="price-breakdown">
                   <div class="d-flex justify-content-between mb-1">
                     <small class="text-muted">Subtotal:</small>
-                    <small>${{ item.subtotalItem.toFixed(2) }}</small>
+                    <small>${{ item.subtotalItem.toFixed(3) }}</small>
                   </div>
                   <div class="d-flex justify-content-between mb-1">
                     <small class="text-muted">IVA ({{ item.IVA }}%):</small>
-                    <small class="text-info">${{ item.ivaAmount.toFixed(2) }}</small>
+                    <small class="text-info">${{ item.ivaAmount.toFixed(3) }}</small>
                   </div>
                   <hr class="my-2">
                   <div class="d-flex justify-content-between">
                     <strong>Total:</strong>
-                    <strong class="text-primary">${{ item.totalItem.toFixed(2) }}</strong>
+                    <strong class="text-primary">${{ item.totalItem.toFixed(3) }}</strong>
                   </div>
                 </div>
               </div>
@@ -175,6 +149,28 @@
         </div>
       </b-card>
     </div>
+
+    <!-- Modal de Datos del Cliente -->
+    <b-modal v-model="showClientModal" title="Datos del Cliente" @ok="confirmarExportacion" ok-title="Generar"
+      cancel-title="Cancelar">
+      <b-form>
+        <b-form-group label="Nombre del Cliente:" label-for="cliente-modal" class="mb-3">
+          <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente" required />
+        </b-form-group>
+
+        <b-form-group label="Ciudad:" label-for="ciudad-modal" class="mb-3">
+          <b-form-input id="ciudad-modal" v-model="ciudad" placeholder="Ingrese ciudad" />
+        </b-form-group>
+
+        <b-form-group label="Vendedor:" label-for="vendedor-modal" class="mb-3">
+          <b-form-select id="vendedor-modal" v-model="vendedorNombre" :options="vendedorOptions"></b-form-select>
+        </b-form-group>
+
+        <b-form-group label="Fecha:" label-for="fecha-modal" class="mb-3">
+          <b-form-input id="fecha-modal" v-model="fecha" type="date" />
+        </b-form-group>
+      </b-form>
+    </b-modal>
   </div>
 </template>
 
@@ -184,6 +180,7 @@ import { useCart } from '@/composables/useCart'
 import { useExcelHandler } from '@/utils/excelHandler'
 import { usePDFGenerator } from '@/utils/pdfGenerator'
 import { useToast } from 'vue-toastification'
+import alertify from 'alertifyjs'
 
 const toast = useToast()
 
@@ -201,10 +198,13 @@ const {
 
 const { exportCartToExcel, exportToExcel, exportCustomExcel } = useExcelHandler();
 
+// Estado del formulario de cliente
 const clienteNombre = ref("");
 const ciudad = ref("");
 const vendedorNombre = ref("");
 const fecha = ref("");
+const showClientModal = ref(false);
+const pendingAction = ref(null); // 'proforma', 'pedido', 'pdf'
 
 // Opciones para el select de vendedor
 const vendedorOptions = [
@@ -224,53 +224,53 @@ onMounted(() => {
   fecha.value = `${year}-${month}-${day}`;
 });
 
-let clearCartConfirmation = false;
 const handleClearCart = () => {
-  if (clearCartConfirmation) {
-    clearCart();
-    toast.success("🗑️ Carrito vaciado");
-    clearCartConfirmation = false;
-  } else {
-    clearCartConfirmation = true;
-    toast.warning(
-      "⚠️ ¿Vaciar el carrito?\n\nHaz clic nuevamente en 'Vaciar Carrito' para confirmar.",
-      { timeout: 5000 }
-    );
-    setTimeout(() => {
-      clearCartConfirmation = false;
-    }, 5000);
-  }
+  alertify.confirm(
+    "Vaciar Carrito",
+    "⚠️ ¿Estás seguro de que deseas vaciar todo el carrito?",
+    () => {
+      clearCart();
+      toast.success("🗑️ Carrito vaciado");
+    },
+    () => {
+      // Cancel action
+    }
+  ).set('labels', { ok: 'Sí, Vaciar', cancel: 'Cancelar' });
 };
 
-// Helper function to validate required fields
-const validateClientInfo = () => {
-  if (!clienteNombre.value || clienteNombre.value.trim() === '') {
-    toast.error('⚠️ Por favor ingresa el nombre del cliente');
-    return false;
+// Preparar exportación (abrir modal)
+const prepararExportacion = (tipo) => {
+  if (cartItemsWithPromotions.value.length === 0) {
+    toast.warning('⚠️ El carrito está vacío');
+    return;
   }
-  if (!ciudad.value || ciudad.value.trim() === '') {
-    toast.error('⚠️ Por favor ingresa la ciudad');
-    return false;
+  pendingAction.value = tipo;
+  showClientModal.value = true;
+};
+
+// Confirmar exportación desde el modal
+const confirmarExportacion = (bvModalEvent) => {
+  if (!clienteNombre.value.trim()) {
+    bvModalEvent.preventDefault(); // Evitar cierre del modal
+    toast.warning('⚠️ Por favor ingrese el nombre del cliente');
+    return;
   }
-  if (!vendedorNombre.value || vendedorNombre.value === '') {
-    toast.error('⚠️ Por favor selecciona un vendedor');
-    return false;
+
+  // Ejecutar la acción pendiente
+  if (pendingAction.value === 'proforma') {
+    generarProformaExcel();
+  } else if (pendingAction.value === 'pedido') {
+    generarPedidoExcel();
+  } else if (pendingAction.value === 'pdf') {
+    exportarListaPrecioPDF();
   }
-  return true;
+
+  // El modal se cerrará automáticamente si no prevenimos el evento
+  pendingAction.value = null;
 };
 
 // Generar Proforma en Excel
 const generarProformaExcel = () => {
-  if (cartItemsWithPromotions.value.length === 0) {
-    toast.warning('⚠️ El carrito está vacío')
-    return
-  }
-
-  // Validar datos del cliente
-  if (!validateClientInfo()) {
-    return;
-  }
-
   // Formato de proforma: Cantidad, Promoción, Nombre Producto, Marca, Precio Farmacia, Total
   const exportData = cartItemsWithPromotions.value.map(item => ({
     'Cantidad': item.quantity,
@@ -278,8 +278,8 @@ const generarProformaExcel = () => {
     'Bonificación': item.promotionDetails?.bonus > 0 ? item.promotionDetails.bonus : '',
     'Nombre Producto': item.NombreProducto,
     'Marca': item.Marca,
-    'Precio Farmacia': item.PrecioFarmacia.toFixed(2),
-    'Total': item.subtotalItem.toFixed(2)
+    'Precio Farmacia': Number(item.PrecioFarmacia).toFixed(2),
+    'Total': Number(item.subtotalItem).toFixed(2)
   }))
 
   console.log('exportData:', exportData);
@@ -301,16 +301,6 @@ const generarProformaExcel = () => {
 
 // Generar Pedido completo en Excel
 const generarPedidoExcel = () => {
-  if (cartItemsWithPromotions.value.length === 0) {
-    toast.warning('⚠️ El carrito está vacío')
-    return
-  }
-
-  // Validar datos del cliente
-  if (!validateClientInfo()) {
-    return;
-  }
-
   // Formato de pedido: Cantidad, Promoción, Nombre Producto, Lote, Fecha de Vencimiento
   const exportData = cartItemsWithPromotions.value.map(item => ({
     'Cantidad': item.quantity,
@@ -339,22 +329,12 @@ const generarPedidoExcel = () => {
 
 // Exportar Lista de Precios en PDF
 const exportarListaPrecioPDF = () => {
-  if (cartItemsWithPromotions.value.length === 0) {
-    toast.warning('⚠️ El carrito está vacío')
-    return
-  }
-
-  // Validar datos del cliente
-  if (!validateClientInfo()) {
-    return;
-  }
-
   // Preparar datos para PDF con la estructura específica
   const pdfData = cartItemsWithPromotions.value.map(item => ({
     'Producto': item.NombreProducto,
     'Marca': item.Marca,
     'Presentacion': item.Presentacion,
-    'Precio': item.PrecioFarmacia,
+    'Precio': Number(item.PrecioFarmacia).toFixed(2),
     'Promocion': item.Descuento ? `${item.Descuento}+1` : '-',
     'Descuento %': item.Descuento ? `${item.Descuento} %` : '-'
   }))
@@ -502,5 +482,82 @@ const cartItemsWithPromotions = vueComputed(() => {
 .card-header {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 2px solid #dee2e6;
+}
+
+/* Estilos minimalistas para botones */
+.btn-minimal {
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-minimal:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-minimal:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Variantes de color minimalista */
+.btn-minimal-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+}
+
+.btn-minimal-success:hover {
+  background: linear-gradient(135deg, #20c997 0%, #28a745 100%);
+  color: white;
+  box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3);
+}
+
+.btn-minimal-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+}
+
+.btn-minimal-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #007bff 100%);
+  color: white;
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.3);
+}
+
+.btn-minimal-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  color: #333;
+}
+
+.btn-minimal-warning:hover {
+  background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%);
+  color: #333;
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.3);
+}
+
+/* Efecto de onda al hacer clic */
+.btn-minimal::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-minimal:active::before {
+  width: 300px;
+  height: 300px;
 }
 </style>

@@ -1,8 +1,8 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="container-fluid py-1">
+    <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-2">
       <h2 class="fw-bold text-primary mb-0">Productos</h2>
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
         <b-badge variant="info" pill class="fs-6">
           {{ productosFiltrados.length }} productos
         </b-badge>
@@ -18,7 +18,7 @@
     <b-card class="shadow-sm mb-4">
       <b-row>
         <b-col md="12" sm="12">
-          <div class="d-flex gap-2">
+          <div class="d-flex gap-2 mb-2">
             <b-form-input v-model="filtroBusqueda" class="form-control"
               placeholder="🔍 Buscar por nombre, código, marca, principio activo..." size="sm"
               @keyup.enter="aplicarBusqueda" />
@@ -28,14 +28,14 @@
           </div>
         </b-col>
 
-        <b-col md="12" sm="12">
+        <b-col md="12" sm="12" class="mb-2">
           <b-form-select v-model="filtroMarca" class="form-select" size="sm">
             <option value="">📦 Todas las marcas</option>
             <option v-for="m in opcionesMarcas" :key="m" :value="m">{{ m }}</option>
           </b-form-select>
         </b-col>
 
-        <b-col md="12" sm="12">
+        <b-col md="12" sm="12" class="mb-2">
           <b-form-select v-model="filtroPresentacion" class="form-select" size="sm">
             <option value="">💊 Todas las presentaciones</option>
             <option v-for="p in opcionesPresentaciones" :key="p" :value="p">{{ p }}</option>
@@ -43,7 +43,7 @@
         </b-col>
 
         <b-col md="12" sm="12">
-          <b-button variant="outline-secondary" size="sm" class="w-100" @click="limpiarFiltros">
+          <b-button variant="outline-secondary" size="sm" class="w-10" @click="limpiarFiltros">
             ✖ Limpiar
           </b-button>
         </b-col>
@@ -61,7 +61,7 @@
       <div class="row g-3 mb-4">
         <div v-for="producto in paginatedProducts" :key="producto.ID" class="col-12 col-sm-6 col-md-6 col-lg-4">
           <Producto :producto="producto" :es-agregado="producto.isDuplicate" @ver-detalle="mostrarDetalle" />
-        </div>|
+        </div>
       </div>
 
       <!-- Paginación Responsiva -->
@@ -110,9 +110,11 @@
             <p><strong>Principio Activo:</strong> {{ productoSeleccionado.PrincipioActivo }}</p>
           </b-col>
           <b-col md="6">
-            <p><strong>Precio Farmacia:</strong> <span class="text-success">${{ productoSeleccionado.PrecioFarmacia
-                }}</span></p>
-            <p><strong>PVP:</strong> <del class="text-danger">${{ productoSeleccionado.PVP }}</del></p>
+            <p><strong>Precio Farmacia:</strong> <span class="text-success">${{
+              Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
+            }}</span></p>
+            <p><strong>PVP:</strong> <del class="text-danger">${{ Number(productoSeleccionado.PVP || 0).toFixed(3)
+            }}</del></p>
             <p v-if="productoSeleccionado.Descuento"><strong>Descuento:</strong> {{ productoSeleccionado.Descuento }}%
             </p>
             <p><strong>IVA:</strong> {{ productoSeleccionado.IVA }}%</p>
@@ -126,7 +128,7 @@
       <template #footer>
         <div class="d-flex justify-content-between w-100">
           <div class="d-flex gap-2">
-            <b-button variant="danger" @click="eliminarProducto">
+            <b-button variant="outline-danger" @click="mostrarModalEliminar">
               🗑️ Eliminar
             </b-button>
           </div>
@@ -141,14 +143,17 @@
         </div>
       </template>
     </b-modal>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
+import alertify from "alertifyjs";
 import Producto from "@/components/Productos/Producto.vue";
+
 import { useCart } from "@/composables/useCart";
 
 const router = useRouter();
@@ -268,39 +273,36 @@ const editarProducto = () => {
   }
 };
 
-// Delete product with toast confirmation
-let deleteConfirmation = null;
-const eliminarProducto = () => {
+// Delete product with modal confirmation
+const mostrarModalEliminar = () => {
+  if (!productoSeleccionado.value) return;
+  confirmarEliminacion();
+};
+
+const confirmarEliminacion = () => {
   if (!productoSeleccionado.value) return;
 
-  // Si ya hay una confirmación pendiente, ejecutar la eliminación
-  if (deleteConfirmation === productoSeleccionado.value.ID) {
-    try {
-      const productos = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-      const filtered = productos.filter(p => p.ID !== productoSeleccionado.value.ID);
-      localStorage.setItem('ListaProductos', JSON.stringify(filtered));
-      
-      toast.success('🗑️ Producto eliminado correctamente');
-      showModal.value = false;
-      cargarProductos();
-      deleteConfirmation = null;
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      toast.error('Error al eliminar el producto');
+  alertify.confirm(
+    "Confirmar Eliminación",
+    "¿Estás seguro de que deseas eliminar este producto?",
+    () => {
+      try {
+        const productos = JSON.parse(localStorage.getItem('ListaProductos')) || [];
+        const filtered = productos.filter(p => p.ID !== productoSeleccionado.value.ID);
+        localStorage.setItem('ListaProductos', JSON.stringify(filtered));
+
+        toast.success('🗑️ Producto eliminado correctamente');
+        showModal.value = false;
+        cargarProductos();
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        toast.error('Error al eliminar el producto');
+      }
+    },
+    () => {
+      // Cancel action
     }
-  } else {
-    // Primera vez, mostrar advertencia
-    deleteConfirmation = productoSeleccionado.value.ID;
-    toast.warning(
-      `⚠️ ¿Eliminar "${productoSeleccionado.value.NombreProducto}"?\n\nHaz clic nuevamente en "Eliminar" para confirmar.`,
-      { timeout: 5000 }
-    );
-    
-    // Resetear confirmación después de 5 segundos
-    setTimeout(() => {
-      deleteConfirmation = null;
-    }, 5000);
-  }
+  ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });
 };
 </script>
 

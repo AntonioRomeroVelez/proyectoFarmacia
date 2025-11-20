@@ -9,6 +9,7 @@ import Excel from "@/views/ExcelView.vue";
 import PDF from "@/views/PDFView.vue";
 import Carrito from "@/views/CarritoView.vue";
 import Visitas from "@/views/VisitasView.vue";
+import Comparacion from "@/views/ComparacionProductosView.vue";
 
 const routes = [
   {
@@ -22,6 +23,7 @@ const routes = [
       { path: "pdf", component: PDF },
       { path: "carrito", component: Carrito },
       { path: "visitas", component: Visitas },
+      { path: "comparacion", component: Comparacion },
     ],
   },
 ];

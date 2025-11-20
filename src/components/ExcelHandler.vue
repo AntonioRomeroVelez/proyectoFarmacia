@@ -8,10 +8,10 @@
               <span class="file-upload-icon">📁</span>
               <span class="file-upload-text">
                 {{
-                  file
-                    ? file.name
-                    : "Haz clic para seleccionar un archivo Excel"
-                }}
+  file
+    ? file.name
+    : "Haz clic para seleccionar un archivo Excel"
+}}
               </span>
             </div>
           </label>
@@ -136,13 +136,13 @@
                     ? 'text-danger'
                     : 'text-success'
                     ">
-                    ${{ Number(producto.P_Farmacia || 0).toFixed(2) }}
+                    ${{ Number(producto.P_Farmacia || 0).toFixed(3) }}
                   </strong>
                 </div>
 
                 <div class="d-flex justify-content-between mb-1">
                   <span class="small">PVP:</span>
-                  <span class="text-muted small">${{ Number(producto.PVP || 0).toFixed(2) }}</span>
+                  <span class="text-muted small">${{ Number(producto.PVP || 0).toFixed(3) }}</span>
                 </div>
 
                 <div class="d-flex justify-content-between mb-1">
@@ -206,6 +206,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useExcelHandler } from "@/utils/excelHandler";
 import { useToast } from "vue-toastification";
+import alertify from "alertifyjs";
 
 const { readExcelHandler } = useExcelHandler();
 const toast = useToast();
@@ -428,8 +429,8 @@ const handleFileUpload = async (event) => {
         Nombre: row[colIndices["Nombre"]] || "",
         Presentacion: row[colIndices["Presentacion"]] || "",
         Principio_Activo: row[colIndices["Principio_Activo"]] || "",
-        P_Farmacia: parseFloat(row[colIndices["P_Farmacia"]]) || 0,
-        PVP: parseFloat(row[colIndices["PVP"]]) || 0,
+        P_Farmacia: parseFloat(parseFloat(row[colIndices["P_Farmacia"]] || 0).toFixed(3)),
+        PVP: parseFloat(parseFloat(row[colIndices["PVP"]] || 0).toFixed(3)),
         Promocion: row[colIndices["Promocion"]] || "",
         Descuento: parseFloat(row[colIndices["Descuento"]]) || 0,
         IVA: parseFloat(row[colIndices["IVA"]]) || 0,
@@ -476,7 +477,6 @@ const handleFileUpload = async (event) => {
   }
 };
 
-let saveConfirmation = false;
 const confirmarGuardar = () => {
   if (errorCount.value > 0) {
     toast.warning(
@@ -485,24 +485,25 @@ const confirmarGuardar = () => {
     return;
   }
 
-  const mensaje = `💾 Guardar ${productos.value.length} productos${duplicateCount.value > 0
-    ? ` (Incluye ${duplicateCount.value} duplicados)`
-    : ""
-    }`;
-
-  if (saveConfirmation) {
-    guardarProductos();
-    saveConfirmation = false;
-  } else {
-    saveConfirmation = true;
-    toast.warning(
-      `${mensaje}\n\nHaz clic nuevamente en 'Guardar Productos' para confirmar.`,
-      { timeout: 5000 }
+  if (duplicateCount.value > 0) {
+    toast.error(
+      "❌ No se puede guardar. Existen productos duplicados en el archivo o que ya existen en el sistema. Por favor elimínelos del archivo Excel."
     );
-    setTimeout(() => {
-      saveConfirmation = false;
-    }, 5000);
+    return;
   }
+
+  const mensaje = `💾 Guardar ${productos.value.length} productos`;
+
+  alertify.confirm(
+    "Confirmar Guardado",
+    `${mensaje}<br><br>¿Estás seguro de que deseas guardar estos productos?`,
+    () => {
+      guardarProductos();
+    },
+    () => {
+      toast.info("Operación cancelada");
+    }
+  ).set('labels', { ok: 'Guardar', cancel: 'Cancelar' });
 };
 
 const guardarProductos = () => {
@@ -568,23 +569,19 @@ const guardarProductos = () => {
   }
 };
 
-let cancelConfirmation = false;
 const cancelarCarga = () => {
-  if (cancelConfirmation) {
-    productos.value = [];
-    file.value = null;
-    toast.info("🔄 Carga cancelada");
-    cancelConfirmation = false;
-  } else {
-    cancelConfirmation = true;
-    toast.warning(
-      "⚠️ ¿Cancelar la carga? Se perderán los datos no guardados.\n\nHaz clic nuevamente en 'Cancelar' para confirmar.",
-      { timeout: 5000 }
-    );
-    setTimeout(() => {
-      cancelConfirmation = false;
-    }, 5000);
-  }
+  alertify.confirm(
+    "Cancelar Carga",
+    "⚠️ ¿Cancelar la carga? Se perderán los datos no guardados.",
+    () => {
+      productos.value = [];
+      file.value = null;
+      toast.info("🔄 Carga cancelada");
+    },
+    () => {
+      // Cancel action
+    }
+  ).set('labels', { ok: 'Sí, Cancelar', cancel: 'No' });
 };
 
 const limpiarFiltros = () => {
@@ -601,23 +598,19 @@ onMounted(() => {
 });
 
 // Borrar todos los productos del sistema
-let deleteAllConfirmation = false;
 const borrarTodosLosProductos = () => {
-  if (deleteAllConfirmation) {
-    localStorage.removeItem('ListaProductos');
-    productosEnSistema.value = 0;
-    toast.success('🗑️ Todos los productos han sido eliminados del sistema');
-    deleteAllConfirmation = false;
-  } else {
-    deleteAllConfirmation = true;
-    toast.warning(
-      `⚠️ ¿Eliminar TODOS los ${productosEnSistema.value} productos del sistema?\n\nEsta acción NO se puede deshacer.\n\nHaz clic nuevamente en 'Borrar Todos' para confirmar.`,
-      { timeout: 5000 }
-    );
-    setTimeout(() => {
-      deleteAllConfirmation = false;
-    }, 5000);
-  }
+  alertify.confirm(
+    "Eliminar Todos los Productos",
+    `⚠️ ¿Eliminar TODOS los ${productosEnSistema.value} productos del sistema?<br><br>Esta acción NO se puede deshacer.`,
+    () => {
+      localStorage.removeItem('ListaProductos');
+      productosEnSistema.value = 0;
+      toast.success('🗑️ Todos los productos han sido eliminados del sistema');
+    },
+    () => {
+      // Cancel action
+    }
+  ).set('labels', { ok: 'Sí, Borrar Todo', cancel: 'Cancelar' });
 };
 
 // Descargar todos los productos en Excel
@@ -637,8 +630,8 @@ const descargarProductosExcel = async () => {
       Nombre: p.NombreProducto || '',
       Presentacion: p.Presentacion || '',
       Principio_Activo: p.PrincipioActivo || '',
-      P_Farmacia: p.PrecioFarmacia || 0,
-      PVP: p.PVP || 0,
+      P_Farmacia: parseFloat(p.PrecioFarmacia || 0).toFixed(3),
+      PVP: parseFloat(p.PVP || 0).toFixed(3),
       Promocion: p.Promocion || '',
       Descuento: p.Descuento || 0,
       IVA: p.IVA || 0

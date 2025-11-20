@@ -3,7 +3,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
       <div class="sidebar-header">
-        <h3 class="brand-text">Farmacia</h3>
+        <h3 class="brand-text">App Farmacia</h3>
         <button class="close-btn d-md-none" @click="closeSidebar">×</button>
       </div>
 
@@ -11,8 +11,8 @@
       <div class="sidebar-user">
         <div class="user-avatar">A</div>
         <div class="user-info">
-          <span class="user-name">Hola, Admin</span>
-          <small class="text-muted">Administrador</small>
+          <span class="user-name">Hola, Dianita</span>
+          <small class="text-muted">Vendedora</small>
         </div>
       </div>
 
@@ -32,11 +32,14 @@
         <router-link to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-file-earmark-excel"></i> Carga Excel
         </router-link>
-         <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+        <router-link to="/comparacion" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-diagram-3"></i> Comparación
+        </router-link>
+        <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-file-earmark-pdf"></i> Reportes PDF
         </router-link>
       </nav>
-      
+
       <div class="sidebar-footer">
         <small class="text-muted">v1.0.0</small>
       </div>
@@ -111,7 +114,7 @@ const closeSidebarOnMobile = () => {
   z-index: 1050;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -251,7 +254,7 @@ const closeSidebarOnMobile = () => {
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -277,30 +280,11 @@ const closeSidebarOnMobile = () => {
   flex: 1;
 }
 
-/* Responsive Styles */
-@media (max-width: 767.98px) {
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
-  .sidebar.sidebar-open {
-    transform: translateX(0);
-  }
-
-  .main-wrapper {
-    margin-left: 0;
-  }
-  
-  .content-area {
-    padding: 1rem;
-  }
-}
-
 /* Floating Toggle Button */
 .floating-toggle {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  bottom: 20px;
+  right: 20px;
   z-index: 1040;
   background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
   border: 2px solid rgba(255, 255, 255, 0.2);
@@ -329,6 +313,33 @@ const closeSidebarOnMobile = () => {
   box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
 }
 
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar-open {
+    transform: translateX(0);
+  }
+
+  .main-wrapper {
+    margin-left: 0;
+  }
+
+  /* Eliminar padding del content-area en móvil */
+  .content-area {
+    padding: 0 !important;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .floating-toggle {
+    display: block;
+  }
+}
 /* Transitions */
 .fade-enter-active,
 .fade-leave-active {
