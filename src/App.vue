@@ -52,6 +52,11 @@ onUnmounted(() => {
   color: #333;
 }
 
+/* Prevent pull-to-refresh on mobile */
+html,
+body {
+  overscroll-behavior-y: none;
+}
 /* Eliminar padding en móvil */
 @media (max-width: 768px) {
   #app .container-fluid {

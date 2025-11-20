@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid py-2">
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-center align-items-center mb-2 flex-wrap">
       <h2 class="fw-bold text-primary mb-0 m-2">
         Productos pedidos
       </h2>

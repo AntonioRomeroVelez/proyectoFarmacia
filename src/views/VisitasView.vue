@@ -1,10 +1,10 @@
 <template>
   <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap">
       <h2 class="fw-bold text-primary mb-0">
         📝 Registro de Visitas Diarias
       </h2>
-      <b-button variant="success" @click="copiarParaWhatsApp" :disabled="visitas.length === 0">
+      <b-button class="mt-2" variant="success" @click="copiarParaWhatsApp" :disabled="visitas.length === 0">
         📋 Copiar para WhatsApp
       </b-button>
     </div>

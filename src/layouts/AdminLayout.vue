@@ -3,7 +3,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
       <div class="sidebar-header">
-        <h3 class="brand-text">App Farmacia</h3>
+        <h3 class="brand-text">MH</h3>
         <button class="close-btn d-md-none" @click="closeSidebar">×</button>
       </div>
 
@@ -12,7 +12,7 @@
         <div class="user-avatar">A</div>
         <div class="user-info">
           <span class="user-name">Hola, Dianita</span>
-          <small class="text-muted">Vendedora</small>
+          <small class="text-muted">Visitador</small>
         </div>
       </div>
 
@@ -329,7 +329,7 @@ const closeSidebarOnMobile = () => {
 
   /* Eliminar padding del content-area en móvil */
   .content-area {
-    padding: 0 !important;
+    padding: 0.5rem !important;
   }
 
   .mobile-header {
@@ -340,6 +340,7 @@ const closeSidebarOnMobile = () => {
     display: block;
   }
 }
+
 /* Transitions */
 .fade-enter-active,
 .fade-leave-active {

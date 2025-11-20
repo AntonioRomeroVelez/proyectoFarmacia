@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid py-2 py-md-4">
-    <div class="d-flex justify-content-between align-items-center mb-3 mb-md-4 flex-wrap gap-2">
+    <div class="d-flex justify-content-center align-items-center mb-3 mb-md-4 flex-wrap gap-2">
       <h2 class="fw-bold text-primary mb-0">Comparación de Productos</h2>
       <router-link to="/productos">
         <b-button variant="outline-primary" size="sm">
@@ -13,25 +13,15 @@
     <b-card class="shadow-sm mb-3 mb-md-4">
       <h5 class="mb-3">📁 Cargar Nuevo Archivo Excel</h5>
       <div class="d-flex flex-column flex-md-row gap-2">
-        <input
-          type="file"
-          ref="fileInput"
-          @change="handleFileUpload"
-          accept=".xlsx, .xls"
-          class="form-control"
-        />
-        <b-button
-          v-if="todosProductos.length > 0 || erroresValidacion.length > 0"
-          variant="outline-secondary"
-          size="sm"
-          @click="limpiar"
-          class="flex-shrink-0"
-        >
+        <input type="file" ref="fileInput" @change="handleFileUpload" accept=".xlsx, .xls" class="form-control" />
+        <b-button v-if="todosProductos.length > 0 || erroresValidacion.length > 0" variant="outline-secondary" size="sm"
+          @click="limpiar" class="flex-shrink-0">
           🗑️ Limpiar
         </b-button>
       </div>
       <small class="text-muted mt-2 d-block">
-        La comparación se realiza por: <strong>Marca</strong>, luego Nombre, Presentación y Principio Activo (ignorando espacios).
+        La comparación se realiza por: <strong>Marca</strong>, luego Nombre, Presentación y Principio Activo (ignorando
+        espacios).
         Los precios se comparan con 3 decimales.
       </small>
     </b-card>
@@ -50,7 +40,7 @@
       <b-card class="shadow-sm mb-4">
         <h5 class="text-danger mb-3">⚠️ Errores de Validación en el Excel</h5>
         <p class="text-muted">Corrige los siguientes errores antes de procesar la comparación:</p>
-        
+
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <thead class="table-light">
@@ -110,38 +100,21 @@
 
       <!-- Filtros de visualización -->
       <div class="mb-3 d-flex gap-2 flex-wrap">
-        <b-button 
-          size="sm" 
-          :variant="filtroActual === 'todos' ? 'primary' : 'outline-primary'"
-          @click="filtroActual = 'todos'"
-        >Todos</b-button>
-        <b-button 
-          size="sm" 
-          :variant="filtroActual === 'nuevos' ? 'success' : 'outline-success'"
-          @click="filtroActual = 'nuevos'"
-        >Nuevos</b-button>
-        <b-button 
-          size="sm" 
-          :variant="filtroActual === 'cambios' ? 'warning' : 'outline-warning'"
-          @click="filtroActual = 'cambios'"
-        >Con Cambios</b-button>
-        <b-button 
-          size="sm" 
-          :variant="filtroActual === 'eliminados' ? 'danger' : 'outline-danger'"
-          @click="filtroActual = 'eliminados'"
-        >Eliminados</b-button>
+        <b-button size="sm" :variant="filtroActual === 'todos' ? 'primary' : 'outline-primary'"
+          @click="filtroActual = 'todos'">Todos</b-button>
+        <b-button size="sm" :variant="filtroActual === 'nuevos' ? 'success' : 'outline-success'"
+          @click="filtroActual = 'nuevos'">Nuevos</b-button>
+        <b-button size="sm" :variant="filtroActual === 'cambios' ? 'warning' : 'outline-warning'"
+          @click="filtroActual = 'cambios'">Con Cambios</b-button>
+        <b-button size="sm" :variant="filtroActual === 'eliminados' ? 'danger' : 'outline-danger'"
+          @click="filtroActual = 'eliminados'">Eliminados</b-button>
       </div>
 
       <!-- Tabla de Resultados -->
       <b-card class="shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">📊 Resultados de la Comparación</h5>
-          <b-button
-            variant="success"
-            size="sm"
-            class="download-btn"
-            @click="descargarExcel"
-          >
+          <b-button variant="success" size="sm" class="download-btn" @click="descargarExcel">
             💾 Descargar Reporte
           </b-button>
         </div>
@@ -188,7 +161,7 @@
 
                 <!-- P. Farmacia -->
                 <td>
-                  <div :class="{'text-primary fw-bold': producto.cambios?.P_Farmacia}">
+                  <div :class="{ 'text-primary fw-bold': producto.cambios?.P_Farmacia }">
                     ${{ formatPrice(producto.P_Farmacia) }}
                   </div>
                   <div v-if="producto.cambios?.P_Farmacia" class="text-muted text-decoration-line-through small">
@@ -198,7 +171,7 @@
 
                 <!-- PVP -->
                 <td>
-                  <div :class="{'text-primary fw-bold': producto.cambios?.PVP}">
+                  <div :class="{ 'text-primary fw-bold': producto.cambios?.PVP }">
                     ${{ formatPrice(producto.PVP) }}
                   </div>
                   <div v-if="producto.cambios?.PVP" class="text-muted text-decoration-line-through small">
@@ -208,7 +181,7 @@
 
                 <!-- Promoción -->
                 <td>
-                  <div :class="{'text-primary fw-bold': producto.cambios?.Promocion}">
+                  <div :class="{ 'text-primary fw-bold': producto.cambios?.Promocion }">
                     {{ producto.Promocion || '-' }}
                   </div>
                   <div v-if="producto.cambios?.Promocion" class="text-muted text-decoration-line-through small">
@@ -218,7 +191,7 @@
 
                 <!-- Descuento -->
                 <td>
-                  <div :class="{'text-primary fw-bold': producto.cambios?.Descuento}">
+                  <div :class="{ 'text-primary fw-bold': producto.cambios?.Descuento }">
                     {{ producto.Descuento ? producto.Descuento + '%' : '-' }}
                   </div>
                   <div v-if="producto.cambios?.Descuento" class="text-muted text-decoration-line-through small">
@@ -229,7 +202,7 @@
             </tbody>
           </table>
         </div>
-        
+
         <div class="text-muted mt-3 text-center small">
           Mostrando {{ productosFiltrados.length }} de {{ todosProductos.length }} registros
         </div>
@@ -284,7 +257,7 @@ const validarProducto = (producto, fila) => {
   const errores = [];
   if (!producto.Marca) errores.push('Marca requerida');
   if (!producto.Nombre) errores.push('Nombre requerido');
-  
+
   return errores.length > 0 ? { fila, producto, errores } : null;
 };
 
@@ -325,7 +298,7 @@ const handleFileUpload = async (event) => {
 
     // 2. Cargar productos existentes de localStorage
     const productosBD = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-    
+
     // Mapa de productos existentes para búsqueda rápida
     const mapaExistentes = new Map();
     productosBD.forEach(p => {
@@ -362,7 +335,7 @@ const handleFileUpload = async (event) => {
         // Comparar precios (3 decimales)
         const pFarmaciaExcel = parseFloat(parseFloat(productoExcel.P_Farmacia || 0).toFixed(3));
         const pFarmaciaBD = parseFloat(parseFloat(productoExistente.P_Farmacia || 0).toFixed(3));
-        
+
         if (pFarmaciaExcel !== pFarmaciaBD) {
           cambios.P_Farmacia = { anterior: pFarmaciaBD.toFixed(3), nuevo: pFarmaciaExcel.toFixed(3) };
           tieneCambios = true;
@@ -370,7 +343,7 @@ const handleFileUpload = async (event) => {
 
         const pvpExcel = parseFloat(parseFloat(productoExcel.PVP || 0).toFixed(3));
         const pvpBD = parseFloat(parseFloat(productoExistente.PVP || 0).toFixed(3));
-        
+
         if (pvpExcel !== pvpBD) {
           cambios.PVP = { anterior: pvpBD.toFixed(3), nuevo: pvpExcel.toFixed(3) };
           tieneCambios = true;
@@ -566,7 +539,7 @@ const descargarExcel = async () => {
     // Generar archivo
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    
+
     // Descargar
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -591,24 +564,58 @@ const descargarExcel = async () => {
   padding: 0.5rem 1rem;
   border-radius: 8px;
   color: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.stat-value { font-weight: 800; font-size: 1.1rem; }
-.stat-text { font-size: 0.85rem; opacity: 0.9; }
+.stat-value {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
 
-.stat-total { background: #6c757d; }
-.stat-nuevos { background: #28a745; }
-.stat-existentes { background: #17a2b8; }
-.stat-cambios { background: #ffc107; color: #333; }
-.stat-eliminados { background: #dc3545; }
-.stat-error { background: #dc3545; }
+.stat-text {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
 
-.table-success-custom { background-color: #e8f5e9 !important; }
-.table-danger-custom { background-color: #ffebee !important; opacity: 0.7; }
-.table-warning-custom { background-color: #fff3e0 !important; }
+.stat-total {
+  background: #6c757d;
+}
+
+.stat-nuevos {
+  background: #28a745;
+}
+
+.stat-existentes {
+  background: #17a2b8;
+}
+
+.stat-cambios {
+  background: #ffc107;
+  color: #333;
+}
+
+.stat-eliminados {
+  background: #dc3545;
+}
+
+.stat-error {
+  background: #dc3545;
+}
+
+.table-success-custom {
+  background-color: #e8f5e9 !important;
+}
+
+.table-danger-custom {
+  background-color: #ffebee !important;
+  opacity: 0.7;
+}
+
+.table-warning-custom {
+  background-color: #fff3e0 !important;
+}
 
 .download-btn {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>

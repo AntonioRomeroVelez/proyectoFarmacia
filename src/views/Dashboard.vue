@@ -1,12 +1,12 @@
 <template>
   <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-center align-items-center mb-2 flex-wrap">
       <div>
         <h2 class="fw-bold text-primary mb-0">📊 Dashboard</h2>
         <p class="text-muted mb-0">Resumen general del sistema</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 mt-2">
         <router-link to="/excel">
           <b-button variant="success">
             📥 Cargar Excel
