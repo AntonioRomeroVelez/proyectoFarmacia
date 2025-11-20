@@ -446,6 +446,7 @@ const cartItemsWithPromotions = vueComputed(() => {
 .cart-item-card {
   transition: all 0.3s ease;
   border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 .cart-item-card:hover {

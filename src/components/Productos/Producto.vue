@@ -1,22 +1,8 @@
 <template>
-  <b-card :class="['producto-card', { 'producto-agregado': esAgregado }]" :header="producto.NombreProducto"
-    style="border: 1px solid #dee2e6;">
+  <b-card :class="['producto-card fw-bold', { 'producto-agregado': esAgregado }]" :header="producto.NombreProducto">
     <!-- Información del producto -->
     <b-card-body>
       <div class="producto-info">
-        <div class="d-flex justify-content-between align-items-center ">
-          <!-- Código y Marca -->
-          <div class="d-flex justify-content-between align-items-start">
-            <b-badge variant="info">
-              {{ producto.Marca }}
-            </b-badge>
-          </div>
-
-          <!-- Presentación -->
-          <div class="producto-presentacion ">
-            <small> <i class="bi bi-box"></i> {{ producto.Presentacion }} </small>
-          </div>
-        </div>
 
         <!-- Principio Activo -->
         <p class="producto-principio text-muted small">
@@ -26,7 +12,7 @@
 
 
         <!-- Precios -->
-        <div class="precio-linea mt-2 mb-2">
+        <div class="precio-linea mb-2">
           <span class="precio-label-inline">Precio Farmacia:</span>
           <strong class="precio-valor-inline">
             ${{ getParteEntera(producto.PrecioFarmacia) }}<span class="precio-decimales">.{{
@@ -36,19 +22,29 @@
 
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
+          <!-- Marca -->
+          <span class="badge badge-subtle-brand">
+            {{ producto.Marca }}
+          </span>
+
+          <!-- Presentacion -->
+          <span class="badge badge-subtle-presentation">
+            {{ producto.Presentacion }}
+          </span>
+
           <!-- Descuento -->
-          <b-badge v-if="producto.Descuento" variant="warning">
+          <span v-if="producto.Descuento" class="badge badge-subtle-discount">
             Desc: {{ producto.Descuento }}%
-          </b-badge>
+          </span>
           <!--IVA -->
-          <b-badge v-if="producto.IVA" variant="primary">
+          <span v-if="producto.IVA" class="badge badge-subtle-tax">
             IVA: {{ producto.IVA }}%
-          </b-badge>
+          </span>
 
           <!-- Promoción -->
-          <b-badge v-if="producto.Promocion" variant="info">
+          <span v-if="producto.Promocion" class="badge badge-subtle-promo">
             Promoción: {{ producto.Promocion }}
-          </b-badge>
+          </span>
         </div>
       </div>
     </b-card-body>
@@ -142,6 +138,8 @@ const verDetalle = () => {
 .producto-card {
   height: 100%;
   transition: all 0.3s ease;
+  /* border: solid 1px rgb(153, 204, 224) !important; */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 .producto-card:hover {
@@ -187,24 +185,55 @@ const verDetalle = () => {
 
 .badge {
   margin: 2px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  padding: 0.4em 0.8em;
+}
+
+/* Badges Sutiles - Tema Farmacéutico */
+.badge-subtle-brand {
+  background-color: #e1f5fe;
+  /* Azul Médico Claro */
+  color: #0277bd;
+  /* Azul Médico Oscuro */
+  border: 1px solid #b3e5fc;
+}
+
+.badge-subtle-presentation {
+  background-color: #f5f5f5;
+  /* Gris Clínico Claro */
+  color: #424242;
+  /* Gris Oscuro */
+  border: 1px solid #e0e0e0;
+}
+
+.badge-subtle-discount {
+  background-color: #fff3e0;
+  /* Naranja Suave */
+  color: #ef6c00;
+  /* Naranja Fuerte */
+  border: 1px solid #ffe0b2;
+}
+
+.badge-subtle-tax {
+  background-color: #eceff1;
+  /* Azul Grisáceo */
+  color: #455a64;
+  /* Azul Grisáceo Oscuro */
+  border: 1px solid #cfd8dc;
+}
+
+.badge-subtle-promo {
+  background-color: #e0f2f1;
+  /* Teal/Verde Agua */
+  color: #00695c;
+  /* Teal Oscuro */
+  border: 1px solid #b2dfdb;
 }
 
 /* Asegurar que los iconos se vean bien */
 .bi {
   font-size: 0.9em;
-}
-
-/* Badge de promoción con mejor visibilidad */
-.promo-badge {
-  background-color: #ffc107 !important;
-  color: #000 !important;
-  font-weight: 600;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-.promo-badge strong {
-  color: #000 !important;
 }
 
 /* Estilos para precio en línea simple */
