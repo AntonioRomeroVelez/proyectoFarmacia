@@ -216,11 +216,11 @@ const verDetalle = () => {
 }
 
 .badge-subtle-tax {
-  background-color: #eceff1;
+  background-color: rgb(252, 204, 192);
   /* Azul Grisáceo */
   color: #455a64;
   /* Azul Grisáceo Oscuro */
-  border: 1px solid #cfd8dc;
+  border: 1px solid #dcd2cf;
 }
 
 .badge-subtle-promo {
