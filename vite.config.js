@@ -12,10 +12,10 @@ export default defineConfig({
     vueDevTools(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['logo.png', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Farmacia MH - Sistema de Gestión',
-        short_name: 'Farmacia MH',
+        name: 'Representaciones MH - Sistema de Gestión',
+        short_name: 'Representaciones MH',
         description: 'Sistema de gestión de productos farmacéuticos con comparación de precios y generación de reportes',
         theme_color: '#0d6efd',
         background_color: '#ffffff',
