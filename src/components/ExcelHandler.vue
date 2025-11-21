@@ -53,7 +53,7 @@
       <!-- Info de productos existentes -->
       <div v-if="productosEnSistema > 0"
         style="background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-        <div class="d-flex justify-content-center align-items-center flex-wrap">
+        <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
           <div>
             <strong>📦 Productos en sistema:</strong> {{ productosEnSistema }}
           </div>

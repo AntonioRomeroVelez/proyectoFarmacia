@@ -397,17 +397,30 @@ const handleFileUpload = async (event) => {
       }
     });
 
-    // 4. Identificar Eliminados (Están en BD pero no en Excel)
+    // 4. Identificar marcas presentes en el Excel
+    const marcasEnExcel = new Set();
+    jsonData.forEach(producto => {
+      if (producto.Marca) {
+        marcasEnExcel.add(normalize(producto.Marca));
+      }
+    });
+
+    // 5. Identificar Eliminados (SOLO de las marcas presentes en el Excel)
     mapaExistentes.forEach((prodBD, clave) => {
       if (!clavesProcesadasExcel.has(clave)) {
-        resultados.push({
-          ...prodBD,
-          P_Farmacia: parseFloat(parseFloat(prodBD.P_Farmacia || 0).toFixed(3)),
-          PVP: parseFloat(parseFloat(prodBD.PVP || 0).toFixed(3)),
-          estado: 'eliminado',
-          tieneCambios: false,
-          cambios: null
-        });
+        const marcaBD = normalize(prodBD.Marca);
+        // Solo marcar como eliminado si la marca del producto está en el Excel
+        if (marcasEnExcel.has(marcaBD)) {
+          resultados.push({
+            ...prodBD,
+            P_Farmacia: parseFloat(parseFloat(prodBD.P_Farmacia || 0).toFixed(3)),
+            PVP: parseFloat(parseFloat(prodBD.PVP || 0).toFixed(3)),
+            estado: 'eliminado',
+            tieneCambios: false,
+            cambios: null
+          });
+        }
+        // Si la marca NO está en el Excel, se ignora completamente
       }
     });
 
@@ -494,6 +507,7 @@ const descargarExcel = async () => {
       { header: 'PVP', key: 'PVP', width: 15 },
       { header: 'Promoción', key: 'Promocion', width: 20 },
       { header: 'Descuento', key: 'Descuento', width: 15 },
+      { header: 'IVA', key: 'IVA', width: 10 },
       { header: 'Detalle Cambios', key: 'Detalle_Cambios', width: 40 },
     ];
 
@@ -505,10 +519,75 @@ const descargarExcel = async () => {
       fgColor: { argb: 'FF4472C4' } // Azul
     };
 
-    // Agregar filas
+    // Obtener productos de la BD
+    const productosBD = JSON.parse(localStorage.getItem('ListaProductos')) || [];
+
+    // Identificar marcas comparadas en el Excel
+    const marcasComparadas = new Set();
     todosProductos.value.forEach(p => {
+      if (p.Marca) {
+        marcasComparadas.add(normalize(p.Marca));
+      }
+    });
+
+    // Crear mapa de productos comparados por clave única
+    const productosComparadosMap = new Map();
+    todosProductos.value.forEach(p => {
+      const clave = generarClave(p);
+      productosComparadosMap.set(clave, p);
+    });
+
+    // Combinar: productos comparados + productos de BD no comparados
+    const productosParaExportar = [];
+
+    // 1. Agregar todos los productos comparados (del Excel)
+    productosParaExportar.push(...todosProductos.value);
+
+    // 2. Agregar productos de BD que NO fueron comparados (marcas diferentes)
+    productosBD.forEach(prodBD => {
+      const marcaBD = normalize(prodBD.Marca);
+
+      // Si la marca NO está en las marcas comparadas, agregar como "sin cambios"
+      if (!marcasComparadas.has(marcaBD)) {
+        const clave = generarClave({
+          Marca: prodBD.Marca,
+          Nombre: prodBD.NombreProducto || prodBD.Nombre,
+          Presentacion: prodBD.Presentacion,
+          Principio_Activo: prodBD.PrincipioActivo || prodBD.Principio_Activo
+        });
+
+        // Verificar que no esté ya en los comparados
+        if (!productosComparadosMap.has(clave)) {
+          productosParaExportar.push({
+            CODIGO: prodBD.Codigo || prodBD.CODIGO,
+            Marca: prodBD.Marca,
+            Nombre: prodBD.NombreProducto || prodBD.Nombre,
+            Presentacion: prodBD.Presentacion,
+            Principio_Activo: prodBD.PrincipioActivo || prodBD.Principio_Activo,
+            P_Farmacia: prodBD.PrecioFarmacia || prodBD.P_Farmacia,
+            PVP: prodBD.PVP,
+            Promocion: prodBD.Promocion,
+            Descuento: prodBD.Descuento,
+            IVA: prodBD.IVA,
+            estado: 'sin_comparar',
+            tieneCambios: false,
+            cambios: null
+          });
+        }
+      }
+    });
+
+    // Ordenar por Marca y luego por Nombre
+    productosParaExportar.sort((a, b) => {
+      const marcaComp = (a.Marca || '').localeCompare(b.Marca || '');
+      if (marcaComp !== 0) return marcaComp;
+      return (a.Nombre || '').localeCompare(b.Nombre || '');
+    });
+
+    // Agregar filas
+    productosParaExportar.forEach(p => {
       const row = worksheet.addRow({
-        Estado: p.estado.toUpperCase(),
+        Estado: p.estado === 'sin_comparar' ? 'SIN COMPARAR' : p.estado.toUpperCase(),
         Modificado: p.tieneCambios ? 'SI' : 'NO',
         CODIGO: p.CODIGO,
         Marca: p.Marca,
@@ -519,8 +598,10 @@ const descargarExcel = async () => {
         PVP: parseFloat(p.PVP || 0).toFixed(3),
         Promocion: p.Promocion,
         Descuento: p.Descuento,
+        IVA: p.IVA,
         Detalle_Cambios: [
           p.cambios?.P_Farmacia ? `Precio: ${p.cambios.P_Farmacia.anterior} -> ${p.cambios.P_Farmacia.nuevo}` : '',
+          p.cambios?.PVP ? `PVP: ${p.cambios.PVP.anterior} -> ${p.cambios.PVP.nuevo}` : '',
           p.cambios?.Promocion ? `Promo: ${p.cambios.Promocion.anterior} -> ${p.cambios.Promocion.nuevo}` : '',
           p.cambios?.Descuento ? `Desc: ${p.cambios.Descuento.anterior} -> ${p.cambios.Descuento.nuevo}` : ''
         ].filter(Boolean).join(' | ')
@@ -534,6 +615,8 @@ const descargarExcel = async () => {
         fillColor = 'FFFFC7CE'; // Rojo claro
       } else if (p.tieneCambios) {
         fillColor = 'FFFFEB9C'; // Amarillo claro
+      } else if (p.estado === 'sin_comparar') {
+        fillColor = 'FFE7E6E6'; // Gris claro
       }
 
       if (fillColor) {
@@ -559,7 +642,7 @@ const descargarExcel = async () => {
     link.click();
     URL.revokeObjectURL(link.href);
 
-    toast.success('Reporte descargado correctamente');
+    toast.success(`✅ Reporte descargado: ${productosParaExportar.length} productos totales`);
   } catch (error) {
     console.error('Error exportar:', error);
     toast.error('Error al generar reporte');
