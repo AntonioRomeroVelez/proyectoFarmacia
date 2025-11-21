@@ -15,96 +15,51 @@
           <!-- Columna Izquierda -->
           <b-col md="6">
             <b-form-group label="Nombre del Producto:" label-for="nombre">
-              <b-form-input
-                id="nombre"
-                v-model="form.NombreProducto"
-                placeholder="Ingrese el nombre del producto"
-                required
-              />
+              <b-form-input id="nombre" v-model="form.NombreProducto" placeholder="Ingrese el nombre del producto"
+                required />
             </b-form-group>
 
             <b-form-group label="Código:" label-for="codigo">
-              <b-form-input
-                id="codigo"
-                v-model="form.Codigo"
-                placeholder="Código del producto"
-              />
+              <b-form-input id="codigo" v-model="form.Codigo" placeholder="Código del producto" />
             </b-form-group>
 
             <b-form-group label="Marca:" label-for="marca">
-              <b-form-input
-                id="marca"
-                v-model="form.Marca"
-                placeholder="Marca del producto"
-              />
+              <b-form-input id="marca" v-model="form.Marca" placeholder="Marca del producto" />
             </b-form-group>
 
             <b-form-group label="Presentación:" label-for="presentacion">
-              <b-form-input
-                id="presentacion"
-                v-model="form.Presentacion"
-                placeholder="Ej: Caja x 30 tabletas"
-              />
+              <b-form-input id="presentacion" v-model="form.Presentacion" placeholder="Ej: Caja x 30 tabletas" />
             </b-form-group>
 
             <b-form-group label="Principio Activo:" label-for="principio">
-              <b-form-input
-                id="principio"
-                v-model="form.PrincipioActivo"
-                placeholder="Principio activo"
-              />
+              <b-form-input id="principio" v-model="form.PrincipioActivo" placeholder="Principio activo" />
             </b-form-group>
           </b-col>
 
           <!-- Columna Derecha -->
           <b-col md="6">
             <b-form-group label="Precio Farmacia:" label-for="precio-farmacia">
-              <b-form-input
-                id="precio-farmacia"
-                v-model.number="form.PrecioFarmacia"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                required
-              />
+              <b-form-input id="precio-farmacia" v-model.number="form.PrecioFarmacia" type="number" step="0.01"
+                placeholder="0.00" required />
             </b-form-group>
 
             <b-form-group label="PVP:" label-for="pvp">
-              <b-form-input
-                id="pvp"
-                v-model.number="form.PVP"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-              />
+              <b-form-input id="pvp" v-model.number="form.PVP" type="number" step="0.01" placeholder="0.00" />
             </b-form-group>
 
             <b-form-group label="Descuento (%):" label-for="descuento">
-              <b-form-input
-                id="descuento"
-                v-model.number="form.Descuento"
-                type="number"
-                step="1"
-                placeholder="0"
-              />
+              <b-form-input id="descuento" v-model.number="form.Descuento" type="number" step="1" placeholder="0" />
             </b-form-group>
 
-            <b-form-group label="IVA (%):" label-for="iva">
-              <b-form-input
-                id="iva"
-                v-model.number="form.IVA"
-                type="number"
-                step="1"
-                placeholder="0"
-              />
+            <b-form-group label="IVA:" label-for="iva">
+              <b-form-select id="iva" v-model.number="form.IVA" :options="[
+                { value: 0, text: 'Sin IVA (0%)' },
+                { value: 15, text: 'Con IVA (15%)' }
+              ]" />
             </b-form-group>
 
             <b-form-group label="Promoción:" label-for="promocion">
-              <b-form-input
-                id="promocion"
-                v-model="form.Promocion"
-                placeholder="Ej: 5+1 10+2"
-              />
+              <b-form-input id="promocion" v-model="form.Promocion" placeholder="Ej: 5+1 10+2" />
               <small class="text-muted">Formato: cantidad+bonificación (separar con espacios)</small>
             </b-form-group>
           </b-col>

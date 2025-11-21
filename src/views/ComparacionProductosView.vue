@@ -9,6 +9,12 @@
       </router-link>
     </div>
 
+    <!-- Alerta de error de carga -->
+    <b-alert v-if="fileLoadError" show variant="danger" class="mb-3" dismissible @dismissed="fileLoadError = ''">
+      <h5 class="alert-heading">❌ Error al cargar el archivo</h5>
+      <p class="mb-0">{{ fileLoadError }}</p>
+    </b-alert>
+
     <!-- Carga de Excel -->
     <b-card class="shadow-sm mb-3 mb-md-4">
       <h5 class="mb-3">📁 Cargar Nuevo Archivo Excel</h5>
@@ -237,6 +243,7 @@ const cargando = ref(false);
 const erroresValidacion = ref([]);
 const todosProductos = ref([]);
 const filtroActual = ref('todos');
+const fileLoadError = ref('');
 
 // Utilidad para formatear precios a 3 decimales
 const formatPrice = (val) => {
@@ -269,6 +276,7 @@ const handleFileUpload = async (event) => {
   cargando.value = true;
   erroresValidacion.value = [];
   todosProductos.value = [];
+  fileLoadError.value = '';
 
   try {
     const data = await file.arrayBuffer();
@@ -278,7 +286,9 @@ const handleFileUpload = async (event) => {
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
     if (jsonData.length === 0) {
+      fileLoadError.value = 'El archivo Excel está vacío o no tiene un formato válido.';
       toast.error('El archivo Excel está vacío');
+      cargando.value = false;
       return;
     }
 
@@ -406,6 +416,7 @@ const handleFileUpload = async (event) => {
 
   } catch (error) {
     console.error('Error al procesar:', error);
+    fileLoadError.value = 'Ocurrió un error al procesar el archivo. Asegúrate de que sea un Excel válido.';
     toast.error('Error al procesar el archivo Excel');
   } finally {
     cargando.value = false;

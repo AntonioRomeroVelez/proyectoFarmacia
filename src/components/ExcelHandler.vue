@@ -8,10 +8,10 @@
               <span class="file-upload-icon">📁</span>
               <span class="file-upload-text">
                 {{
-  file
-    ? file.name
-    : "Haz clic para seleccionar un archivo Excel"
-}}
+                file
+                ? file.name
+                : "Haz clic para seleccionar un archivo Excel"
+                }}
               </span>
             </div>
           </label>
@@ -24,6 +24,31 @@
           IVA
         </small>
       </b-form-group>
+
+      <!-- Alerta de error de carga -->
+      <b-alert v-if="fileLoadError" show variant="danger" class="mb-3" dismissible @dismissed="fileLoadError = ''">
+        <h5 class="alert-heading">❌ Error al cargar el archivo</h5>
+        <p class="mb-2">{{ fileLoadError }}</p>
+
+        <div v-if="missingColumns.length > 0" class="mt-2">
+          <p class="mb-1 font-weight-bold">El archivo debe tener las siguientes columnas exactas:</p>
+          <ul class="mb-0 small">
+            <li>CODIGO</li>
+            <li>Marca</li>
+            <li>Nombre</li>
+            <li>Presentacion</li>
+            <li>Principio_Activo</li>
+            <li>P_Farmacia</li>
+            <li>PVP</li>
+            <li>Promocion</li>
+            <li>Descuento</li>
+            <li>IVA</li>
+          </ul>
+          <p class="mt-2 mb-0 small text-muted">
+            Columnas faltantes detectadas: <strong>{{ missingColumns.join(', ') }}</strong>
+          </p>
+        </div>
+      </b-alert>
 
       <!-- Info de productos existentes -->
       <div v-if="productosEnSistema > 0"
@@ -217,6 +242,8 @@ const searchText = ref("");
 const filterMarca = ref("");
 const filterStatus = ref("all");
 const productosEnSistema = ref(0);
+const fileLoadError = ref("");
+const missingColumns = ref([]);
 
 const fields = [
   { key: "CODIGO", label: "Código", sortable: true },
@@ -351,6 +378,7 @@ const handleFileUpload = async (event) => {
 
   const fileName = selectedFile.name.toLowerCase();
   if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+    fileLoadError.value = "Por favor selecciona un archivo Excel válido (.xlsx o .xls)";
     toast.error(
       "❌ Por favor selecciona un archivo Excel válido (.xlsx o .xls)"
     );
@@ -359,12 +387,15 @@ const handleFileUpload = async (event) => {
   }
 
   toast.info("📖 Leyendo archivo Excel...");
+  fileLoadError.value = "";
+  missingColumns.value = [];
 
   try {
     const { readExcelFile } = useExcelHandler();
     const data = await readExcelFile(selectedFile);
 
     if (data.length < 2) {
+      fileLoadError.value = "El archivo Excel está vacío o no tiene datos.";
       toast.error("❌ El archivo Excel está vacío o no tiene datos");
       return;
     }
@@ -383,12 +414,14 @@ const handleFileUpload = async (event) => {
       "IVA",
     ];
 
-    const missingColumns = requiredColumns.filter(
+    const missing = requiredColumns.filter(
       (col) => !headers.includes(col)
     );
-    if (missingColumns.length > 0) {
+    if (missing.length > 0) {
+      missingColumns.value = missing;
+      fileLoadError.value = "El archivo no tiene el formato correcto. Faltan columnas requeridas.";
       toast.error(
-        `❌ Estructura incorrecta. Faltan columnas: ${missingColumns.join(
+        `❌ Estructura incorrecta. Faltan columnas: ${missing.join(
           ", "
         )}`
       );
@@ -473,6 +506,7 @@ const handleFileUpload = async (event) => {
     );
   } catch (error) {
     console.error("Error:", error);
+    fileLoadError.value = "Ocurrió un error al procesar el archivo Excel. Verifique que el archivo no esté dañado.";
     toast.error("❌ Error al procesar el archivo Excel");
   }
 };

@@ -52,45 +52,69 @@ export const usePDFGenerator = () => {
         return;
       }
 
-      const pdf = new jsPDF();
+      // Obtener encabezados (columnas) del primer elemento
+      const headers = Object.keys(data[0]);
       
-      // Debug: Verificar si autoTable está disponible
-      console.log("autoTable disponible:", typeof pdf.autoTable);
-      console.log("autoTable import:", autoTable);
-      console.log("Datos a procesar:", data);
+      // Determinar orientación y tamaño de fuente basado en número de columnas
+      const isLandscape = headers.length > 8;
+      const orientation = isLandscape ? "l" : "p";
+      const pdf = new jsPDF(orientation, "mm", "a4");
+      
+      // Ajustar estilos según orientación
+      const baseFontSize = isLandscape ? 8 : 9;
+      const cellPadding = isLandscape ? 2 : 3;
 
-      // Configurar título
-      pdf.setFontSize(18);
+      // Configurar título principal (Tipo de Documento)
+      pdf.setFontSize(16);
       pdf.setFont(undefined, "bold");
       pdf.text(
-        options.title || "Reporte de Productos",
+        options.title || "Reporte",
         pdf.internal.pageSize.getWidth() / 2,
         15,
         { align: "center" }
       );
 
-      // Subtítulo (Cliente)
+      // Subtítulo (Título personalizado)
       if (options.subtitle) {
         pdf.setFontSize(12);
         pdf.setFont(undefined, "normal");
-        pdf.text(options.subtitle, 14, 25);
+        pdf.text(options.subtitle, pdf.internal.pageSize.getWidth() / 2, 22, { align: "center" });
       }
 
-      // Fecha
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, "normal");
-      const fechaTexto = options.date || `Generado: ${new Date().toLocaleString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-      pdf.text(fechaTexto, 14, options.subtitle ? 30 : 25);
+      let startY = 32;
 
-      // Obtener encabezados (columnas) del primer elemento
-      const headers = Object.keys(data[0]);
-      console.log("Encabezados detectados:", headers);
+      // Renderizar datos del encabezado si existen
+      if (options.headerData) {
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, "bold");
+        
+        // Columna Izquierda
+        pdf.text("Cliente:", 14, 32);
+        pdf.text("Ciudad:", 14, 37);
+        
+        // Columna Derecha
+        pdf.text("Fecha:", 120, 32);
+        pdf.text("Vendedor:", 120, 37);
+
+        pdf.setFont(undefined, "normal");
+        
+        // Valores Izquierda
+        pdf.text(options.headerData.cliente || "-", 35, 32);
+        pdf.text(options.headerData.ciudad || "-", 35, 37);
+
+        // Valores Derecha
+        pdf.text(options.headerData.fecha || "-", 145, 32);
+        pdf.text(options.headerData.vendedor || "-", 145, 37);
+
+        startY = 45; // Ajustar inicio de la tabla
+      } else {
+        // Fallback para compatibilidad anterior
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, "normal");
+        const fechaTexto = options.date || `Generado: ${new Date().toLocaleString("es-ES")}`;
+        pdf.text(fechaTexto, 14, options.subtitle ? 30 : 25);
+        startY = options.subtitle ? 35 : 32;
+      }
 
       // Mapeo de nombres de columnas a etiquetas legibles
       const columnLabels = {
@@ -109,6 +133,10 @@ export const usePDFGenerator = () => {
         Promocion: "Promoción",
         quantity: "Cantidad",
         Subtotal: "Subtotal",
+        "Cantidad a recibir": "Cant. Recibir",
+        Bonificacion: "Bonificación",
+        P_Unitario: "P. Unitario",
+        P_Total: "P. Total"
       };
 
       // Crear array de encabezados con etiquetas
@@ -122,39 +150,39 @@ export const usePDFGenerator = () => {
           const value = item[key];
           
           // Formatear valores numéricos
-          if (key === "PrecioFarmacia" || key === "PVP" || key === "Subtotal") {
-            return value != null ? `$${Number(value).toFixed(2)}` : "-";
+          if (key === "PrecioFarmacia" || key === "PVP" || key === "Subtotal" || key === "PrecioTotal" || key === "TotalConIVA" || key === "TotalSinIVA") {
+            return value != null ? `$${Number(value).toFixed(2)}` : "";
           }
           if (key === "IVA" || key === "Descuento") {
-            return value != null ? `${value}%` : "-";
+            return value != null ? `${value}%` : "";
           }
           
-          return value != null ? String(value) : "-";
+          return value != null ? String(value) : "";
         });
       });
-
-      console.log("Encabezados de tabla:", tableHeaders);
-      console.log("Datos de tabla:", tableData);
 
       // Generar la tabla con autoTable
       autoTable(pdf, {
         head: [tableHeaders],
         body: tableData,
-        startY: options.subtitle ? 35 : 32,
+        startY: startY,
         theme: "grid",
         headStyles: {
           fillColor: [41, 128, 185],
           textColor: 255,
           fontStyle: "bold",
           halign: "center",
+          fontSize: baseFontSize,
         },
         styles: {
-          fontSize: 9,
-          cellPadding: 3,
+          fontSize: baseFontSize,
+          cellPadding: cellPadding,
+          valign: "middle",
+          overflow: "linebreak",
         },
         columnStyles: {
-          // Ajustar anchos de columnas específicas
-          0: { cellWidth: "auto" },
+          // Ajustar anchos de columnas específicas si es necesario
+          // Por defecto autoTable ajusta al contenido
         },
         alternateRowStyles: {
           fillColor: [245, 245, 245],
@@ -163,10 +191,36 @@ export const usePDFGenerator = () => {
       });
 
       // Pie de página con total de productos
-      const finalY = pdf.lastAutoTable?.finalY || 40;
+      let finalY = pdf.lastAutoTable?.finalY || 40;
       pdf.setFontSize(10);
       pdf.setFont(undefined, "bold");
       pdf.text(`Total de productos: ${data.length}`, 14, finalY + 10);
+
+      // Renderizar tabla de resumen de totales si existe
+      if (options.totals) {
+        const totalsData = [
+          ["Subtotal:", `$${Number(options.totals.subtotal).toFixed(2)}`],
+          ["Base 0%:", `$${Number(options.totals.base0).toFixed(2)}`],
+          ["Base 15%:", `$${Number(options.totals.base15).toFixed(2)}`],
+          ["IVA 15%:", `$${Number(options.totals.iva).toFixed(2)}`],
+          ["Total:", `$${Number(options.totals.total).toFixed(2)}`],
+        ];
+
+        autoTable(pdf, {
+          body: totalsData,
+          startY: finalY + 15,
+          theme: "plain",
+          styles: {
+            fontSize: 10,
+            cellPadding: 2,
+          },
+          columnStyles: {
+            0: { fontStyle: "bold", halign: "right", cellWidth: 140 }, // Etiqueta alineada a la derecha
+            1: { halign: "right", cellWidth: 40 }, // Valor alineado a la derecha
+          },
+          margin: { right: 10 },
+        });
+      }
 
       // Guardar el PDF
       pdf.save(filename);
