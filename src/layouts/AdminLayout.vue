@@ -3,7 +3,6 @@
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
       <div class="sidebar-header">
-        <h3 class="brand-text"><img src="../../public/logo.png" alt="Logo"></img></h3>
         <button class="close-btn d-md-none" @click="closeSidebar">×</button>
       </div>
 

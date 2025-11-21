@@ -2,10 +2,7 @@
   <div class="container-fluid py-4">
     <!-- Header -->
     <div class="d-flex justify-content-center align-items-center mb-2 flex-wrap">
-      <div>
-        <h2 class="fw-bold text-primary mb-0">📊 Dashboard</h2>
-        <p class="text-muted mb-0">Resumen general del sistema</p>
-      </div>
+
       <div class="d-flex gap-2 mt-2">
         <router-link to="/excel">
           <b-button variant="success">
@@ -23,7 +20,7 @@
     <!-- KPI Cards -->
     <div class="row g-3 mb-4">
       <!-- Total Productos -->
-      <div class="col-12 col-sm-6 col-xl-3">
+      <div class="col-12 col-sm-12 col-xl-3">
         <b-card class="h-100 border-0 shadow-sm kpi-card bg-primary text-white">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -41,7 +38,7 @@
       </div>
 
       <!-- Visitas -->
-      <div class="col-12 col-sm-6 col-xl-3">
+      <div class="col-12 col-sm-12 col-xl-3">
         <b-card class="h-100 border-0 shadow-sm kpi-card bg-success text-white">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -59,7 +56,7 @@
       </div>
 
       <!-- Carrito -->
-      <div class="col-12 col-sm-6 col-xl-3">
+      <div class="col-12 col-sm-12 col-xl-3">
         <b-card class="h-100 border-0 shadow-sm kpi-card bg-info text-white">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -75,46 +72,9 @@
           </div>
         </b-card>
       </div>
-
-      <!-- Estado Sistema -->
-      <div class="col-12 col-sm-6 col-xl-3">
-        <b-card class="h-100 border-0 shadow-sm kpi-card"
-          :class="stats.errores > 0 ? 'bg-warning text-dark' : 'bg-light text-dark'">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-2 opacity-75">Estado Sistema</h6>
-              <h3 class="mb-0 fw-bold">{{ stats.errores > 0 ? 'Atención' : 'Óptimo' }}</h3>
-            </div>
-            <div class="icon-box bg-dark bg-opacity-10 rounded-circle p-3">
-              <span class="fs-4">⚙️</span>
-            </div>
-          </div>
-          <div class="mt-3 small opacity-75">
-            {{ stats.errores }} productos con errores
-          </div>
-        </b-card>
-      </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-lg-8">
-        <b-card class="h-100 shadow-sm border-0">
-          <h5 class="card-title mb-4">🏆 Top 5 Marcas</h5>
-          <div class="chart-container" style="height: 300px;">
-            <Bar v-if="loaded" :data="barChartData" :options="barChartOptions" />
-          </div>
-        </b-card>
-      </div>
-      <div class="col-12 col-lg-4">
-        <b-card class="h-100 shadow-sm border-0">
-          <h5 class="card-title mb-4">📊 Estado de Productos</h5>
-          <div class="chart-container" style="height: 300px; position: relative;">
-            <Doughnut v-if="loaded" :data="doughnutChartData" :options="doughnutChartOptions" />
-          </div>
-        </b-card>
-      </div>
-    </div>
+
 
     <!-- Recent Activity -->
     <div class="row">
@@ -125,7 +85,8 @@
             <router-link to="/visitas" class="text-decoration-none small">Ver todas →</router-link>
           </div>
 
-          <div class="table-responsive">
+          <!-- Desktop: Table view -->
+          <div class="table-responsive d-none d-md-block">
             <table class="table table-hover align-middle">
               <thead class="table-light">
                 <tr>
@@ -149,6 +110,25 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile: Card view -->
+          <div class="d-block d-md-none">
+            <div v-if="recentVisits.length === 0" class="text-center text-muted py-4">
+              No hay actividad reciente
+            </div>
+            <div v-else class="mobile-cards">
+              <b-card v-for="(visita, index) in recentVisits" :key="index" class="mb-3 visit-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div class="flex-grow-1">
+                    <div class="text-muted small mb-1">📅 {{ formatearFecha(visita.fecha) }}</div>
+                    <h6 class="fw-bold mb-1">{{ visita.lugar }}</h6>
+                    <p class="text-muted small mb-2">{{ visita.observacion }}</p>
+                  </div>
+                  <b-badge variant="success" pill class="ms-2">Completada</b-badge>
+                </div>
+              </b-card>
+            </div>
           </div>
         </b-card>
       </div>
@@ -305,5 +285,39 @@ const prepareCharts = (productos) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Mobile visit cards */
+.visit-card {
+  border-left: 4px solid #28a745;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.visit-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container-fluid {
+    padding: 0.5rem;
+  }
+
+  /* Stack buttons */
+  .d-flex.gap-2 {
+    flex-direction: column;
+  }
+
+  .d-flex.gap-2 a,
+  .d-flex.gap-2 .btn {
+    width: 100%;
+  }
 }
 </style>
