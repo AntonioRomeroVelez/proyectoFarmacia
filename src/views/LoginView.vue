@@ -22,8 +22,13 @@
           <label for="password" class="form-label">
             <i class="icon">🔒</i> Contraseña
           </label>
-          <input id="password" v-model="password" type="password" class="form-input" placeholder="Ingresa tu contraseña"
-            required />
+          <div class="password-input-wrapper">
+            <input id="password" v-model="password" :type="showPassword ? 'text' : 'password'"
+              class="form-input password-input" placeholder="Ingresa tu contraseña" required />
+            <button type="button" class="toggle-password-btn" @click="showPassword = !showPassword" tabindex="-1">
+              {{ showPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
         </div>
 
         <button type="submit" class="login-button" :disabled="loading">
@@ -31,8 +36,6 @@
           <span v-else>Ingresando...</span>
         </button>
       </form>
-
-
     </div>
   </div>
 </template>
@@ -48,6 +51,7 @@ const { login, isAuthenticated } = useAuth();
 const username = ref('');
 const password = ref('');
 const loading = ref(false);
+const showPassword = ref(false);
 
 // Si ya está autenticado, redirigir
 if (isAuthenticated.value) {
@@ -73,11 +77,15 @@ const handleLogin = async () => {
 <style scoped>
 .login-container {
   min-height: 100vh;
+  min-height: 100dvh;
+  /* Mejor para móvil con teclado */
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
+  overflow-y: auto;
+  /* Importante para móvil */
 }
 
 .login-card {
@@ -88,6 +96,8 @@ const handleLogin = async () => {
   max-width: 440px;
   padding: 40px;
   animation: slideUp 0.5s ease-out;
+  margin: auto;
+  /* Asegura centrado vertical incluso con teclado */
 }
 
 @keyframes slideUp {
@@ -137,7 +147,7 @@ const handleLogin = async () => {
 }
 
 .login-form {
-  margin-bottom: 25px;
+  margin-bottom: 0;
 }
 
 .form-group {
@@ -172,6 +182,43 @@ const handleLogin = async () => {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Wrapper para el campo de contraseña con botón */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  padding-right: 50px;
+  /* Espacio para el botón */
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  user-select: none;
+}
+
+.toggle-password-btn:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.toggle-password-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
 .login-button {
   width: 100%;
   padding: 14px;
@@ -184,6 +231,7 @@ const handleLogin = async () => {
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  margin-top: 10px;
 }
 
 .login-button:hover:not(:disabled) {
@@ -200,51 +248,74 @@ const handleLogin = async () => {
   cursor: not-allowed;
 }
 
-.login-footer {
-  border-top: 1px solid #e2e8f0;
-  padding-top: 20px;
-}
-
-.demo-credentials {
-  background: #f7fafc;
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-}
-
-.demo-title {
-  margin: 0 0 10px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.demo-users {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.demo-user {
-  font-size: 12px;
-  color: #718096;
-  padding: 8px 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.demo-user strong {
-  color: #2d3748;
-}
-
+/* Optimizaciones para móvil */
 @media (max-width: 480px) {
+  .login-container {
+    padding: 10px;
+    align-items: flex-start;
+    /* Cambia de center a flex-start en móvil */
+    padding-top: 20px;
+  }
+
   .login-card {
     padding: 30px 25px;
+    margin: 0;
+    /* Elimina margin auto en móvil */
   }
 
   .login-title {
     font-size: 24px;
+  }
+
+  .login-header {
+    margin-bottom: 20px;
+    /* Reduce margen en móvil */
+  }
+
+  .logo-circle {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+  }
+
+  .logo-icon {
+    font-size: 30px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    /* Reduce espacio entre campos */
+  }
+}
+
+/* Ajuste para cuando el teclado virtual está activo */
+@media (max-height: 600px) {
+  .login-container {
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+
+  .login-header {
+    margin-bottom: 15px;
+  }
+
+  .logo-circle {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+
+  .logo-icon {
+    font-size: 25px;
+  }
+
+  .login-title {
+    font-size: 20px;
+    margin-bottom: 5px;
+  }
+
+  .login-subtitle {
+    font-size: 12px;
   }
 }
 </style>
