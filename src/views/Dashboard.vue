@@ -1,24 +1,9 @@
 <template>
-  <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-center align-items-center mb-2 flex-wrap">
+  <div class="container-fluid py-4 text-center">
 
-      <div class="d-flex gap-2 mt-2">
-        <router-link to="/excel">
-          <b-button variant="success">
-            📥 Cargar Excel
-          </b-button>
-        </router-link>
-        <router-link to="/visitas">
-          <b-button variant="primary">
-            📝 Nueva Visita
-          </b-button>
-        </router-link>
-      </div>
-    </div>
 
     <!-- KPI Cards -->
-    <div class="row g-3 mb-4">
+    <div class="col-12 row g-3 mb-4 text-center">
       <!-- Total Productos -->
       <div class="col-12 col-sm-12 col-xl-3">
         <b-card class="h-100 border-0 shadow-sm kpi-card bg-primary text-white">

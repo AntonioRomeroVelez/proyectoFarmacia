@@ -58,11 +58,29 @@ export function useAuth() {
 
   // Login
   const login = (username, password) => {
-    const user = USERS.find(
+    // Cargar usuarios más recientes del storage
+    const storedUsers = localStorage.getItem('app_users');
+    let allUsers = [];
+    
+    if (storedUsers) {
+      allUsers = JSON.parse(storedUsers);
+    } else {
+      // Fallback a usuarios hardcoded si no hay nada en storage (primera vez)
+      allUsers = USERS;
+      // Inicializar storage si está vacío
+      localStorage.setItem('app_users', JSON.stringify(USERS));
+    }
+
+    const user = allUsers.find(
       u => u.username === username && u.password === password
     );
 
     if (user) {
+      if (user.activo === false) {
+        toast.error('❌ Usuario deshabilitado. Contacte al administrador.');
+        return false;
+      }
+
       // Guardar usuario (sin contraseña)
       const { password: _, ...userWithoutPassword } = user;
       currentUser.value = userWithoutPassword;

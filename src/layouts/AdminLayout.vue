@@ -1,8 +1,14 @@
 <template>
   <div class="admin-layout">
     <!-- Sidebar -->
-    <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen }">
+    <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen, 'desktop-closed': !isDesktopSidebarOpen }">
       <div class="sidebar-header">
+        <div class="d-flex align-items-center gap-4">
+          <span class="brand-text">Farmacia</span>
+          <button class="toggle-btn d-none d-md-block btn" @click="toggleDesktopSidebar" title="Ocultar menú">
+            <BIconList />
+          </button>
+        </div>
         <button class="close-btn d-md-none" @click="closeSidebar">×</button>
       </div>
 
@@ -23,6 +29,13 @@
         </router-link>
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-box-seam"></i> Productos
+        </router-link>
+        <router-link v-if="isAdmin" to="/crear-producto" class="nav-item" active-class="active"
+          @click="closeSidebarOnMobile">
+          <i class="bi bi-plus-circle"></i> Nuevo Producto
+        </router-link>
+        <router-link v-if="isAdmin" to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-people"></i> Usuarios
         </router-link>
         <router-link to="/carrito" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-cart"></i> Carrito
@@ -58,8 +71,14 @@
       <BIconList />
     </button>
 
+    <!-- Desktop Re-open Button -->
+    <button class="desktop-toggle-btn d-none d-md-flex" @click="toggleDesktopSidebar" v-if="!isDesktopSidebarOpen"
+      title="Mostrar menú">
+      <BIconList />
+    </button>
+
     <!-- Main Content Wrapper -->
-    <div class="main-wrapper">
+    <div class="main-wrapper" :class="{ 'desktop-expanded': !isDesktopSidebarOpen }">
       <!-- Page Content -->
       <main class="content-area">
         <router-view v-slot="{ Component }">
@@ -80,6 +99,7 @@ import { useAuth } from '@/composables/useAuth';
 const { userName, isAdmin, logout } = useAuth();
 
 const isSidebarOpen = ref(false);
+const isDesktopSidebarOpen = ref(true);
 
 const userInitial = computed(() => {
   return userName.value.charAt(0).toUpperCase();
@@ -87,6 +107,10 @@ const userInitial = computed(() => {
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
+};
+
+const toggleDesktopSidebar = () => {
+  isDesktopSidebarOpen.value = !isDesktopSidebarOpen.value;
 };
 
 const closeSidebar = () => {
@@ -277,6 +301,7 @@ const handleLogout = () => {
   transform: translateY(0);
   box-shadow: 0 1px 4px rgba(220, 53, 69, 0.3);
 }
+
 /* Overlay */
 .sidebar-overlay {
   position: fixed;
@@ -333,6 +358,12 @@ const handleLogout = () => {
   font-size: 1.5rem;
   color: #4b5563;
   padding: 0.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.toggle-btn:hover {
+  color: #0d6efd;
 }
 
 /* Content Area */
@@ -374,6 +405,33 @@ const handleLogout = () => {
   box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
 }
 
+/* Desktop Toggle Button (when closed) */
+.desktop-toggle-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 1040;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #4b5563;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.desktop-toggle-btn:hover {
+  background: #f8f9fa;
+  color: #0d6efd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   .sidebar {
@@ -402,6 +460,15 @@ const handleLogout = () => {
   }
 }
 
+@media (min-width: 769px) {
+  .sidebar.desktop-closed {
+    transform: translateX(-100%);
+  }
+
+  .main-wrapper.desktop-expanded {
+    margin-left: 0;
+  }
+}
 /* Transitions */
 .fade-enter-active,
 .fade-leave-active {

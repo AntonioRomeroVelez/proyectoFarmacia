@@ -44,6 +44,16 @@ const routes = [
         component: Comparacion,
         meta: { requiresAdmin: true }
       },
+      {
+        path: "crear-producto",
+        component: () => import("@/views/NewProductView.vue"),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: "usuarios",
+        component: () => import("@/views/UsersManagementView.vue"),
+        meta: { requiresAdmin: true }
+      },
     ],
   },
 ];
