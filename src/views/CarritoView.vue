@@ -163,7 +163,7 @@
         </b-form-group>
 
         <b-form-group label="Vendedor:" label-for="vendedor-modal" class="mb-3">
-          <b-form-select id="vendedor-modal" v-model="vendedorNombre" :options="vendedorOptions"></b-form-select>
+          <b-form-input id="vendedor-modal" v-model="vendedorNombre" readonly />
         </b-form-group>
 
         <b-form-group label="Fecha:" label-for="fecha-modal" class="mb-3">
@@ -180,9 +180,13 @@ import { useCart } from '@/composables/useCart'
 import { useExcelHandler } from '@/utils/excelHandler'
 import { usePDFGenerator } from '@/utils/pdfGenerator'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
+import { useUsuarios } from '@/composables/useUsuarios'
 import alertify from 'alertifyjs'
 
 const toast = useToast()
+const { userName } = useAuth()
+const { users } = useUsuarios()
 
 const {
   cart,
@@ -206,12 +210,6 @@ const fecha = ref("");
 const showClientModal = ref(false);
 const pendingAction = ref(null); // 'proforma', 'pedido', 'pdf'
 
-// Opciones para el select de vendedor
-const vendedorOptions = [
-  { value: '', text: 'Seleccione un vendedor' },
-  { value: 'Diana Benalcázar', text: 'Diana Benalcázar' },
-];
-
 onMounted(() => {
   // Set default date to today
   const today = new Date();
@@ -219,6 +217,9 @@ onMounted(() => {
   const month = String(today.getMonth() + 1).padStart(2, "0");
   const day = String(today.getDate()).padStart(2, "0");
   fecha.value = `${year}-${month}-${day}`;
+
+  // Pre-seleccionar el usuario actual como vendedor
+  vendedorNombre.value = userName.value || '';
 });
 
 const handleClearCart = () => {

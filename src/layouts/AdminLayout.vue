@@ -4,7 +4,7 @@
     <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen, 'desktop-closed': !isDesktopSidebarOpen }">
       <div class="sidebar-header">
         <div class="d-flex align-items-center gap-4">
-          <span class="brand-text">Farmacia</span>
+          <span class="brand-text">MH</span>
           <button class="toggle-btn d-none d-md-block btn" @click="toggleDesktopSidebar" title="Ocultar menú">
             <BIconList />
           </button>
@@ -17,7 +17,7 @@
         <div class="user-avatar">{{ userInitial }}</div>
         <div class="user-info">
           <span class="user-name">Hola, {{ userName }}</span>
-          <small :class="isAdmin ? 'badge-admin' : 'badge-vendedor'">
+          <small :class="isAdmin ? 'badge-admin' : 'badge-vendedor'" class="text-center">
             {{ isAdmin ? 'Administrador' : 'Vendedor' }}
           </small>
         </div>
@@ -469,6 +469,7 @@ const handleLogout = () => {
     margin-left: 0;
   }
 }
+
 /* Transitions */
 .fade-enter-active,
 .fade-leave-active {

@@ -152,16 +152,16 @@
     <b-modal v-model="showPdfModal" title="📄 Datos del Documento" @ok="confirmGeneratePDF" ok-title="Generar PDF"
       cancel-title="Cancelar">
       <b-form>
-        <b-form-group label="Cliente (Obligatorio):" label-for="pdf-client" class="mb-3">
+        <b-form-group label="Cliente:" label-for="pdf-client" class="mb-3">
           <b-form-input id="pdf-client" v-model="pdfClient" placeholder="Nombre del cliente" required></b-form-input>
         </b-form-group>
 
-        <b-form-group label="Ciudad (Obligatorio):" label-for="pdf-city" class="mb-3">
+        <b-form-group label="Ciudad:" label-for="pdf-city" class="mb-3">
           <b-form-input id="pdf-city" v-model="pdfCity" placeholder="Ciudad" required></b-form-input>
         </b-form-group>
 
-        <b-form-group label="Vendedor (Obligatorio):" label-for="pdf-seller" class="mb-3">
-          <b-form-select id="pdf-seller" v-model="pdfSeller" :options="sellerOptions" required></b-form-select>
+        <b-form-group label="Vendedor:" label-for="pdf-seller" class="mb-3">
+          <b-form-input id="pdf-seller" v-model="pdfSeller" readonly />
         </b-form-group>
 
         <b-form-group label="Tipo de Documento:" label-for="pdf-type" class="mb-3">
@@ -173,14 +173,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useCart } from "@/composables/useCart";
 import { usePDFGenerator } from "@/utils/pdfGenerator";
 import { useToast } from "vue-toastification";
+import { useAuth } from '@/composables/useAuth';
+import { useUsuarios } from '@/composables/useUsuarios';
 
 const { cart, clearCart } = useCart();
 const { generatePDFFromData } = usePDFGenerator();
 const toast = useToast();
+const { userName } = useAuth();
+const { users } = useUsuarios();
 
 // Título personalizado para el PDF
 // Título personalizado para el PDF
@@ -194,16 +198,16 @@ const pdfCity = ref("");
 const pdfSeller = ref("");
 const pdfType = ref("Proforma");
 
-const sellerOptions = [
-  { value: '', text: 'Seleccione un vendedor' },
-  { value: 'Diana Benalcázar', text: 'Diana Benalcázar' },
-];
-
 const documentTypeOptions = [
   { value: 'Proforma', text: 'Proforma' },
   { value: 'Pedido', text: 'Pedido' },
   { value: 'Lista de Precios', text: 'Lista de Precios' },
 ];
+
+onMounted(() => {
+  // Pre-seleccionar el usuario actual como vendedor
+  pdfSeller.value = userName.value || '';
+});
 
 // Columnas disponibles
 const availableColumns = ref([
@@ -314,7 +318,7 @@ const generatePDF = () => {
 const confirmGeneratePDF = (bvModalEvent) => {
   if (!pdfClient.value || !pdfCity.value || !pdfSeller.value) {
     bvModalEvent.preventDefault();
-    toast.warning("⚠️ Por favor complete todos los campos obligatorios");
+    toast.warning("⚠️ Por favor complete todos los campos obligatorios Nombre y Ciudad");
     return;
   }
 
