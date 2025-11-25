@@ -152,11 +152,9 @@ const verDetalle = () => {
 }
 
 .producto-principio {
-  height: 40px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
 }
 
 .precios-container {
