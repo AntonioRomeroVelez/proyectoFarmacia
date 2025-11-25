@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="bg-light min-vh-100">
-    <!-- PÁGINAS -->
+    <!-- Contenido principal -->
     <b-container fluid class="py-4">
       <router-view />
     </b-container>
@@ -8,38 +8,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useCart } from '@/composables/useCart'
-
-const { cartCount } = useCart()
-const navExpanded = ref(false)
-
-const toggleNav = () => {
-  navExpanded.value = !navExpanded.value
-}
-
-const closeNav = () => {
-  navExpanded.value = false
-}
-
-const handleNavbarClick = (e) => {
-  // Don't close if clicking on the navbar itself
-}
-
-const handleClickOutside = (e) => {
-  const navbar = document.querySelector('.navbar-custom')
-  if (navbar && !navbar.contains(e.target) && navExpanded.value) {
-    closeNav()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+// No necesitamos nada aquí ahora, el login y usuario están en AdminLayout
 </script>
 
 <style>
@@ -57,6 +26,7 @@ html,
 body {
   overscroll-behavior-y: none;
 }
+
 /* Eliminar padding en móvil */
 @media (max-width: 768px) {
   #app .container-fluid {
@@ -77,7 +47,6 @@ body {
 /*    BOTONES MINIMALISTAS         */
 /* =============================== */
 
-/* Estilos base para todos los botones */
 .btn {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid #dee2e6;
@@ -95,7 +64,6 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Botón outline-secondary minimalista */
 .btn-outline-secondary {
   background-color: white;
   border-color: #6c757d;
@@ -108,7 +76,6 @@ body {
   color: white;
 }
 
-/* Botón outline-primary */
 .btn-outline-primary {
   background-color: white;
   border-color: #0d6efd;
@@ -121,7 +88,6 @@ body {
   color: white;
 }
 
-/* Botón outline-danger */
 .btn-outline-danger {
   background-color: white;
   border-color: #dc3545;
@@ -134,7 +100,6 @@ body {
   color: white;
 }
 
-/* Botón outline-success */
 .btn-outline-success {
   background-color: white;
   border-color: #198754;
@@ -147,7 +112,6 @@ body {
   color: white;
 }
 
-/* Botón primary sólido */
 .btn-primary {
   background-color: #0d6efd;
   border-color: #0d6efd;
@@ -158,6 +122,7 @@ body {
   background-color: #0b5ed7;
   border-color: #0a58ca;
 }
+
 .card {
   border-radius: 12px;
   border: none !important;

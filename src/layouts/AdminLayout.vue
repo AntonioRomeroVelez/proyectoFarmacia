@@ -8,10 +8,12 @@
 
       <!-- User Profile in Sidebar -->
       <div class="sidebar-user">
-        <div class="user-avatar">A</div>
+        <div class="user-avatar">{{ userInitial }}</div>
         <div class="user-info">
-          <span class="user-name">Hola, Dianita</span>
-          <small class="text-muted">Visitador</small>
+          <span class="user-name">Hola, {{ userName }}</span>
+          <small :class="isAdmin ? 'badge-admin' : 'badge-vendedor'">
+            {{ isAdmin ? 'Administrador' : 'Vendedor' }}
+          </small>
         </div>
       </div>
 
@@ -28,10 +30,11 @@
         <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-journal-text"></i> Visitas
         </router-link>
-        <router-link to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+        <router-link v-if="isAdmin" to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-file-earmark-excel"></i> Carga Excel
         </router-link>
-        <router-link to="/comparacion" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+        <router-link v-if="isAdmin" to="/comparacion" class="nav-item" active-class="active"
+          @click="closeSidebarOnMobile">
           <i class="bi bi-diagram-3"></i> Comparación
         </router-link>
         <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
@@ -40,7 +43,10 @@
       </nav>
 
       <div class="sidebar-footer">
-        <small class="text-muted">v1.0.0</small>
+        <button class="logout-btn" @click="handleLogout">
+          🚪 Cerrar Sesión
+        </button>
+        <small class="text-muted d-block mt-2">v1.0.0</small>
       </div>
     </aside>
 
@@ -67,10 +73,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { BIconList } from 'bootstrap-icons-vue';
+import { useAuth } from '@/composables/useAuth';
+
+const { userName, isAdmin, logout } = useAuth();
 
 const isSidebarOpen = ref(false);
+
+const userInitial = computed(() => {
+  return userName.value.charAt(0).toUpperCase();
+});
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
@@ -84,6 +97,10 @@ const closeSidebarOnMobile = () => {
   if (window.innerWidth < 768) {
     closeSidebar();
   }
+};
+
+const handleLogout = () => {
+  logout();
 };
 </script>
 
@@ -209,12 +226,57 @@ const closeSidebarOnMobile = () => {
   color: #0d6efd;
 }
 
+/* Badge Styles */
+.badge-admin {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: #28a745;
+  color: white;
+  display: inline-block;
+}
+
+.badge-vendedor {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: #ffc107;
+  color: #333;
+  display: inline-block;
+}
+
 .sidebar-footer {
   padding: 1rem;
   text-align: center;
   border-top: 1px solid #eee;
 }
 
+.logout-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+}
+
+.logout-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(220, 53, 69, 0.3);
+}
 /* Overlay */
 .sidebar-overlay {
   position: fixed;

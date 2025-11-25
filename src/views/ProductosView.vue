@@ -88,8 +88,8 @@
       <h5 class="text-muted mt-3">No se encontraron productos</h5>
       <p class="text-muted mb-3">
         {{ productos.length === 0
-          ? 'Carga productos desde la página de Excel para comenzar'
-          : 'Intenta ajustar los filtros de búsqueda'
+        ? 'Carga productos desde la página de Excel para comenzar'
+        : 'Intenta ajustar los filtros de búsqueda'
         }}
       </p>
       <router-link to="/excel" v-if="productos.length === 0">
@@ -111,10 +111,10 @@
           </b-col>
           <b-col md="6">
             <p><strong>Precio Farmacia:</strong> <span class="text-success">${{
-              Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
-            }}</span></p>
+                Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
+                }}</span></p>
             <p><strong>PVP:</strong> <del class="text-danger">${{ Number(productoSeleccionado.PVP || 0).toFixed(3)
-            }}</del></p>
+                }}</del></p>
             <p v-if="productoSeleccionado.Descuento"><strong>Descuento:</strong> {{ productoSeleccionado.Descuento }}%
             </p>
             <p><strong>IVA:</strong> {{ productoSeleccionado.IVA }}%</p>
@@ -128,7 +128,7 @@
       <template #footer>
         <div class="d-flex justify-content-between w-100">
           <div class="d-flex gap-2">
-            <b-button variant="outline-danger" @click="mostrarModalEliminar">
+            <b-button v-if="isAdmin" variant="outline-danger" @click="mostrarModalEliminar">
               🗑️ Eliminar
             </b-button>
           </div>
@@ -136,7 +136,7 @@
             <b-button variant="outline-secondary" @click="showModal = false">
               Cerrar
             </b-button>
-            <b-button variant="primary" @click="editarProducto">
+            <b-button v-if="isAdmin" variant="primary" @click="editarProducto">
               ✏️ Editar
             </b-button>
           </div>
@@ -153,12 +153,13 @@ import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import alertify from "alertifyjs";
 import Producto from "@/components/Productos/Producto.vue";
-
 import { useCart } from "@/composables/useCart";
+import { useAuth } from "@/composables/useAuth";
 
 const router = useRouter();
 const toast = useToast();
 const { cartCount } = useCart();
+const { isAdmin } = useAuth();
 
 const productos = ref([]);
 const productosFiltrados = ref([]);
