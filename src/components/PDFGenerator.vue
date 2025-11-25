@@ -179,6 +179,7 @@ import { usePDFGenerator } from "@/utils/pdfGenerator";
 import { useToast } from "vue-toastification";
 import { useAuth } from '@/composables/useAuth';
 import { useUsuarios } from '@/composables/useUsuarios';
+import alertify from 'alertifyjs';
 
 const { cart, clearCart } = useCart();
 const { generatePDFFromData } = usePDFGenerator();
@@ -403,23 +404,19 @@ const confirmGeneratePDF = (bvModalEvent) => {
   });
 };
 
-// Limpiar carrito con confirmación toast
-let pdfClearCartConfirmation = false;
+// Limpiar carrito con confirmación alertify
 const handleClearCart = () => {
-  if (pdfClearCartConfirmation) {
-    clearCart();
-    toast.success("🗑️ Carrito vaciado");
-    pdfClearCartConfirmation = false;
-  } else {
-    pdfClearCartConfirmation = true;
-    toast.warning(
-      "⚠️ ¿Vaciar el carrito?\n\nHaz clic nuevamente en 'Vaciar carrito' para confirmar.",
-      { timeout: 5000 }
-    );
-    setTimeout(() => {
-      pdfClearCartConfirmation = false;
-    }, 5000);
-  }
+  alertify.confirm(
+    "Vaciar Carrito",
+    "⚠️ ¿Estás seguro de que deseas vaciar todo el carrito?",
+    () => {
+      clearCart();
+      toast.success("🗑️ Carrito vaciado");
+    },
+    () => {
+      // Cancel action
+    }
+  ).set('labels', { ok: 'Sí, Vaciar', cancel: 'Cancelar' });
 };
 
 // --- Lógica de Promociones (Duplicada de CarritoView para consistencia) ---
