@@ -1,9 +1,9 @@
 <template>
   <div class="container-fluid py-2">
-    <div class="d-flex justify-content-center align-items-center mb-2 flex-wrap">
-      <h2 class="fw-bold text-primary mb-0 m-2">
-        Productos pedidos
-      </h2>
+    <div
+      class="d-flex justify-content-center align-items-center mb-2 flex-wrap"
+    >
+      <h2 class="fw-bold text-primary mb-0 m-2">Productos pedidos</h2>
       <router-link to="/productos">
         <b-button variant="outline-primary" size="sm" class="m-2">
           ← Seguir comprando
@@ -13,13 +13,13 @@
 
     <!-- Estado vacío -->
     <b-card v-if="cart.length === 0" class="text-center py-5 shadow-sm">
-      <div style="font-size: 4rem; color: #6c757d;">🛒</div>
+      <div style="font-size: 4rem; color: #6c757d">🛒</div>
       <h5 class="text-muted mt-3">Tu carrito está vacío</h5>
-      <p class="text-muted mb-3">Agrega productos desde la página de productos</p>
+      <p class="text-muted mb-3">
+        Agrega productos desde la página de productos
+      </p>
       <router-link to="/productos">
-        <b-button variant="primary">
-          Ver Productos
-        </b-button>
+        <b-button variant="primary"> Ver Productos </b-button>
       </router-link>
     </b-card>
 
@@ -41,21 +41,32 @@
             <hr />
             <div class="d-flex justify-content-between mb-3">
               <strong class="fs-5">Total Global:</strong>
-              <strong class="fs-5 text-success">${{ cartTotal.toFixed(3) }}</strong>
+              <strong class="fs-5 text-success"
+                >${{ cartTotal.toFixed(3) }}</strong
+              >
             </div>
             <div class="d-flex justify-content-center mb-3 gap-2 flex-wrap">
-              <b-button variant="btn-minimal-success" class="btn-minimal btn-minimal-success"
-                @click="prepararExportacion('proforma')">
+              <b-button
+                variant="btn-minimal-success"
+                class="btn-minimal btn-minimal-success"
+                @click="prepararExportacion('proforma')"
+              >
                 Proforma PDF
               </b-button>
 
-              <b-button variant="btn-minimal-primary" class="btn-minimal btn-minimal-primary"
-                @click="prepararExportacion('pedido')">
+              <b-button
+                variant="btn-minimal-primary"
+                class="btn-minimal btn-minimal-primary"
+                @click="prepararExportacion('pedido')"
+              >
                 Pedido Excel
               </b-button>
 
-              <b-button variant="btn-minimal-warning" class="btn-minimal btn-minimal-warning"
-                @click="prepararExportacion('pdf')">
+              <b-button
+                variant="btn-minimal-warning"
+                class="btn-minimal btn-minimal-warning"
+                @click="prepararExportacion('pdf')"
+              >
                 Lista Precio PDF
               </b-button>
             </div>
@@ -66,24 +77,38 @@
       <!-- Productos en tarjetas -->
       <b-card class="shadow-sm mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">🛍️ Productos en el Carrito ({{ cartCount }} items)</h5>
+          <h5 class="mb-0">
+            🛍️ Productos en el Carrito ({{ cartCount }} items)
+          </h5>
           <b-button variant="outline-danger" size="sm" @click="handleClearCart">
             Vaciar Producto de carrito
           </b-button>
         </div>
 
         <div class="row g-3">
-          <div v-for="item in cartItemsWithPromotions" :key="item.ID" class="col-12 col-md-6 col-lg-4">
+          <div
+            v-for="item in cartItemsWithPromotions"
+            :key="item.ID"
+            class="col-12 col-md-6 col-lg-4"
+          >
             <b-card class="cart-item-card h-100">
               <!-- Header -->
               <template #header>
                 <div class="d-flex justify-content-between align-items-start">
                   <div>
-                    <h6 class="mb-1 fw-bold text-primary">{{ item.NombreProducto }}</h6>
-                    <small class="text-muted">{{ item.Marca }} - {{ item.Presentacion }}</small>
+                    <h6 class="mb-1 fw-bold text-primary">
+                      {{ item.NombreProducto }}
+                    </h6>
+                    <small class="text-muted"
+                      >{{ item.Marca }} - {{ item.Presentacion }}</small
+                    >
                   </div>
-                  <b-button variant="outline-danger" size="sm" @click="removeFromCart(item.ID)"
-                    title="Eliminar producto">
+                  <b-button
+                    variant="outline-danger"
+                    size="sm"
+                    @click="removeFromCart(item.ID)"
+                    title="Eliminar producto"
+                  >
                     ✕
                   </b-button>
                 </div>
@@ -97,32 +122,56 @@
                 </div>
 
                 <!-- Precio unitario -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-3"
+                >
                   <span class="text-muted">Precio Unitario:</span>
-                  <strong class="text-success fs-5">${{ Number(item.PrecioFarmacia).toFixed(3) }}</strong>
+                  <strong class="text-success fs-5"
+                    >${{ Number(item.PrecioFarmacia).toFixed(3) }}</strong
+                  >
                 </div>
 
                 <!-- Control de cantidad -->
                 <div class="quantity-control mb-3">
                   <label class="form-label small text-muted">Cantidad:</label>
-                  <div class="d-flex justify-content-center align-items-center gap-2">
-                    <b-button variant="outline-secondary" size="sm" @click="updateQuantity(item.ID, item.quantity - 1)">
+                  <div
+                    class="d-flex justify-content-center align-items-center gap-2"
+                  >
+                    <b-button
+                      variant="outline-secondary"
+                      size="sm"
+                      @click="updateQuantity(item.ID, item.quantity - 1)"
+                    >
                       −
                     </b-button>
                     <span class="quantity-display">{{ item.quantity }}</span>
-                    <b-button variant="outline-secondary" size="sm" @click="updateQuantity(item.ID, item.quantity + 1)">
+                    <b-button
+                      variant="outline-secondary"
+                      size="sm"
+                      @click="updateQuantity(item.ID, item.quantity + 1)"
+                    >
                       +
                     </b-button>
                   </div>
                   <!-- Promoción Display -->
                   <div v-if="item.promotionDetails" class="mt-2 text-center">
-                    <b-badge variant="success" class="w-100 py-2" style="white-space: normal;">
+                    <b-badge
+                      variant="success"
+                      class="w-100 py-2"
+                      style="white-space: normal"
+                    >
                       🎉 Recibes: {{ item.promotionDetails.totalReceived }}
-                      <br>
-                      <small>({{ item.quantity }} pagados + {{ item.promotionDetails.bonus }} gratis)</small>
+                      <br />
+                      <small
+                        >({{ item.quantity }} pagados +
+                        {{ item.promotionDetails.bonus }} gratis)</small
+                      >
                     </b-badge>
-                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
-                      Promo: {{ item.Promocion || 'N/A' }}
+                    <small
+                      class="text-muted d-block mt-1"
+                      style="font-size: 0.75rem"
+                    >
+                      Promo: {{ item.Promocion || "N/A" }}
                     </small>
                   </div>
                 </div>
@@ -135,12 +184,16 @@
                   </div>
                   <div class="d-flex justify-content-between mb-1">
                     <small class="text-muted">IVA ({{ item.IVA }}%):</small>
-                    <small class="text-info">${{ item.ivaAmount.toFixed(3) }}</small>
+                    <small class="text-info"
+                      >${{ item.ivaAmount.toFixed(3) }}</small
+                    >
                   </div>
-                  <hr class="my-2">
+                  <hr class="my-2" />
                   <div class="d-flex justify-content-between">
                     <strong>Total:</strong>
-                    <strong class="text-primary">${{ item.totalItem.toFixed(3) }}</strong>
+                    <strong class="text-primary"
+                      >${{ item.totalItem.toFixed(3) }}</strong
+                    >
                   </div>
                 </div>
               </div>
@@ -151,15 +204,33 @@
     </div>
 
     <!-- Modal de Datos del Cliente -->
-    <b-modal v-model="showClientModal" title="Datos del Cliente" @ok="confirmarExportacion" ok-title="Generar"
-      cancel-title="Cancelar">
+    <b-modal
+      v-model="showClientModal"
+      title="Datos del Cliente"
+      @ok="confirmarExportacion"
+      ok-title="Generar"
+      cancel-title="Cancelar"
+    >
       <b-form>
-        <b-form-group label="Nombre del Cliente:" label-for="cliente-modal" class="mb-3">
-          <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente" required />
+        <b-form-group
+          label="Nombre del Cliente:"
+          label-for="cliente-modal"
+          class="mb-3"
+        >
+          <b-form-input
+            id="cliente-modal"
+            v-model="clienteNombre"
+            placeholder="Ingrese nombre del cliente"
+            required
+          />
         </b-form-group>
 
         <b-form-group label="Ciudad:" label-for="ciudad-modal" class="mb-3">
-          <b-form-input id="ciudad-modal" v-model="ciudad" placeholder="Ingrese ciudad" />
+          <b-form-input
+            id="ciudad-modal"
+            v-model="ciudad"
+            placeholder="Ingrese ciudad"
+          />
         </b-form-group>
 
         <b-form-group label="Vendedor:" label-for="vendedor-modal" class="mb-3">
@@ -175,18 +246,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { useCart } from '@/composables/useCart'
-import { useExcelHandler } from '@/utils/excelHandler'
-import { usePDFGenerator } from '@/utils/pdfGenerator'
-import { useToast } from 'vue-toastification'
-import { useAuth } from '@/composables/useAuth'
-import { useUsuarios } from '@/composables/useUsuarios'
-import alertify from 'alertifyjs'
+import { ref, onMounted, computed } from "vue";
+import { useCart } from "@/composables/useCart";
+import { useExcelHandler } from "@/utils/excelHandler";
+import { usePDFGenerator } from "@/utils/pdfGenerator";
+import { useToast } from "vue-toastification";
+import { useAuth } from "@/composables/useAuth";
+import { useUsuarios } from "@/composables/useUsuarios";
+import alertify from "alertifyjs";
 
-const toast = useToast()
-const { userName } = useAuth()
-const { users } = useUsuarios()
+const toast = useToast();
+const { userName } = useAuth();
+const { users } = useUsuarios();
 
 const {
   cart,
@@ -200,7 +271,8 @@ const {
   clearCart,
 } = useCart();
 
-const { exportCartToExcel, exportToExcel, exportCustomExcel } = useExcelHandler();
+const { exportCartToExcel, exportToExcel, exportCustomExcel } =
+  useExcelHandler();
 
 // Estado del formulario de cliente
 const clienteNombre = ref("");
@@ -219,27 +291,29 @@ onMounted(() => {
   fecha.value = `${year}-${month}-${day}`;
 
   // Pre-seleccionar el usuario actual como vendedor
-  vendedorNombre.value = userName.value || '';
+  vendedorNombre.value = userName.value || "";
 });
 
 const handleClearCart = () => {
-  alertify.confirm(
-    "Vaciar Carrito",
-    "⚠️ ¿Estás seguro de que deseas vaciar todo el carrito?",
-    () => {
-      clearCart();
-      toast.success("🗑️ Carrito vaciado");
-    },
-    () => {
-      // Cancel action
-    }
-  ).set('labels', { ok: 'Sí, Vaciar', cancel: 'Cancelar' });
+  alertify
+    .confirm(
+      "Vaciar Carrito",
+      "⚠️ ¿Estás seguro de que deseas vaciar todo el carrito?",
+      () => {
+        clearCart();
+        toast.success("🗑️ Carrito vaciado");
+      },
+      () => {
+        // Cancel action
+      }
+    )
+    .set("labels", { ok: "Sí, Vaciar", cancel: "Cancelar" });
 };
 
 // Preparar exportación (abrir modal)
 const prepararExportacion = (tipo) => {
   if (cartItemsWithPromotions.value.length === 0) {
-    toast.warning('⚠️ El carrito está vacío');
+    toast.warning("⚠️ El carrito está vacío");
     return;
   }
   pendingAction.value = tipo;
@@ -250,16 +324,16 @@ const prepararExportacion = (tipo) => {
 const confirmarExportacion = (bvModalEvent) => {
   if (!clienteNombre.value.trim()) {
     bvModalEvent.preventDefault(); // Evitar cierre del modal
-    toast.warning('⚠️ Por favor ingrese el nombre del cliente');
+    toast.warning("⚠️ Por favor ingrese el nombre del cliente");
     return;
   }
 
   // Ejecutar la acción pendiente
-  if (pendingAction.value === 'proforma') {
+  if (pendingAction.value === "proforma") {
     generarProformaPDF();
-  } else if (pendingAction.value === 'pedido') {
+  } else if (pendingAction.value === "pedido") {
     generarPedidoExcel();
-  } else if (pendingAction.value === 'pdf') {
+  } else if (pendingAction.value === "pdf") {
     exportarListaPrecioPDF();
   }
 
@@ -272,7 +346,7 @@ const generarProformaPDF = () => {
   const { generatePDFFromData } = usePDFGenerator();
 
   // Preparar datos para el PDF
-  const pdfData = cartItemsWithPromotions.value.map(item => {
+  const pdfData = cartItemsWithPromotions.value.map((item) => {
     const bonus = item.promotionDetails?.bonus || 0;
     const precio = Number(item.PrecioFarmacia || 0);
     const subtotal = Number(item.subtotalItem || 0);
@@ -281,37 +355,43 @@ const generarProformaPDF = () => {
       quantity: item.quantity,
       Bonificacion: bonus > 0 ? bonus : "",
       Presentacion: item.Presentacion,
-      NombreProducto: item.IVA > 0 ? `* ${item.NombreProducto}` : item.NombreProducto,
+      NombreProducto:
+        item.IVA > 0 ? `* ${item.NombreProducto}` : item.NombreProducto,
       Marca: item.Marca,
       P_Unitario: precio.toFixed(2),
-      P_Total: subtotal.toFixed(2)
+      P_Total: subtotal.toFixed(2),
     };
   });
 
   // Calcular totales para el resumen
-  const totals = cartItemsWithPromotions.value.reduce((acc, item) => {
-    const subtotalItem = Number(item.subtotalItem || 0);
-    const ivaRate = Number(item.IVA || 0);
-    const ivaAmount = Number(item.ivaAmount || 0);
+  const totals = cartItemsWithPromotions.value.reduce(
+    (acc, item) => {
+      const subtotalItem = Number(item.subtotalItem || 0);
+      const ivaRate = Number(item.IVA || 0);
+      const ivaAmount = Number(item.ivaAmount || 0);
 
-    acc.subtotal += subtotalItem;
+      acc.subtotal += subtotalItem;
 
-    if (ivaRate === 0) {
-      acc.base0 += subtotalItem;
-    } else {
-      acc.base15 += subtotalItem;
-    }
+      if (ivaRate === 0) {
+        acc.base0 += subtotalItem;
+      } else {
+        acc.base15 += subtotalItem;
+      }
 
-    acc.iva += ivaAmount;
-    acc.total += Number(item.totalItem || 0);
+      acc.iva += ivaAmount;
+      acc.total += Number(item.totalItem || 0);
 
-    return acc;
-  }, { subtotal: 0, base0: 0, base15: 0, iva: 0, total: 0 });
+      return acc;
+    },
+    { subtotal: 0, base0: 0, base15: 0, iva: 0, total: 0 }
+  );
 
-  const filename = `${clienteNombre.value.replace(/\s+/g, "_") || 'Cliente'}_Proforma_${fecha.value}.pdf`;
+  const filename = `${
+    clienteNombre.value.replace(/\s+/g, "_") || "Cliente"
+  }_Proforma_${fecha.value}.pdf`;
 
   generatePDFFromData(pdfData, filename, {
-    title: 'Proforma',
+    title: "Proforma",
     subtitle: `Cliente: ${clienteNombre.value}`,
     totals: totals,
     headerData: {
@@ -319,8 +399,8 @@ const generarProformaPDF = () => {
       ciudad: ciudad.value,
       vendedor: vendedorNombre.value,
       fecha: fecha.value,
-      tipo: 'Proforma'
-    }
+      tipo: "Proforma",
+    },
   });
 
   toast.success(`✅ Proforma PDF generada: ${filename}`);
@@ -329,69 +409,73 @@ const generarProformaPDF = () => {
 // Generar Pedido completo en Excel
 const generarPedidoExcel = () => {
   // Formato de pedido: Cantidad, Promoción, Nombre Producto, Lote, Fecha de Vencimiento
-  const exportData = cartItemsWithPromotions.value.map(item => ({
-    'Cantidad': item.quantity,
-    'Descuento': item.Descuento ? item.Descuento + '%' : '',
-    'Bonificación': item.promotionDetails?.bonus > 0 ? item.promotionDetails.bonus : '',
-    'Nombre Producto': item.NombreProducto,
-    'Lote': '', // Campo vacío para que el usuario lo complete
-    'Fecha de Vencimiento': '' // Campo vacío para que el usuario lo complete
-  }))
+  const exportData = cartItemsWithPromotions.value.map((item) => ({
+    Cantidad: item.quantity,
+    Bonificación:
+      item.promotionDetails?.bonus > 0 ? item.promotionDetails.bonus : "",
+    "Nombre Producto": item.NombreProducto,
+    Lote: "", // Campo vacío para que el usuario lo complete
+    "Fecha de Vencimiento": "", // Campo vacío para que el usuario lo complete
+  }));
 
-  const filename = `${clienteNombre.value.replace(/\s+/g, "_")}_Pedido_${fecha.value}.xlsx`
+  const filename = `${clienteNombre.value.replace(/\s+/g, "_")}_Pedido_${
+    fecha.value
+  }.xlsx`;
 
   const metadata = {
-    'Cliente': clienteNombre.value,
-    'Ciudad': ciudad.value,
-    'Vendedor': vendedorNombre.value,
-    'Fecha': fecha.value
+    Cliente: clienteNombre.value,
+    Ciudad: ciudad.value,
+    Vendedor: vendedorNombre.value,
+    Fecha: fecha.value,
   };
 
-  exportCustomExcel(metadata, exportData, filename)
+  exportCustomExcel(metadata, exportData, filename);
 
   toast.success(`✅ Pedido generado: ${filename}`, {
-    timeout: 1000
-  })
-}
+    timeout: 1000,
+  });
+};
 
 // Exportar Lista de Precios en PDF
 const exportarListaPrecioPDF = () => {
   // Preparar datos para PDF con la estructura específica
-  const pdfData = cartItemsWithPromotions.value.map(item => ({
-    'Producto': item.NombreProducto,
-    'Marca': item.Marca,
-    'Presentacion': item.Presentacion,
-    'Precio': Number(item.PrecioFarmacia).toFixed(2),
-    'Promocion': item.Descuento ? `${item.Descuento}+1` : '-',
-    'Descuento %': item.Descuento ? `${item.Descuento} %` : '-'
-  }))
+  const pdfData = cartItemsWithPromotions.value.map((item) => ({
+    Producto: item.NombreProducto,
+    Marca: item.Marca,
+    Presentacion: item.Presentacion,
+    Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
+    Promocion: item.Promocion ? `${item.Promocion}` : "",
+    "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
+  }));
 
   // Generar PDF con información del cliente
-  const { generatePDFFromData } = usePDFGenerator()
-  const filename = `${clienteNombre.value.replace(/\s+/g, "_")}_Lista_Precios_${fecha.value}.pdf`
+  const { generatePDFFromData } = usePDFGenerator();
+  const filename = `${clienteNombre.value.replace(/\s+/g, "_")}_Lista_Precios_${
+    fecha.value
+  }.pdf`;
 
   generatePDFFromData(pdfData, filename, {
-    title: 'Lista productos MH',
+    title: "Lista productos MH",
     subtitle: `Cliente: ${clienteNombre.value}`,
-    date: `Fecha: ${fecha.value}`
-  })
+    date: `Fecha: ${fecha.value}`,
+  });
 
-  toast.success(`✅ Lista de productos generada: ${filename}`)
-}
+  toast.success(`✅ Lista de productos generada: ${filename}`);
+};
 
 // --- Lógica de Promociones ---
 
 const parsePromotionRules = (promoString) => {
   if (!promoString) return [];
-  const parts = promoString.split(' ');
+  const parts = promoString.split(" ");
   const rules = [];
 
-  parts.forEach(part => {
+  parts.forEach((part) => {
     const match = part.match(/(\d+)\+(\d+)/);
     if (match) {
       rules.push({
         buy: parseInt(match[1], 10),
-        get: parseInt(match[2], 10)
+        get: parseInt(match[2], 10),
       });
     }
   });
@@ -414,7 +498,7 @@ const calculateBonus = (quantity, rules) => {
 };
 
 const cartItemsWithPromotions = computed(() => {
-  return cartItemsWithDetails.value.map(item => {
+  return cartItemsWithDetails.value.map((item) => {
     const promoString = item.Promocion || "";
     let promotionDetails = null;
 
@@ -425,7 +509,7 @@ const cartItemsWithPromotions = computed(() => {
         if (bonus > 0) {
           promotionDetails = {
             bonus,
-            totalReceived: item.quantity + bonus
+            totalReceived: item.quantity + bonus,
           };
         }
       }
@@ -433,7 +517,7 @@ const cartItemsWithPromotions = computed(() => {
 
     return {
       ...item,
-      promotionDetails
+      promotionDetails,
     };
   });
 });
@@ -542,7 +626,7 @@ const cartItemsWithPromotions = computed(() => {
 
 /* Efecto de onda al hacer clic */
 .btn-minimal::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
