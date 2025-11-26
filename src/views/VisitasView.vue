@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid py-4">
-    <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap">
+    <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-2">
       <h2 class="fw-bold text-primary mb-0">
         📝 Registro de Visitas Diarias
       </h2>

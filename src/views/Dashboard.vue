@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid py-4 text-center">
+  <div class="container-fluid text-center">
 
 
     <!-- KPI Cards -->

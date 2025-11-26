@@ -1,49 +1,56 @@
 <template>
-  <div class="container-fluid py-1">
-    <div class="d-flex justify-content-center align-items-center mb-4 flex-wrap gap-2">
-      <h2 class="fw-bold text-primary mb-0">Productos</h2>
-      <div class="d-flex align-items-center gap-2 flex-wrap">
-        <b-badge variant="info" pill class="fs-6">
-          {{ productosFiltrados.length }} productos
-        </b-badge>
+  <div class="container-fluid py-3">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div>
+        <h2 class="fw-bold text-primary mb-1">Catálogo de Productos</h2>
+        <p class="text-muted mb-0 small">Gestiona y busca en tu inventario</p>
       </div>
+      <b-badge variant="success" pill class="fs-6 px-3 py-2 shadow-sm" style="border-radius: 5px !important">
+        {{ productosFiltrados.length }} productos registrados
+      </b-badge>
     </div>
 
-    <!-- Filtros -->
-    <b-card class="shadow-sm mb-4">
-      <b-row>
-        <b-col md="12" sm="12">
-          <div class="d-flex gap-2 mb-2">
-            <b-form-input v-model="filtroBusqueda" class="form-control"
-              placeholder="🔍 Buscar por nombre, código, marca, principio activo..." size="sm"
-              @keyup.enter="aplicarBusqueda" />
-            <b-button variant="primary" size="sm" @click="aplicarBusqueda" style="white-space: nowrap;">
-              🔍 Buscar
+    <!-- Filtros Card -->
+    <div class="bg-white p-3 rounded-2 shadow-sm mb-4 border">
+      <b-row class="g-3">
+        <!-- Buscador Principal -->
+        <b-col md="12" lg="6">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              🔍
+            </span>
+            <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 ps-0"
+              placeholder="nombre, código, marca" @keyup.enter="aplicarBusqueda" />
+            <b-button variant="primary" @click="aplicarBusqueda">
+              Buscar
             </b-button>
           </div>
         </b-col>
 
-        <b-col md="12" sm="12" class="mb-2">
-          <b-form-select v-model="filtroMarca" class="form-select" size="sm">
-            <option value="">📦 Todas las marcas</option>
+        <!-- Filtros Select -->
+        <b-col md="12" lg="3">
+          <b-form-select v-model="filtroMarca" class="form-select">
+            <option value="">Marca</option>
             <option v-for="m in opcionesMarcas" :key="m" :value="m">{{ m }}</option>
           </b-form-select>
         </b-col>
 
-        <b-col md="12" sm="12" class="mb-2">
-          <b-form-select v-model="filtroPresentacion" class="form-select" size="sm">
-            <option value="">💊 Todas las presentaciones</option>
+        <b-col md="12" lg="3">
+          <b-form-select v-model="filtroPresentacion" class="form-select">
+            <option value="">Presentación</option>
             <option v-for="p in opcionesPresentaciones" :key="p" :value="p">{{ p }}</option>
           </b-form-select>
         </b-col>
 
-        <b-col md="12" sm="12">
-          <b-button variant="outline-secondary" size="sm" class="w-10" @click="limpiarFiltros">
-            ✖ Limpiar
+        <!-- Botón Limpiar (solo visible si hay filtros activos) -->
+        <b-col cols="12" class="d-flex justify-content-end" v-if="filtroBusqueda || filtroMarca || filtroPresentacion">
+          <b-button variant="link" class="text-decoration-none text-muted p-0" @click="limpiarFiltros">
+            ✖ Limpiar filtros
           </b-button>
         </b-col>
       </b-row>
-    </b-card>
+    </div>
 
     <!-- Loading state -->
     <div v-if="cargando" class="text-center py-5">

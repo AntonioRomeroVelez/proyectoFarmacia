@@ -65,10 +65,10 @@ export const useExcelHandler = () => {
           const row = worksheet.getRow(currentRow);
           row.getCell(1).value = key;
           row.getCell(2).value = value;
-          
+
           // Style metadata keys
           row.getCell(1).font = { bold: true };
-          
+
           currentRow++;
         });
         currentRow++; // Empty row after metadata
@@ -78,11 +78,11 @@ export const useExcelHandler = () => {
       if (tableData.length > 0) {
         const headers = Object.keys(tableData[0]);
         const headerRow = worksheet.getRow(currentRow);
-        
+
         headers.forEach((header, index) => {
           const cell = headerRow.getCell(index + 1);
           cell.value = header;
-          
+
           // Style Headers
           cell.fill = {
             type: "pattern",
@@ -110,10 +110,11 @@ export const useExcelHandler = () => {
         // --- 3. Table Data ---
         tableData.forEach((item) => {
           const row = worksheet.getRow(currentRow);
+          row.height = 55; // EL ALTO DE CADA CELDA DEL EXCEL
           headers.forEach((header, index) => {
             const cell = row.getCell(index + 1);
             cell.value = item[header];
-            
+
             // Style Data Cells
             cell.alignment = {
               vertical: "middle",
@@ -131,22 +132,31 @@ export const useExcelHandler = () => {
         });
 
         // Auto-adjust column widths
-        worksheet.columns.forEach((column) => {
-          let maxLength = 0;
-          column.eachCell({ includeEmpty: true }, (cell) => {
-            const columnLength = cell.value ? cell.value.toString().length : 10;
-            if (columnLength > maxLength) {
-              maxLength = columnLength;
-            }
-          });
-          column.width = maxLength < 10 ? 10 : maxLength + 2;
+        // Configurar anchos de columnas
+        worksheet.columns.forEach((column, index) => {
+          const header = headers[index];
+
+          // Si la columna es "Lote", asignar ancho de 30
+          if (header === "Lote") {
+            column.width = 30;
+          } else {
+            // Auto-ajustar ancho para otras columnas
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: true }, (cell) => {
+              const columnLength = cell.value ? cell.value.toString().length : 10;
+              if (columnLength > maxLength) {
+                maxLength = columnLength;
+              }
+            });
+            column.width = maxLength < 10 ? 10 : maxLength + 2;
+          }
         });
       }
 
       // --- 4. Download ---
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-      
+
       // Create download link
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);

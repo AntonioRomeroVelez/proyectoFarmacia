@@ -2,11 +2,13 @@
   <div class="admin-layout">
     <!-- Sidebar -->
     <aside class="sidebar" :class="{ 'sidebar-open': isSidebarOpen, 'desktop-closed': !isDesktopSidebarOpen }">
-      <div class="sidebar-header">
+      <div class="sidebar-header position-relative">
         <div class="d-flex align-items-center gap-4">
-          <span class="brand-text">MH</span>
-          <button class="toggle-btn d-none d-md-block btn" @click="toggleDesktopSidebar" title="Ocultar menú">
-            <BIconList />
+          <span class="brand-text text-center">App ventas</span>
+          <button class="toggle-btn d-none d-md-block btn position-absolute top-0 end-0" @click="toggleDesktopSidebar"
+            :title="isDesktopSidebarOpen ? 'Ocultar menú' : 'Mostrar menú'">
+            <BIconX v-if="isDesktopSidebarOpen" />
+            <BIconList v-else />
           </button>
         </div>
         <button class="close-btn d-md-none" @click="closeSidebar">×</button>
@@ -93,13 +95,58 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { BIconList } from 'bootstrap-icons-vue';
+import { BIconList, BIconX } from 'bootstrap-icons-vue';
 import { useAuth } from '@/composables/useAuth';
 
 const { userName, isAdmin, logout } = useAuth();
+import { onMounted, onUnmounted } from 'vue';
+import { useToast } from 'vue-toastification';
 
+const toast = useToast();
 const isSidebarOpen = ref(false);
 const isDesktopSidebarOpen = ref(true);
+let inactivityTimer = null;
+const INACTIVITY_LIMIT = 3600000; // 1 hora en milisegundos
+
+// Función para reiniciar el temporizador
+const resetInactivityTimer = () => {
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    handleInactivityLogout();
+  }, INACTIVITY_LIMIT);
+};
+
+// Logout por inactividad
+const handleInactivityLogout = () => {
+  toast.warning("Sesión cerrada por inactividad (1 hora sin uso)");
+  logout();
+};
+
+// Configurar listeners de actividad
+const setupActivityListeners = () => {
+  const events = ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'click'];
+  events.forEach(event => {
+    window.addEventListener(event, resetInactivityTimer);
+  });
+  resetInactivityTimer(); // Iniciar temporizador
+};
+
+// Limpiar listeners
+const removeActivityListeners = () => {
+  const events = ['mousemove', 'mousedown', 'keypress', 'touchmove', 'scroll', 'click'];
+  events.forEach(event => {
+    window.removeEventListener(event, resetInactivityTimer);
+  });
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+};
+
+onMounted(() => {
+  setupActivityListeners();
+});
+
+onUnmounted(() => {
+  removeActivityListeners();
+});
 
 const userInitial = computed(() => {
   return userName.value.charAt(0).toUpperCase();

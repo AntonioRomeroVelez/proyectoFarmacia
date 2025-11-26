@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="bg-light min-vh-100">
     <!-- Contenido principal -->
-    <b-container fluid class="py-4">
+    <b-container fluid class="">
       <router-view />
     </b-container>
   </div>

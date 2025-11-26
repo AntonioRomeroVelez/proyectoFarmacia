@@ -54,12 +54,12 @@ export const usePDFGenerator = () => {
 
       // Obtener encabezados (columnas) del primer elemento
       const headers = Object.keys(data[0]);
-      
+
       // Determinar orientación y tamaño de fuente basado en número de columnas
       const isLandscape = headers.length > 8;
       const orientation = isLandscape ? "l" : "p";
       const pdf = new jsPDF(orientation, "mm", "a4");
-      
+
       // Ajustar estilos según orientación
       const baseFontSize = isLandscape ? 8 : 9;
       const cellPadding = isLandscape ? 2 : 3;
@@ -87,17 +87,17 @@ export const usePDFGenerator = () => {
       if (options.headerData) {
         pdf.setFontSize(10);
         pdf.setFont(undefined, "bold");
-        
+
         // Columna Izquierda
         pdf.text("Cliente:", 14, 32);
         pdf.text("Ciudad:", 14, 37);
-        
+
         // Columna Derecha
         pdf.text("Fecha:", 120, 32);
         pdf.text("Vendedor:", 120, 37);
 
         pdf.setFont(undefined, "normal");
-        
+
         // Valores Izquierda
         pdf.text(options.headerData.cliente || "-", 35, 32);
         pdf.text(options.headerData.ciudad || "-", 35, 37);
@@ -148,7 +148,7 @@ export const usePDFGenerator = () => {
       const tableData = data.map((item) => {
         return headers.map((key) => {
           const value = item[key];
-          
+
           // Formatear valores numéricos
           if (key === "PrecioFarmacia" || key === "PVP" || key === "Subtotal" || key === "PrecioTotal" || key === "TotalConIVA" || key === "TotalSinIVA") {
             return value != null ? `$${Number(value).toFixed(2)}` : "";
@@ -156,7 +156,7 @@ export const usePDFGenerator = () => {
           if (key === "IVA" || key === "Descuento") {
             return value != null ? `${value}%` : "";
           }
-          
+
           return value != null ? String(value) : "";
         });
       });
@@ -173,6 +173,8 @@ export const usePDFGenerator = () => {
           fontStyle: "bold",
           halign: "center",
           fontSize: baseFontSize,
+          overflow: "linebreak",
+          minCellHeight: 10,
         },
         styles: {
           fontSize: baseFontSize,
@@ -181,8 +183,15 @@ export const usePDFGenerator = () => {
           overflow: "linebreak",
         },
         columnStyles: {
-          // Ajustar anchos de columnas específicas si es necesario
-          // Por defecto autoTable ajusta al contenido
+          // Configurar ancho específico para "Desc. en + 2 uni"
+          ...Object.fromEntries(
+            headers.map((header, index) => {
+              if (header === "Desc. en + 2 uni") {
+                return [index, { cellWidth: 17, halign: 'center' }];
+              }
+              return [index, {}];
+            })
+          ),
         },
         alternateRowStyles: {
           fillColor: [245, 245, 245],
