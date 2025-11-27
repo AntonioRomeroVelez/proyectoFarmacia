@@ -36,12 +36,12 @@
           </b-form-select>
         </b-col>
 
-        <b-col md="12" lg="3">
+        <!-- <b-col md="12" lg="3">
           <b-form-select v-model="filtroPresentacion" class="form-select">
             <option value="">Presentación</option>
             <option v-for="p in opcionesPresentaciones" :key="p" :value="p">{{ p }}</option>
           </b-form-select>
-        </b-col>
+        </b-col> -->
 
         <!-- Botón Limpiar (solo visible si hay filtros activos) -->
         <b-col cols="12" class="d-flex justify-content-end" v-if="filtroBusqueda || filtroMarca || filtroPresentacion">

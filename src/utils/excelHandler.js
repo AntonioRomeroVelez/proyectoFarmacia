@@ -17,7 +17,6 @@ export const useExcelHandler = () => {
           const worksheet = workbook.Sheets[firstSheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-          toast.success("Archivo Excel leído correctamente");
           resolve(jsonData);
         } catch (error) {
           toast.error("Error al leer el archivo Excel");

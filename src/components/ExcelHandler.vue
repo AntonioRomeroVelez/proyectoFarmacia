@@ -1,5 +1,13 @@
 <template>
   <div class="excel-handler">
+    <!-- Spinner de carga -->
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="spinner-container">
+        <b-spinner variant="primary" style="width: 4rem; height: 4rem;"></b-spinner>
+        <p class="mt-3 text-white fw-bold">{{ loadingMessage }}</p>
+      </div>
+    </div>
+
     <b-card title="📊 Importar Productos desde Excel" class="shadow-sm">
       <b-form-group label="Subir archivo Excel:">
         <div class="custom-file-upload">
@@ -8,9 +16,9 @@
               <span class="file-upload-icon">📁</span>
               <span class="file-upload-text">
                 {{
-                file
-                ? file.name
-                : "Haz clic para seleccionar un archivo Excel"
+                  file
+                    ? file.name
+                    : "Haz clic para seleccionar un archivo Excel"
                 }}
               </span>
             </div>
@@ -228,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
 import { useExcelHandler } from "@/utils/excelHandler";
 import { useToast } from "vue-toastification";
 import alertify from "alertifyjs";
@@ -244,6 +252,8 @@ const filterStatus = ref("all");
 const productosEnSistema = ref(0);
 const fileLoadError = ref("");
 const missingColumns = ref([]);
+const isLoading = ref(false);
+const loadingMessage = ref("");
 
 const fields = [
   { key: "CODIGO", label: "Código", sortable: true },
@@ -386,9 +396,16 @@ const handleFileUpload = async (event) => {
     return;
   }
 
-  toast.info("📖 Leyendo archivo Excel...");
+  isLoading.value = true;
+  loadingMessage.value = "📖 Leyendo archivo Excel...";
   fileLoadError.value = "";
   missingColumns.value = [];
+
+  // Esperar a que Vue actualice el DOM para mostrar el spinner
+  await nextTick();
+
+  // Dar un pequeño delay para asegurar que el spinner se renderice
+  await new Promise(resolve => setTimeout(resolve, 100));
 
   try {
     const { readExcelFile } = useExcelHandler();
@@ -429,7 +446,7 @@ const handleFileUpload = async (event) => {
       return;
     }
 
-    toast.success("✅ Estructura del archivo validada correctamente");
+    loadingMessage.value = "✅ Validando estructura...";
 
     const colIndices = {};
     headers.forEach((header, index) => {
@@ -449,6 +466,8 @@ const handleFileUpload = async (event) => {
       const productKey = `${normalizeString(p.Marca)}-${normalizeString(p.NombreProducto)}-${normalizeString(p.Presentacion)}-${normalizeString(p.PrincipioActivo)}`;
       productoKeys[productKey] = { existing: true }; // Marcar como existente en sistema
     });
+
+    loadingMessage.value = "📦 Procesando productos...";
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
@@ -508,6 +527,9 @@ const handleFileUpload = async (event) => {
     console.error("Error:", error);
     fileLoadError.value = "Ocurrió un error al procesar el archivo Excel. Verifique que el archivo no esté dañado.";
     toast.error("❌ Error al procesar el archivo Excel");
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = "";
   }
 };
 
@@ -540,7 +562,14 @@ const confirmarGuardar = () => {
   ).set('labels', { ok: 'Guardar', cancel: 'Cancelar' });
 };
 
-const guardarProductos = () => {
+const guardarProductos = async () => {
+  isLoading.value = true;
+  loadingMessage.value = "💾 Guardando productos...";
+
+  // Esperar a que Vue actualice el DOM para mostrar el spinner
+  await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 100));
+
   try {
     const existingProducts =
       JSON.parse(localStorage.getItem("ListaProductos")) || [];
@@ -600,6 +629,9 @@ const guardarProductos = () => {
   } catch (error) {
     console.error("Error:", error);
     toast.error("❌ Error al guardar productos");
+  } finally {
+    isLoading.value = false;
+    loadingMessage.value = "";
   }
 };
 
@@ -874,5 +906,31 @@ const descargarProductosExcel = async () => {
   border: 1px solid #dc3545;
   border-radius: 6px;
   padding: 0.5rem;
+}
+
+/* Loading overlay styles */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(5px);
+}
+
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem 3rem;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 </style>

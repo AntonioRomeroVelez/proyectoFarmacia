@@ -2,6 +2,10 @@ import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 
+// Configuración de inactividad
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hora en milisegundos
+const WARNING_TIME = 60 * 1000; // 1 minuto en milisegundos
+
 // Usuarios predefinidos
 const USERS = [
   {
@@ -15,19 +19,21 @@ const USERS = [
     id: 2,
     username: 'dianita26',
     password: 'dianita_26',
-    nombre: 'Dianita Benalcazar',
+    nombre: 'Diana Benálcazar',
     role: 'admin'
   },
   {
     id: 3,
     username: 'vendedor26',
     password: 'vendedor_26',
-    nombre: 'Vendedor',
+    nombre: 'Diana Benálcazar',
     role: 'vendedor'
   }
 ];
 
 const currentUser = ref(null);
+const showInactivityWarning = ref(false);
+const remainingSeconds = ref(60);
 
 export function useAuth() {
   const router = useRouter();
@@ -56,12 +62,96 @@ export function useAuth() {
     return false;
   };
 
+  // Variables para temporizadores
+  let inactivityTimer = null;
+  let warningTimer = null;
+  let countdownInterval = null;
+
+  // Función para resetear el temporizador de inactividad
+  const resetInactivityTimer = () => {
+    // Solo funciona si hay usuario autenticado
+    if (!currentUser.value) return;
+
+    // Limpiar temporizadores existentes
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (warningTimer) clearTimeout(warningTimer);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // Ocultar advertencia si está visible
+    showInactivityWarning.value = false;
+    remainingSeconds.value = 60;
+
+    // Configurar nuevo temporizador de advertencia (29 minutos)
+    warningTimer = setTimeout(() => {
+      startWarningCountdown();
+    }, INACTIVITY_TIMEOUT - WARNING_TIME);
+
+    // Configurar temporizador de cierre forzado (30 minutos)
+    inactivityTimer = setTimeout(() => {
+      forceLogout();
+    }, INACTIVITY_TIMEOUT);
+  };
+
+  // Función para iniciar el countdown de advertencia
+  const startWarningCountdown = () => {
+    showInactivityWarning.value = true;
+    remainingSeconds.value = 60;
+
+    countdownInterval = setInterval(() => {
+      remainingSeconds.value--;
+      if (remainingSeconds.value <= 0) {
+        clearInterval(countdownInterval);
+      }
+    }, 1000);
+  };
+
+  // Función para cerrar sesión forzadamente
+  const forceLogout = () => {
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (warningTimer) clearTimeout(warningTimer);
+
+    showInactivityWarning.value = false;
+    currentUser.value = null;
+    localStorage.removeItem('currentUser');
+
+    // Remover listeners
+    removeInactivityListeners();
+
+    toast.warning('⏱️ Sesión cerrada por inactividad');
+    router.push('/login');
+  };
+
+  // Función para cancelar la advertencia
+  const dismissWarning = () => {
+    showInactivityWarning.value = false;
+    resetInactivityTimer();
+    toast.success('✅ Sesión extendida');
+  };
+
+  // Configurar listeners de actividad
+  const setupInactivityListeners = () => {
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, resetInactivityTimer);
+    });
+  };
+
+  // Remover listeners de actividad
+  const removeInactivityListeners = () => {
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.removeEventListener(event, resetInactivityTimer);
+    });
+  };
+
+
   // Login
   const login = (username, password) => {
     // Cargar usuarios más recientes del storage
     const storedUsers = localStorage.getItem('app_users');
     let allUsers = [];
-    
+
     if (storedUsers) {
       allUsers = JSON.parse(storedUsers);
     } else {
@@ -85,7 +175,11 @@ export function useAuth() {
       const { password: _, ...userWithoutPassword } = user;
       currentUser.value = userWithoutPassword;
       localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-      
+
+      // Iniciar sistema de inactividad
+      setupInactivityListeners();
+      resetInactivityTimer();
+
       toast.success(`¡Bienvenido, ${user.nombre}!`);
       return true;
     } else {
@@ -96,8 +190,18 @@ export function useAuth() {
 
   // Logout
   const logout = () => {
+    // Limpiar temporizadores
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+    if (warningTimer) clearTimeout(warningTimer);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    // Remover listeners
+    removeInactivityListeners();
+
     currentUser.value = null;
     localStorage.removeItem('currentUser');
+    showInactivityWarning.value = false;
+
     toast.info('Sesión cerrada');
     router.push('/login');
   };
@@ -130,6 +234,12 @@ export function useAuth() {
   // Inicializar al importar
   checkAuth();
 
+  // Si hay sesión guardada, iniciar sistema de inactividad
+  if (currentUser.value) {
+    setupInactivityListeners();
+    resetInactivityTimer();
+  }
+
   return {
     currentUser,
     isAuthenticated,
@@ -140,6 +250,9 @@ export function useAuth() {
     login,
     logout,
     checkAuth,
-    hasPermission
+    hasPermission,
+    showInactivityWarning,
+    remainingSeconds,
+    dismissWarning
   };
 }

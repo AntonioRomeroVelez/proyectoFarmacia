@@ -14,10 +14,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Representaciones MH - Sistema de Gestión',
-        short_name: 'Representaciones MH',
+        name: 'Sistema de Gestión',
+        short_name: 'Sistema de Gestión',
         description: 'Sistema de gestión de productos farmacéuticos con comparación de precios y generación de reportes',
-        theme_color: '#0d6efd',
+        theme_color: '#6cbdffff',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

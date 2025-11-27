@@ -1,5 +1,8 @@
 <template>
   <div id="app" class="bg-light min-vh-100">
+    <!-- Advertencia de inactividad -->
+    <InactivityWarning :show="showInactivityWarning" :remainingSeconds="remainingSeconds" @dismiss="dismissWarning" />
+
     <!-- Contenido principal -->
     <b-container fluid class="">
       <router-view />
@@ -8,7 +11,10 @@
 </template>
 
 <script setup>
-// No necesitamos nada aquí ahora, el login y usuario están en AdminLayout
+import InactivityWarning from '@/components/InactivityWarning.vue';
+import { useAuth } from '@/composables/useAuth';
+
+const { showInactivityWarning, remainingSeconds, dismissWarning } = useAuth();
 </script>
 
 <style>

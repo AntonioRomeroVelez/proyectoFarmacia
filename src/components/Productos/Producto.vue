@@ -9,6 +9,11 @@
           {{ producto.PrincipioActivo }}
         </p>
 
+        <!-- Marca -->
+        <div class="badge badge-subtle-brand small d-text flex-wrap">
+          <b>Marca:</b> {{ producto.Marca }}
+        </div>
+
 
 
         <!-- Precios -->
@@ -22,11 +27,6 @@
 
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <!-- Marca -->
-          <span class="badge badge-subtle-brand">
-            {{ producto.Marca }}
-          </span>
-
           <!-- Presentacion -->
           <span class="badge badge-subtle-presentation">
             {{ producto.Presentacion }}
@@ -153,8 +153,8 @@ const verDetalle = () => {
 
 .producto-principio {
   word-break: break-word;
-    overflow-wrap: break-word;
-    line-height: 1.4;
+  overflow-wrap: break-word;
+  line-height: 1.4;
 }
 
 .precios-container {
@@ -195,6 +195,9 @@ const verDetalle = () => {
   color: #0277bd;
   /* Azul Médico Oscuro */
   border: 1px solid #b3e5fc;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .badge-subtle-presentation {
