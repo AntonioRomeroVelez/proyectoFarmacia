@@ -564,7 +564,10 @@ const confirmarGuardar = async () => {
     "Confirmar Guardado",
     `${mensaje}<br><br>¿Estás seguro de que deseas guardar estos productos?`,
     () => {
-      guardarProductos();
+      // Usar setTimeout para permitir que el modal se cierre y la UI se actualice antes de iniciar el proceso pesado
+      setTimeout(() => {
+        guardarProductos();
+      }, 100);
     },
     () => {
       toast.info("Operación cancelada");
