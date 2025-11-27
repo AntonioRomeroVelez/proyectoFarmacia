@@ -21,7 +21,7 @@
               🔍
             </span>
             <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 ps-0"
-              placeholder="nombre, código, marca" @keyup.enter="aplicarBusqueda" />
+              placeholder="nombre o principio activo" @keyup.enter="aplicarBusqueda" />
             <b-button variant="primary" @click="aplicarBusqueda">
               Buscar
             </b-button>
@@ -90,8 +90,8 @@
       <h5 class="text-muted mt-3">No se encontraron productos</h5>
       <p class="text-muted mb-3">
         {{ productos.length === 0
-          ? 'Carga productos desde la página de Excel para comenzar'
-          : 'Intenta ajustar los filtros de búsqueda'
+        ? 'Carga productos desde la página de Excel para comenzar'
+        : 'Intenta ajustar los filtros de búsqueda'
         }}
       </p>
       <router-link to="/excel" v-if="productos.length === 0">
@@ -113,7 +113,7 @@
           </b-col>
           <b-col md="6">
             <p><strong>Precio Farmacia:</strong> <span class="text-success">${{
-              Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
+                Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
                 }}</span></p>
             <p><strong>PVP:</strong> <del class="text-danger">${{ Number(productoSeleccionado.PVP || 0).toFixed(3)
                 }}</del></p>
@@ -230,8 +230,7 @@ watch(
         const matchesSearch =
           p.NombreProducto?.toLowerCase().includes(text) ||
           p.Marca?.toLowerCase().includes(text) ||
-          p.PrincipioActivo?.toLowerCase().includes(text) ||
-          String(p.Codigo || "").toLowerCase().includes(text);
+          p.PrincipioActivo?.toLowerCase().includes(text);
 
         if (!matchesSearch) return false;
       }

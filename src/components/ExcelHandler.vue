@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <b-card title="📊 Importar Productos desde Excel" class="shadow-sm">
+    <b-card title="📊 Importar Productos desde Excel" class="shadow-sm main-card">
       <b-form-group label="Subir archivo Excel:">
         <div class="custom-file-upload">
           <label for="excel-file" class="file-upload-label">
@@ -78,8 +78,9 @@
 
       <div v-if="productos.length" class="mt-3">
         <!-- Resumen y acciones -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
+        <div
+          class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-3 flex-wrap">
+          <div class="w-100">
             <h5 class="mb-1">📦 Productos Cargados: {{ productos.length }}</h5>
             <div class="d-flex gap-2 flex-wrap">
               <b-badge variant="success"> ✓ {{ validCount }} Válidos </b-badge>
@@ -91,7 +92,7 @@
               </b-badge>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap mt-2">
+          <div class="d-grid gap-2 d-sm-flex w-100 justify-content-lg-end flex-wrap">
             <b-button variant="outline-secondary" size="sm" @click="cancelarCarga">
               ✕ Cancelar
             </b-button>
@@ -103,11 +104,11 @@
 
         <!-- Filtros -->
         <b-card class="mb-3 bg-light">
-          <b-row>
-            <b-col md="12">
+          <b-row class="g-2">
+            <b-col cols="12" md="4">
               <b-form-input v-model="searchText" placeholder="🔍 Buscar por código, nombre, marca..." size="sm" />
             </b-col>
-            <b-col md="12">
+            <b-col cols="12" md="3">
               <b-form-select v-model="filterMarca" size="sm">
                 <option value="">📦 Todas las marcas</option>
                 <option v-for="marca in marcasUnicas" :key="marca" :value="marca">
@@ -115,7 +116,7 @@
                 </option>
               </b-form-select>
             </b-col>
-            <b-col md="12">
+            <b-col cols="12" md="3">
               <b-form-select v-model="filterStatus" size="sm">
                 <option value="all">📋 Todos</option>
                 <option value="valid">✓ Solo válidos</option>
@@ -123,7 +124,7 @@
                 <option value="errors">❌ Solo con errores</option>
               </b-form-select>
             </b-col>
-            <b-col md="12">
+            <b-col cols="12" md="2">
               <b-button variant="outline-secondary" size="sm" class="w-100" @click="limpiarFiltros">
                 🔄 Limpiar
               </b-button>
@@ -132,17 +133,16 @@
         </b-card>
 
         <!-- Grid de tarjetas -->
-        <div class="row g-3 mb-4">
+        <div class="row mb-4">
           <div v-for="producto in productosFiltrados" :key="producto.CODIGO + Math.random()"
-            class="col-12 col-sm-6 col-md-4 col-lg-3">
+            class="col-12 col-sm-6 col-md-4 col-lg-3 mb-2">
             <b-card :class="getCardClass(producto)" class="h-100 producto-card">
               <!-- Header -->
               <template #header>
-                <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <b-badge :variant="getStatusBadgeVariant(producto)" class="px-2 py-1">
                     {{ getStatusText(producto) }}
                   </b-badge>
-                  <b-badge variant="secondary">{{ producto.CODIGO }}</b-badge>
                 </div>
               </template>
 
@@ -150,49 +150,47 @@
               <h6 class="card-title mb-2">{{ producto.Nombre }}</h6>
 
               <div class="product-info">
-                <p class="mb-1">
-                  <strong>Marca:</strong> {{ producto.Marca || "-" }}
-                </p>
-                <p class="mb-1">
+                <div class="mb-1 d-flex flex-wrap gap-2">
+                  <strong>Marca: </strong> {{ producto.Marca || "" }}
+                </div>
+
+                <div class="mb-1 d-flex flex-wrap gap-2">
                   <strong>Presentación:</strong>
-                  {{ producto.Presentacion || "-" }}
-                </p>
-                <p class="mb-2 small text-muted">
-                  {{ producto.Principio_Activo || "-" }}
-                </p>
+                  {{ producto.Presentacion || "" }}
+                </div>
+
+
+                <div class="mb-1 d-flex flex-wrap gap-2">
+                  <strong>Principio Activo: </strong> {{ producto.Principio_Activo || "" }}
+                </div>
 
                 <hr class="my-2" />
 
-                <div class="d-flex justify-content-between mb-1">
-                  <span class="small">P. Farmacia:</span>
-                  <strong :class="producto.errors.includes('Precio inválido')
-                    ? 'text-danger'
-                    : 'text-success'
-                    ">
-                    ${{ Number(producto.P_Farmacia || 0).toFixed(3) }}
-                  </strong>
-                </div>
 
-                <div class="d-flex justify-content-between mb-1">
-                  <span class="small">PVP:</span>
-                  <span class="text-muted small">${{ Number(producto.PVP || 0).toFixed(3) }}</span>
-                </div>
 
-                <div class="d-flex justify-content-between mb-1">
-                  <span class="small">IVA:</span>
-                  <b-badge :variant="producto.IVA >= 0 && producto.IVA <= 100
-                    ? 'info'
-                    : 'danger'
-                    " class="px-2">
-                    {{ producto.IVA }}%
-                  </b-badge>
-                </div>
+                <b-badge variant="info" class="px-2">
+                  P. Farmacia:
+                  ${{ Number(producto.P_Farmacia || 0).toFixed(3) }}
+                </b-badge>
 
-                <div v-if="producto.Descuento" class="d-flex justify-content-between">
-                  <span class="small">Descuento:</span>
-                  <b-badge variant="warning" class="px-2">{{ producto.Descuento }}%</b-badge>
-                </div>
+                <b-badge variant="info" class="px-2">
+                  PVP: ${{ Number(producto.PVP || 0).toFixed(3) }}
+                </b-badge>
+
+                <b-badge :variant="producto.IVA >= 0 && producto.IVA <= 100
+                  ? 'info'
+                  : 'danger'
+                  " class="px-2"> IVA:
+                  {{ producto.IVA }}%
+                </b-badge>
+
+
+
+
+                <b-badge v-if="producto.Descuento" variant="warning" class="px-2">Descuento: {{ producto.Descuento
+                }}%</b-badge>
               </div>
+
 
               <!-- Errores -->
               <div v-if="producto.errors.length > 0" class="mt-2 error-box">
@@ -533,8 +531,17 @@ const handleFileUpload = async (event) => {
   }
 };
 
-const confirmarGuardar = () => {
+const confirmarGuardar = async () => {
+  // Mostrar feedback inmediato
+  isLoading.value = true;
+  loadingMessage.value = "🔍 Verificando datos...";
+
+  // Dar tiempo al UI para actualizarse
+  await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 50));
+
   if (errorCount.value > 0) {
+    isLoading.value = false;
     toast.warning(
       "⚠️ Hay productos con errores. Por favor revísalos antes de guardar."
     );
@@ -542,11 +549,14 @@ const confirmarGuardar = () => {
   }
 
   if (duplicateCount.value > 0) {
+    isLoading.value = false;
     toast.error(
       "❌ No se puede guardar. Existen productos duplicados en el archivo o que ya existen en el sistema. Por favor elimínelos del archivo Excel."
     );
     return;
   }
+
+  isLoading.value = false;
 
   const mensaje = `💾 Guardar ${productos.value.length} productos`;
 
@@ -564,11 +574,15 @@ const confirmarGuardar = () => {
 
 const guardarProductos = async () => {
   isLoading.value = true;
-  loadingMessage.value = "💾 Guardando productos...";
+  loadingMessage.value = "💾 Iniciando guardado...";
 
-  // Esperar a que Vue actualice el DOM para mostrar el spinner
+  // Esperar a que Vue actualice el DOM y que el modal de alertify se cierre visualmente
   await nextTick();
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  loadingMessage.value = "💾 Procesando datos...";
+  // Aumentar el tiempo de espera para asegurar que el spinner se vea antes de la operación bloqueante
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   try {
     const existingProducts =
@@ -773,6 +787,10 @@ const descargarProductosExcel = async () => {
 </script>
 
 <style scoped>
+.excel-handler {
+  width: 100%;
+}
+
 .custom-file-upload {
   margin-bottom: 0.5rem;
 }
@@ -828,6 +846,8 @@ const descargarProductosExcel = async () => {
   font-size: 0.95rem;
   color: #495057;
   font-weight: 500;
+  word-break: break-word;
+  text-align: center;
 }
 
 .table-danger {
@@ -894,6 +914,8 @@ const descargarProductosExcel = async () => {
 
 .product-info {
   font-size: 0.85rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .product-info p {
@@ -932,5 +954,15 @@ const descargarProductosExcel = async () => {
   padding: 2rem 3rem;
   border-radius: 15px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 576px) {
+  :deep(.main-card .card-body) {
+    padding: 0.75rem;
+  }
+
+  .file-upload-label {
+    padding: 0.75rem;
+  }
 }
 </style>

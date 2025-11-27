@@ -1,6 +1,6 @@
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useToast } from "vue-toastification";
 
 // Configuración de inactividad
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hora en milisegundos
@@ -10,25 +10,25 @@ const WARNING_TIME = 60 * 1000; // 1 minuto en milisegundos
 const USERS = [
   {
     id: 1,
-    username: 'romero30',
-    password: 'romero_30',
-    nombre: 'Antonio Romero',
-    role: 'admin'
+    username: "romero30",
+    password: "romero_30",
+    nombre: "Antonio Romero",
+    role: "admin",
   },
   {
     id: 2,
-    username: 'dianita26',
-    password: 'dianita_26',
-    nombre: 'Diana Benálcazar',
-    role: 'admin'
+    username: "dianita26",
+    password: "dianita_26",
+    nombre: "Diana Benálcazar",
+    role: "admin",
   },
   {
     id: 3,
-    username: 'vendedor26',
-    password: 'vendedor_26',
-    nombre: 'Diana Benálcazar',
-    role: 'vendedor'
-  }
+    username: "vendedor26",
+    password: "vendedor_26",
+    nombre: "Diana Benálcazar",
+    role: "vendedor",
+  },
 ];
 
 const currentUser = ref(null);
@@ -42,20 +42,32 @@ export function useAuth() {
   // Computed properties
   const isAuthenticated = computed(() => !!currentUser.value);
   const userRole = computed(() => currentUser.value?.role || null);
-  const isAdmin = computed(() => currentUser.value?.role === 'admin');
-  const isVendedor = computed(() => currentUser.value?.role === 'vendedor');
-  const userName = computed(() => currentUser.value?.nombre || '');
+  const isAdmin = computed(() => currentUser.value?.role === "admin");
+  const isVendedor = computed(() => currentUser.value?.role === "vendedor");
+  const userName = computed(() => currentUser.value?.nombre || "");
 
   // Verificar si hay sesión guardada al cargar
+  // Verificar si hay sesión guardada al cargar
   const checkAuth = () => {
-    const savedUser = localStorage.getItem('currentUser');
+    const savedUser = localStorage.getItem("currentUser");
     if (savedUser) {
       try {
-        currentUser.value = JSON.parse(savedUser);
+        let userObj = JSON.parse(savedUser);
+
+        // Sincronizar con usuarios predefinidos para asegurar datos actualizados (nombre, rol, etc.)
+        const defaultUser = USERS.find(u => u.username === userObj.username);
+        if (defaultUser) {
+          const { password, ...defaultUserSafe } = defaultUser;
+          userObj = { ...userObj, ...defaultUserSafe };
+          // Actualizar storage con datos frescos
+          localStorage.setItem("currentUser", JSON.stringify(userObj));
+        }
+
+        currentUser.value = userObj;
         return true;
       } catch (error) {
-        console.error('Error loading saved session:', error);
-        localStorage.removeItem('currentUser');
+        console.error("Error loading saved session:", error);
+        localStorage.removeItem("currentUser");
         return false;
       }
     }
@@ -113,68 +125,77 @@ export function useAuth() {
 
     showInactivityWarning.value = false;
     currentUser.value = null;
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
 
     // Remover listeners
     removeInactivityListeners();
 
-    toast.warning('⏱️ Sesión cerrada por inactividad');
-    router.push('/login');
+    toast.warning("⏱️ Sesión cerrada por inactividad");
+    router.push("/login");
   };
 
   // Función para cancelar la advertencia
   const dismissWarning = () => {
     showInactivityWarning.value = false;
     resetInactivityTimer();
-    toast.success('✅ Sesión extendida');
+    toast.success("✅ Sesión extendida");
   };
 
   // Configurar listeners de actividad
   const setupInactivityListeners = () => {
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    events.forEach(event => {
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((event) => {
       window.addEventListener(event, resetInactivityTimer);
     });
   };
 
   // Remover listeners de actividad
   const removeInactivityListeners = () => {
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    events.forEach(event => {
+    const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
+    events.forEach((event) => {
       window.removeEventListener(event, resetInactivityTimer);
     });
   };
 
-
   // Login
   const login = (username, password) => {
     // Cargar usuarios más recientes del storage
-    const storedUsers = localStorage.getItem('app_users');
+    const storedUsers = localStorage.getItem("app_users");
     let allUsers = [];
 
     if (storedUsers) {
       allUsers = JSON.parse(storedUsers);
-    } else {
-      // Fallback a usuarios hardcoded si no hay nada en storage (primera vez)
-      allUsers = USERS;
-      // Inicializar storage si está vacío
-      localStorage.setItem('app_users', JSON.stringify(USERS));
     }
 
+    // Asegurar que los usuarios predefinidos estén actualizados en la lista
+    USERS.forEach(defaultUser => {
+      const index = allUsers.findIndex(u => u.username === defaultUser.username);
+      if (index !== -1) {
+        // Actualizar usuario existente con datos frescos (nombre, rol, password)
+        allUsers[index] = { ...allUsers[index], ...defaultUser };
+      } else {
+        // Agregar si no existe (inicialización o nuevo usuario default)
+        allUsers.push(defaultUser);
+      }
+    });
+
+    // Guardar lista actualizada en storage
+    localStorage.setItem("app_users", JSON.stringify(allUsers));
+
     const user = allUsers.find(
-      u => u.username === username && u.password === password
+      (u) => u.username === username && u.password === password
     );
 
     if (user) {
       if (user.activo === false) {
-        toast.error('❌ Usuario deshabilitado. Contacte al administrador.');
+        toast.error("❌ Usuario deshabilitado. Contacte al administrador.");
         return false;
       }
 
       // Guardar usuario (sin contraseña)
       const { password: _, ...userWithoutPassword } = user;
       currentUser.value = userWithoutPassword;
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+      localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword));
 
       // Iniciar sistema de inactividad
       setupInactivityListeners();
@@ -183,7 +204,7 @@ export function useAuth() {
       toast.success(`¡Bienvenido, ${user.nombre}!`);
       return true;
     } else {
-      toast.error('Usuario o contraseña incorrectos');
+      toast.error("Usuario o contraseña incorrectos");
       return false;
     }
   };
@@ -199,11 +220,11 @@ export function useAuth() {
     removeInactivityListeners();
 
     currentUser.value = null;
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
     showInactivityWarning.value = false;
 
-    toast.info('Sesión cerrada');
-    router.push('/login');
+    toast.info("Sesión cerrada");
+    router.push("/login");
   };
 
   // Verificar permisos
@@ -212,20 +233,16 @@ export function useAuth() {
 
     const permissions = {
       admin: [
-        'view_products',
-        'edit_products',
-        'delete_products',
-        'load_excel',
-        'export_data',
-        'manage_firebase',
-        'generate_proforma',
-        'generate_pedido'
+        "view_products",
+        "edit_products",
+        "delete_products",
+        "load_excel",
+        "export_data",
+        "manage_firebase",
+        "generate_proforma",
+        "generate_pedido",
       ],
-      vendedor: [
-        'view_products',
-        'generate_proforma',
-        'generate_pedido'
-      ]
+      vendedor: ["view_products", "generate_proforma", "generate_pedido"],
     };
 
     return permissions[currentUser.value.role]?.includes(permission) || false;
@@ -253,6 +270,6 @@ export function useAuth() {
     hasPermission,
     showInactivityWarning,
     remainingSeconds,
-    dismissWarning
+    dismissWarning,
   };
 }
