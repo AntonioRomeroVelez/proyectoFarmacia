@@ -22,8 +22,8 @@
                 <i class="bi bi-box-seam fs-4"></i>
               </div>
               <div>
-                <h5 class="fw-bold text-dark mb-1">Gestionar Productos</h5>
-                <p class="text-muted small mb-0">Inventario, precios y stock</p>
+                <h5 class="fw-bold text-dark mb-1">Ir a Productos</h5>
+                <p class="text-muted small mb-0">Gestionar productos</p>
               </div>
               <i class="bi bi-arrow-right ms-auto text-muted"></i>
             </div>
@@ -38,7 +38,7 @@
                 <i class="bi bi-geo-alt fs-4"></i>
               </div>
               <div>
-                <h5 class="fw-bold text-dark mb-1">Registrar Visita</h5>
+                <h5 class="fw-bold text-dark mb-1">Ir a Visitas</h5>
                 <p class="text-muted small mb-0">Control de visitas a clientes</p>
               </div>
               <i class="bi bi-arrow-right ms-auto text-muted"></i>

@@ -39,12 +39,12 @@
           <!-- Columna Derecha -->
           <b-col md="6">
             <b-form-group label="Precio Farmacia:" label-for="precio-farmacia">
-              <b-form-input id="precio-farmacia" v-model.number="form.PrecioFarmacia" type="number" step="0.01"
-                placeholder="0.00" required />
+              <b-form-input id="precio-farmacia" v-model.number="form.PrecioFarmacia" type="number" step="0.001"
+                placeholder="0.000" required />
             </b-form-group>
 
             <b-form-group label="PVP:" label-for="pvp">
-              <b-form-input id="pvp" v-model.number="form.PVP" type="number" step="0.01" placeholder="0.00" />
+              <b-form-input id="pvp" v-model.number="form.PVP" type="number" step="0.001" placeholder="0.000" />
             </b-form-group>
 
             <b-form-group label="Descuento (%):" label-for="descuento">
@@ -105,15 +105,15 @@ const form = ref({
 onMounted(() => {
   const productId = route.params.id
   console.log('Route param ID:', productId, 'Type:', typeof productId)
-  
+
   const productos = JSON.parse(localStorage.getItem('ListaProductos')) || []
   console.log('Total products:', productos.length)
-  
+
   // Try to find product by comparing both as strings and numbers
   const producto = productos.find(p => {
     return p.ID == productId || p.ID === parseInt(productId) || String(p.ID) === String(productId)
   })
-  
+
   console.log('Found product:', producto)
 
   if (producto) {

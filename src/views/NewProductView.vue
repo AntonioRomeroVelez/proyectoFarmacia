@@ -17,55 +17,30 @@
             <!-- Código y Marca -->
             <div class="col-md-6">
               <label class="form-label">Código <span class="text-danger">*</span></label>
-              <input
-                v-model="form.Codigo"
-                type="text"
-                class="form-control"
-                required
-                placeholder="Ej: ABC001"
-              />
+              <input v-model="form.Codigo" type="text" class="form-control" required placeholder="Ej: ABC001" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Marca <span class="text-danger">*</span></label>
-              <input
-                v-model="form.Marca"
-                type="text"
-                class="form-control"
-                required
-                placeholder="Ej: Pfizer"
-              />
+              <input v-model="form.Marca" type="text" class="form-control" required placeholder="Ej: Pfizer" />
             </div>
 
             <!-- Nombre y Presentación -->
             <div class="col-md-6">
               <label class="form-label">Nombre del Producto <span class="text-danger">*</span></label>
-              <input
-                v-model="form.NombreProducto"
-                type="text"
-                class="form-control"
-                required
-                placeholder="Ej: Paracetamol"
-              />
+              <input v-model="form.NombreProducto" type="text" class="form-control" required
+                placeholder="Ej: Paracetamol" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Presentación</label>
-              <input
-                v-model="form.Presentacion"
-                type="text"
-                class="form-control"
-                placeholder="Ej: Caja x 10 tabletas"
-              />
+              <input v-model="form.Presentacion" type="text" class="form-control"
+                placeholder="Ej: Caja x 10 tabletas" />
             </div>
 
             <!-- Principio Activo -->
             <div class="col-12">
               <label class="form-label">Principio Activo</label>
-              <input
-                v-model="form.PrincipioActivo"
-                type="text"
-                class="form-control"
-                placeholder="Ej: Paracetamol 500mg"
-              />
+              <input v-model="form.PrincipioActivo" type="text" class="form-control"
+                placeholder="Ej: Paracetamol 500mg" />
             </div>
 
             <hr class="my-4">
@@ -76,28 +51,15 @@
               <label class="form-label">Precio Farmacia <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input
-                  v-model.number="form.PrecioFarmacia"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  class="form-control"
-                  required
-                />
+                <input v-model.number="form.PrecioFarmacia" type="number" step="0.001" min="0" class="form-control"
+                  required />
               </div>
             </div>
             <div class="col-md-4">
               <label class="form-label">PVP <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input
-                  v-model.number="form.PVP"
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  class="form-control"
-                  required
-                />
+                <input v-model.number="form.PVP" type="number" step="0.001" min="0" class="form-control" required />
               </div>
             </div>
             <div class="col-md-4">
@@ -111,23 +73,11 @@
             <!-- Descuento y Promoción -->
             <div class="col-md-6">
               <label class="form-label">Descuento (%)</label>
-              <input
-                v-model.number="form.Descuento"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                class="form-control"
-              />
+              <input v-model.number="form.Descuento" type="number" step="0.01" min="0" max="100" class="form-control" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Promoción</label>
-              <input
-                v-model="form.Promocion"
-                type="text"
-                class="form-control"
-                placeholder="Ej: 2+1"
-              />
+              <input v-model="form.Promocion" type="text" class="form-control" placeholder="Ej: 2+1" />
             </div>
           </div>
 
@@ -169,13 +119,13 @@ const form = reactive({
 
 const guardarProducto = async () => {
   loading.value = true;
-  
+
   try {
     // Simular pequeño delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const existingProducts = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-    
+
     // Validar código único
     if (existingProducts.some(p => p.Codigo === form.Codigo)) {
       toast.error('❌ Ya existe un producto con este código');
