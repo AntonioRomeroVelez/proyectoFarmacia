@@ -1,6 +1,6 @@
 <template>
   <nav class="navbar navbar-light bg-white shadow-sm px-3">
-    <span class="fw-bold fs-5">Farmacia – Sistema Admin</span>
+    <span class="fw-bold fs-5">Farmacia - Sistema Admin</span>
 
     <div>
       <b-button variant="outline-secondary" size="sm">

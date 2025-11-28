@@ -27,13 +27,17 @@
 
       <nav class="sidebar-nav">
         <router-link to="/" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-house-door"></i> Dashboard
+          <i class="bi bi-house-door"></i>Inicio
         </router-link>
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-box-seam"></i> Productos
         </router-link>
         <router-link to="/carrito" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-cart"></i> Carrito
+        </router-link>
+        <router-link v-if="documents.length > 0" to="/historial" class="nav-item" active-class="active"
+          @click="closeSidebarOnMobile">
+          <i class="bi bi-clock-history"></i> Historial
         </router-link>
         <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-journal-text"></i> Visitas
@@ -100,8 +104,10 @@
 import { ref, computed } from 'vue';
 import { BIconList, BIconX } from 'bootstrap-icons-vue';
 import { useAuth } from '@/composables/useAuth';
+import { useHistorial } from '@/composables/useHistorial';
 
 const { userName, isAdmin, logout } = useAuth();
+const { documents } = useHistorial();
 import { onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
 

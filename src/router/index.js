@@ -11,6 +11,7 @@ import Carrito from "@/views/CarritoView.vue";
 import Visitas from "@/views/VisitasView.vue";
 import Comparacion from "@/views/ComparacionProductosView.vue";
 import Login from "@/views/LoginView.vue";
+import Historial from "@/views/HistorialView.vue";
 
 const routes = [
   {
@@ -38,6 +39,7 @@ const routes = [
       },
       { path: "pdf", component: PDF },
       { path: "carrito", component: Carrito },
+      { path: "historial", component: Historial },
       { path: "visitas", component: Visitas },
       {
         path: "comparacion",

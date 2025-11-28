@@ -185,11 +185,13 @@ import { usePDFGenerator } from "@/utils/pdfGenerator";
 import { useToast } from "vue-toastification";
 import { useAuth } from "@/composables/useAuth";
 import { useUsuarios } from "@/composables/useUsuarios";
+import { useHistorial } from "@/composables/useHistorial";
 import alertify from "alertifyjs";
 
 const toast = useToast();
 const { userName } = useAuth();
 const { users } = useUsuarios();
+const { saveDocument } = useHistorial();
 
 const {
   cart,
@@ -263,10 +265,43 @@ const confirmarExportacion = (bvModalEvent) => {
   // Ejecutar la acción pendiente
   if (pendingAction.value === "proforma") {
     generarProformaPDF();
+    saveDocument({
+      type: 'Proforma',
+      clientName: clienteNombre.value,
+      date: fecha.value,
+      items: [...cartItemsWithPromotions.value],
+      totals: {
+        total: cartTotal.value,
+        subtotal: cartSubtotal.value,
+        iva: cartTotalIVA.value
+      }
+    });
   } else if (pendingAction.value === "pedido") {
     generarPedidoExcel();
+    saveDocument({
+      type: 'Pedido',
+      clientName: clienteNombre.value,
+      date: fecha.value,
+      items: [...cartItemsWithPromotions.value],
+      totals: {
+        total: cartTotal.value,
+        subtotal: cartSubtotal.value,
+        iva: cartTotalIVA.value
+      }
+    });
   } else if (pendingAction.value === "pdf") {
     exportarListaPrecioPDF();
+    saveDocument({
+      type: 'Lista de Precios',
+      clientName: clienteNombre.value,
+      date: fecha.value,
+      items: [...cartItemsWithPromotions.value],
+      totals: {
+        total: cartTotal.value,
+        subtotal: cartSubtotal.value,
+        iva: cartTotalIVA.value
+      }
+    });
   }
 
   // El modal se cerrará automáticamente si no prevenimos el evento
