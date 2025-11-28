@@ -41,6 +41,11 @@
             IVA: {{ producto.IVA }}%
           </span>
 
+          <span v-if="producto.PVP" class="badge badge-subtle-pvp">
+            PVP: ${{ producto.PVP }}
+          </span>
+
+
           <!-- Promoción -->
           <span v-if="producto.Promocion" class="badge badge-subtle-promo">
             Promoción: {{ producto.Promocion }}
@@ -224,6 +229,13 @@ const verDetalle = () => {
   border: 1px solid #dcd2cf;
 }
 
+.badge-subtle-pvp {
+  background-color: rgb(252, 192, 249);
+  /* Azul Grisáceo */
+  color: #455a64;
+  /* Azul Grisáceo Oscuro */
+  border: 1px solid #dcd2cf;
+}
 .badge-subtle-promo {
   background-color: #e0f2f1;
   /* Teal/Verde Agua */

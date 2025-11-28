@@ -1,70 +1,95 @@
 <template>
-  <div class="container-fluid text-center">
-    <!-- KPI Cards -->
-    <div class="col-12 row g-3 mb-4 text-center">
-      <!-- Total Productos -->
-      <div class="col-12 col-sm-12 col-xl-3">
-        <b-card class="h-100 border-0 shadow-sm kpi-card bg-primary text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              Total Productos {{ totalProductos }}
-
-              <router-link>Ir a productos</router-link>
-            </div>
-          </div>
-        </b-card>
+  <div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="d-flex align-items-center mb-4 px-2 flex-column">
+      <div class="">
+        <span class="text-muted small">{{ fechaActual }}</span>
+      </div>
+      <div>
+        <h2 class="fw-bold text-dark mb-1">Panel de Control</h2>
+        <p class="text-muted mb-0">Resumen general y accesos rápidos</p>
       </div>
 
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-md-6">
+        <router-link to="/productos" class="text-decoration-none">
+          <b-card class="h-100 border-0 shadow-sm action-card hover-lift">
+            <div class="d-flex align-items-center">
+              <div class="icon-circle bg-primary bg-opacity-10 text-primary me-3">
+                <i class="bi bi-box-seam fs-4"></i>
+              </div>
+              <div>
+                <h5 class="fw-bold text-dark mb-1">Gestionar Productos</h5>
+                <p class="text-muted small mb-0">Inventario, precios y stock</p>
+              </div>
+              <i class="bi bi-arrow-right ms-auto text-muted"></i>
+            </div>
+          </b-card>
+        </router-link>
+      </div>
+      <div class="col-12 col-md-6">
+        <router-link to="/visitas" class="text-decoration-none">
+          <b-card class="h-100 border-0 shadow-sm action-card hover-lift">
+            <div class="d-flex align-items-center">
+              <div class="icon-circle bg-success bg-opacity-10 text-success me-3">
+                <i class="bi bi-geo-alt fs-4"></i>
+              </div>
+              <div>
+                <h5 class="fw-bold text-dark mb-1">Registrar Visita</h5>
+                <p class="text-muted small mb-0">Control de visitas a clientes</p>
+              </div>
+              <i class="bi bi-arrow-right ms-auto text-muted"></i>
+            </div>
+          </b-card>
+        </router-link>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
       <!-- Total Productos -->
-      <div class="col-12 col-sm-12 col-xl-3">
-        <b-card class="h-100 border-0 shadow-sm kpi-card bg-primary text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-2 opacity-75">Total Productos</h6>
-              <h3 class="mb-0 fw-bold">{{ stats.totalProductos }}</h3>
-            </div>
-            <div class="icon-box bg-white bg-opacity-25 rounded-circle p-3">
-              <span class="fs-4">📦</span>
-            </div>
-          </div>
-          <div class="mt-3 small opacity-75">
-            {{ stats.productosNuevos }} nuevos esta semana
+      <div class="col-6 col-lg-3">
+        <b-card class="h-100 border-0 shadow-sm kpi-card">
+          <div class="mb-2 text-muted small text-uppercase fw-bold tracking-wide">Productos</div>
+          <div class="d-flex align-items-end justify-content-between">
+            <h3 class="mb-0 fw-bold text-dark">{{ stats.totalProductos }}</h3>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Total</span>
           </div>
         </b-card>
       </div>
 
       <!-- Visitas -->
-      <div class="col-12 col-sm-12 col-xl-3">
-        <b-card class="h-100 border-0 shadow-sm kpi-card bg-success text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-2 opacity-75">Visitas Realizadas</h6>
-              <h3 class="mb-0 fw-bold">{{ stats.totalVisitas }}</h3>
-            </div>
-            <div class="icon-box bg-white bg-opacity-25 rounded-circle p-3">
-              <span class="fs-4">📍</span>
-            </div>
-          </div>
-          <div class="mt-3 small opacity-75">
-            Última: {{ stats.ultimaVisitaFecha }}
+      <div class="col-6 col-lg-3">
+        <b-card class="h-100 border-0 shadow-sm kpi-card">
+          <div class="mb-2 text-muted small text-uppercase fw-bold tracking-wide">Visitas</div>
+          <div class="d-flex align-items-end justify-content-between">
+            <h3 class="mb-0 fw-bold text-dark">{{ stats.totalVisitas }}</h3>
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Realizadas</span>
           </div>
         </b-card>
       </div>
 
       <!-- Carrito -->
-      <div class="col-12 col-sm-12 col-xl-3">
-        <b-card class="h-100 border-0 shadow-sm kpi-card bg-info text-white">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-2 opacity-75">En Carrito</h6>
-              <h3 class="mb-0 fw-bold">{{ stats.itemsCarrito }} Items</h3>
-            </div>
-            <div class="icon-box bg-white bg-opacity-25 rounded-circle p-3">
-              <span class="fs-4">🛒</span>
-            </div>
+      <div class="col-6 col-lg-3">
+        <b-card class="h-100 border-0 shadow-sm kpi-card">
+          <div class="mb-2 text-muted small text-uppercase fw-bold tracking-wide">En Carrito</div>
+          <div class="d-flex align-items-end justify-content-between">
+            <h3 class="mb-0 fw-bold text-dark">{{ stats.itemsCarrito }}</h3>
+            <span class="badge bg-info bg-opacity-10 text-info rounded-pill">Items</span>
           </div>
-          <div class="mt-3 small opacity-75">
-            Valor: ${{ stats.valorCarrito.toFixed(2) }}
+        </b-card>
+      </div>
+
+      <!-- Valor Carrito -->
+      <div class="col-6 col-lg-3">
+        <b-card class="h-100 border-0 shadow-sm kpi-card">
+          <div class="mb-2 text-muted small text-uppercase fw-bold tracking-wide">Valor Total</div>
+          <div class="d-flex align-items-end justify-content-between">
+            <h3 class="mb-0 fw-bold text-dark">${{ stats.valorCarrito.toFixed(2) }}</h3>
+            <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">USD</span>
           </div>
         </b-card>
       </div>
@@ -73,74 +98,37 @@
     <!-- Recent Activity -->
     <div class="row">
       <div class="col-12">
-        <b-card class="shadow-sm border-0">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">🕒 Actividad Reciente (Visitas)</h5>
-            <router-link to="/visitas" class="text-decoration-none small"
-              >Ver todas →</router-link
-            >
+        <b-card class="border-0 shadow-sm">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">🕒 Actividad Reciente</h5>
+            <router-link to="/visitas" class="btn btn-sm btn-light text-primary fw-bold">
+              Ver todo
+            </router-link>
           </div>
 
-          <!-- Desktop: Table view -->
-          <div class="table-responsive d-none d-md-block">
-            <table class="table table-hover align-middle">
-              <thead class="table-light">
-                <tr>
-                  <th>Fecha</th>
-                  <th>Lugar</th>
-                  <th>Observación</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(visita, index) in recentVisits" :key="index">
-                  <td>{{ formatearFecha(visita.fecha) }}</td>
-                  <td class="fw-bold">{{ visita.lugar }}</td>
-                  <td class="text-muted text-truncate" style="max-width: 300px">
-                    {{ visita.observacion }}
-                  </td>
-                  <td><b-badge variant="success" pill>Completada</b-badge></td>
-                </tr>
-                <tr v-if="recentVisits.length === 0">
-                  <td colspan="4" class="text-center text-muted py-3">
-                    No hay actividad reciente
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile: Card view -->
-          <div class="d-block d-md-none">
-            <div
-              v-if="recentVisits.length === 0"
-              class="text-center text-muted py-4"
-            >
-              No hay actividad reciente
+          <!-- List View (Mobile & Desktop) -->
+          <div class="activity-list">
+            <div v-if="recentVisits.length === 0" class="text-center text-muted py-5">
+              <div class="mb-3 opacity-50">
+                <i class="bi bi-calendar-x fs-1"></i>
+              </div>
+              <p>No hay actividad reciente registrada</p>
             </div>
-            <div v-else class="mobile-cards">
-              <b-card
-                v-for="(visita, index) in recentVisits"
-                :key="index"
-                class="mb-3 visit-card"
-              >
-                <div
-                  class="d-flex justify-content-between align-items-start mb-2"
-                >
-                  <div class="flex-grow-1">
-                    <div class="text-muted small mb-1">
-                      📅 {{ formatearFecha(visita.fecha) }}
-                    </div>
-                    <h6 class="fw-bold mb-1">{{ visita.lugar }}</h6>
-                    <p class="text-muted small mb-2">
-                      {{ visita.observacion }}
-                    </p>
-                  </div>
-                  <b-badge variant="success" pill class="ms-2"
-                    >Completada</b-badge
-                  >
+
+            <div v-else v-for="(visita, index) in recentVisits" :key="index"
+              class="activity-item d-flex align-items-start py-3 border-bottom">
+              <div class="activity-icon bg-light rounded-circle p-2 me-3 text-muted">
+                <i class="bi bi-geo-alt"></i>
+              </div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                  <h6 class="fw-bold mb-0 text-dark">{{ visita.lugar }}</h6>
+                  <small class="text-muted">{{ formatearFecha(visita.fecha) }}</small>
                 </div>
-              </b-card>
+                <p class="text-muted small mb-0 text-truncate-2">
+                  {{ visita.observacion || 'Sin observaciones' }}
+                </p>
+              </div>
             </div>
           </div>
         </b-card>
@@ -151,82 +139,38 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  ArcElement,
-} from "chart.js";
-import { Bar, Doughnut } from "vue-chartjs";
 import { useCart } from "@/composables/useCart";
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
-
 const { cartCount, cartTotal } = useCart();
-const loaded = ref(false);
 const recentVisits = ref([]);
 
 const stats = ref({
   totalProductos: 0,
-  productosNuevos: 0, // Simulado o calculado si hubiera fecha
   totalVisitas: 0,
-  ultimaVisitaFecha: "-",
   itemsCarrito: 0,
   valorCarrito: 0,
-  errores: 0,
 });
 
-// Chart Data Refs
-const barChartData = ref({
-  labels: [],
-  datasets: [],
+const fechaActual = computed(() => {
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 });
-
-const doughnutChartData = ref({
-  labels: [],
-  datasets: [],
-});
-
-const barChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-  },
-  scales: {
-    y: { beginAtZero: true },
-  },
-};
-
-const doughnutChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { position: "bottom" },
-  },
-};
 
 const formatearFecha = (fechaISO) => {
   if (!fechaISO) return "-";
   const fecha = new Date(fechaISO);
+  // Si es hoy, mostrar hora
+  const hoy = new Date();
+  if (fecha.toDateString() === hoy.toDateString()) {
+    return `Hoy, ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
+  }
   return fecha.toLocaleDateString("es-ES", {
     day: "2-digit",
     month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 };
 
@@ -241,121 +185,67 @@ onMounted(() => {
   stats.value.itemsCarrito = cartCount.value;
   stats.value.valorCarrito = cartTotal.value;
 
-  // Contar errores (productos con campos faltantes o inválidos)
-  // Usamos una lógica simple similar a ExcelHandler
-  stats.value.errores = productos.filter(
-    (p) => !p.Marca || !p.NombreProducto || isNaN(p.PrecioFarmacia)
-  ).length;
-
   if (visitas.length > 0) {
-    const last = visitas[visitas.length - 1];
-    stats.value.ultimaVisitaFecha = formatearFecha(last.fecha).split(",")[0];
     // Get last 5 visits reversed
     recentVisits.value = [...visitas].reverse().slice(0, 5);
   }
-
-  // Preparar datos para gráficos
-  prepareCharts(productos);
-  loaded.value = true;
 });
-
-const prepareCharts = (productos) => {
-  // 1. Top Marcas
-  const marcasCount = {};
-  productos.forEach((p) => {
-    const marca = p.Marca || "Sin Marca";
-    marcasCount[marca] = (marcasCount[marca] || 0) + 1;
-  });
-
-  const sortedMarcas = Object.entries(marcasCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  barChartData.value = {
-    labels: sortedMarcas.map((m) => m[0]),
-    datasets: [
-      {
-        label: "Productos",
-        backgroundColor: [
-          "#0d6efd",
-          "#6610f2",
-          "#6f42c1",
-          "#d63384",
-          "#dc3545",
-        ],
-        data: sortedMarcas.map((m) => m[1]),
-        borderRadius: 6,
-      },
-    ],
-  };
-
-  // 2. Estado Productos (Simulado basado en validación simple)
-  const validos = productos.length - stats.value.errores;
-  const errores = stats.value.errores;
-  // Asumimos duplicados si hubiera flag, por ahora simple
-
-  doughnutChartData.value = {
-    labels: ["Válidos", "Con Errores"],
-    datasets: [
-      {
-        backgroundColor: ["#198754", "#dc3545"],
-        data: [validos, errores],
-      },
-    ],
-  };
-};
 </script>
 
 <style scoped>
-.kpi-card {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  overflow: hidden;
+.dashboard-container {
+  padding: 0.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.kpi-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+/* Cards Styling */
+.action-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: white;
 }
 
-.icon-box {
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.icon-circle {
   width: 48px;
   height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Mobile visit cards */
-.visit-card {
-  border-left: 4px solid #28a745;
-  transition: transform 0.2s, box-shadow 0.2s;
+.kpi-card {
+  background: white;
+  transition: transform 0.2s;
 }
 
-.visit-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.tracking-wide {
+  letter-spacing: 0.05em;
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .container-fluid {
-    padding: 0.75rem;
-  }
+/* Activity List */
+.activity-item:last-child {
+  border-bottom: 0 !important;
 }
 
-@media (max-width: 576px) {
-  .container-fluid {
-    padding: 0.5rem;
-  }
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-  /* Stack buttons */
-  .d-flex.gap-2 {
-    flex-direction: column;
-  }
-
-  .d-flex.gap-2 a,
-  .d-flex.gap-2 .btn {
-    width: 100%;
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+  .dashboard-container {
+    padding: 1.5rem;
   }
 }
 </style>

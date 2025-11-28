@@ -32,18 +32,21 @@
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-box-seam"></i> Productos
         </router-link>
-        <router-link v-if="isAdmin" to="/crear-producto" class="nav-item" active-class="active"
-          @click="closeSidebarOnMobile">
-          <i class="bi bi-plus-circle"></i> Nuevo Producto
-        </router-link>
-        <router-link v-if="isAdmin" to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-people"></i> Usuarios
-        </router-link>
         <router-link to="/carrito" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-cart"></i> Carrito
         </router-link>
         <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-journal-text"></i> Visitas
+        </router-link>
+        <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-file-earmark-pdf"></i> Reportes PDF
+        </router-link>
+
+        <div v-if="isAdmin" class="my-2 border-top"></div>
+
+        <router-link v-if="isAdmin" to="/crear-producto" class="nav-item" active-class="active"
+          @click="closeSidebarOnMobile">
+          <i class="bi bi-plus-circle"></i> Registrar Producto
         </router-link>
         <router-link v-if="isAdmin" to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-file-earmark-excel"></i> Carga Excel
@@ -52,8 +55,8 @@
           @click="closeSidebarOnMobile">
           <i class="bi bi-diagram-3"></i> Comparación
         </router-link>
-        <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-file-earmark-pdf"></i> Reportes PDF
+        <router-link v-if="isAdmin" to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-people"></i> Usuarios
         </router-link>
       </nav>
 
