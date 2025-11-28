@@ -171,11 +171,44 @@ export const useExcelHandler = () => {
     }
   };
 
+  const exportarCobrosExcel = async (cobros) => {
+    try {
+      const fecha = new Date().toISOString().split('T')[0];
+      const filename = `Cobros_${fecha}.xlsx`;
+
+      const tableData = cobros.map(cobro => ({
+        'Fecha': cobro.fecha,
+        'Cliente': cobro.cliente,
+        'Cantidad': `$${Number(cobro.cantidad).toFixed(2)}`,
+        'Tipo': cobro.tipo,
+        'Método de Pago': cobro.metodoPago,
+        'Nº Factura': cobro.numeroFactura || '-',
+        'Nº Recibo': cobro.numeroRecibo || '-',
+        'Observaciones': cobro.observaciones || ''
+      }));
+
+      const total = cobros.reduce((sum, c) => sum + parseFloat(c.cantidad || 0), 0);
+
+      const metadata = {
+        'Reporte': 'Registro de Cobros',
+        'Fecha de Exportación': fecha,
+        'Total de Cobros': cobros.length,
+        'Monto Total': `$${total.toFixed(2)}`
+      };
+
+      await exportCustomExcel(metadata, tableData, filename);
+    } catch (error) {
+      console.error('Error exporting cobros:', error);
+      toast.error('Error al exportar cobros');
+    }
+  };
+
   return {
     readExcelFile,
     exportToExcel,
     exportCartToExcel,
-    exportCustomExcel
+    exportCustomExcel,
+    exportarCobrosExcel
   };
 };
 

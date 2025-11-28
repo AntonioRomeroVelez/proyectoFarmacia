@@ -95,6 +95,80 @@
       </div>
     </div>
 
+    <!-- Eventos de Hoy -->
+    <div class="row mb-4">
+      <div class="col-12 col-lg-6">
+        <b-card class="border-0 shadow-sm h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">📅 Eventos de Hoy</h5>
+            <router-link to="/agenda" class="btn btn-sm btn-light text-primary fw-bold">
+              Ver Agenda
+            </router-link>
+          </div>
+
+          <div v-if="eventosHoy.length === 0" class="text-center text-muted py-4">
+            <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+            <p class="mb-0 mt-2">No tienes eventos programados para hoy</p>
+          </div>
+
+          <div v-else class="list-group list-group-flush">
+            <div v-for="evento in eventosHoy" :key="evento.id" class="list-group-item px-0 border-bottom"
+              :class="{ 'opacity-50': evento.completada }">
+              <div class="d-flex justify-content-between align-items-start">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1" :class="{ 'text-decoration-line-through': evento.completada }">
+                    {{ evento.titulo }}
+                  </h6>
+                  <small class="text-muted">{{ evento.descripcion }}</small>
+                  <div class="mt-1">
+                    <span class="badge bg-primary me-1">{{ evento.tipo }}</span>
+                    <span v-if="evento.completada" class="badge bg-success">✓ Hecho</span>
+                    <span v-else class="badge bg-warning text-dark">Pendiente</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </b-card>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <b-card class="border-0 shadow-sm h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">💰 Cobros de Hoy</h5>
+            <router-link to="/cobros" class="btn btn-sm btn-light text-primary fw-bold">
+              Ver Cobros
+            </router-link>
+          </div>
+
+          <div v-if="cobrosHoy.length === 0" class="text-center text-muted py-4">
+            <i class="bi bi-cash-coin fs-1 opacity-50"></i>
+            <p class="mb-0 mt-2">No hay cobros registrados hoy</p>
+          </div>
+
+          <div v-else>
+            <div class="mb-3 p-3 bg-success bg-opacity-10 rounded text-center">
+              <small class="text-muted d-block mb-1">Total Cobrado Hoy</small>
+              <h3 class="mb-0 text-success fw-bold">${{ totalCobrosHoy.toFixed(2) }}</h3>
+              <small class="text-muted">{{ cobrosHoy.length }} cobro(s)</small>
+            </div>
+
+            <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+              <div v-for="cobro in cobrosHoy.slice(0, 5)" :key="cobro.id" class="list-group-item px-0 border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h6 class="mb-0">{{ cobro.cliente }}</h6>
+                    <small class="text-muted">{{ cobro.tipo }} - {{ cobro.metodoPago }}</small>
+                  </div>
+                  <span class="fw-bold text-success">${{ Number(cobro.cantidad).toFixed(2) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </b-card>
+      </div>
+    </div>
+
     <!-- Recent Activity -->
     <div class="row">
       <div class="col-12">
@@ -140,8 +214,13 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
 import { useCart } from "@/composables/useCart";
+import { useAgenda } from "@/composables/useAgenda";
+import { useCobros } from "@/composables/useCobros";
 
 const { cartCount, cartTotal } = useCart();
+const { getEventosPorFecha } = useAgenda();
+const { cobros, getTotalCobros } = useCobros();
+
 const recentVisits = ref([]);
 
 const stats = ref({
@@ -158,6 +237,22 @@ const fechaActual = computed(() => {
     month: 'long',
     day: 'numeric'
   });
+});
+
+// Eventos de hoy
+const eventosHoy = computed(() => {
+  const hoy = new Date().toISOString().split('T')[0];
+  return getEventosPorFecha(hoy);
+});
+
+// Cobros de hoy
+const cobrosHoy = computed(() => {
+  const hoy = new Date().toISOString().split('T')[0];
+  return cobros.value.filter(c => c.fecha === hoy);
+});
+
+const totalCobrosHoy = computed(() => {
+  return getTotalCobros(cobrosHoy.value);
 });
 
 const formatearFecha = (fechaISO) => {

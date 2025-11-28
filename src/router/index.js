@@ -12,6 +12,8 @@ import Visitas from "@/views/VisitasView.vue";
 import Comparacion from "@/views/ComparacionProductosView.vue";
 import Login from "@/views/LoginView.vue";
 import Historial from "@/views/HistorialView.vue";
+import Agenda from "@/views/AgendaView.vue";
+import Cobros from "@/views/CobrosView.vue";
 
 const routes = [
   {
@@ -40,6 +42,8 @@ const routes = [
       { path: "pdf", component: PDF },
       { path: "carrito", component: Carrito },
       { path: "historial", component: Historial },
+      { path: "agenda", component: Agenda },
+      { path: "cobros", component: Cobros },
       { path: "visitas", component: Visitas },
       {
         path: "comparacion",

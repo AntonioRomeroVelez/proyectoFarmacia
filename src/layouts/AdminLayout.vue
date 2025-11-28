@@ -27,7 +27,7 @@
 
       <nav class="sidebar-nav">
         <router-link to="/" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-house-door"></i>Inicio
+          <i class="bi bi-house-door"></i> Inicio
         </router-link>
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-box-seam"></i> Productos
@@ -39,8 +39,14 @@
           @click="closeSidebarOnMobile">
           <i class="bi bi-clock-history"></i> Historial
         </router-link>
+        <router-link to="/agenda" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-calendar3"></i> Agenda
+        </router-link>
+        <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-cash-coin"></i> Cobros
+        </router-link>
         <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-journal-text"></i> Visitas
+          <i class="bi bi-geo-alt"></i> Visitas
         </router-link>
         <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-file-earmark-pdf"></i> Reportes PDF
