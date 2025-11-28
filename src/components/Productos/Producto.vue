@@ -6,35 +6,40 @@
 
         <!-- Principio Activo -->
         <p class="producto-principio text-muted small">
-          {{ producto.PrincipioActivo }}
+          {{ producto.PrincipioActivo.replaceAll('+', ' + ') }}
         </p>
 
-        <!-- Marca -->
-        <div class="badge badge-subtle-brand small d-text flex-wrap">
-          <b>Marca:</b> {{ producto.Marca }}
-        </div>
 
 
 
-        <!-- Precios -->
-        <div class="precio-linea mb-2">
-          <span class="precio-label-inline">Precio Farmacia:</span>
-          <strong class="precio-valor-inline">
-            ${{ getParteEntera(producto.PrecioFarmacia) }}<span class="precio-decimales">.{{
-              getParteDecimal(producto.PrecioFarmacia) }}</span>
-          </strong>
-        </div>
 
 
-        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+          <!-- Marca -->
+          <div class="badge badge-subtle-brand small d-text flex-wrap">
+            <b>Marca:</b> {{ producto.Marca }}
+          </div>
+
+
+          <!-- Precios -->
+          <div class="precio-linea  badge-subtle-p_farmacia">
+            <span class="precio-label-inline">Precio:</span>
+            <strong class="precio-valor-inline">
+              ${{ getParteEntera(producto.PrecioFarmacia) }}<span class="precio-decimales">.{{
+                getParteDecimal(producto.PrecioFarmacia) }}</span>
+            </strong>
+          </div>
+
+
           <!-- Presentacion -->
           <span class="badge badge-subtle-presentation">
-            {{ producto.Presentacion }}
+            Presentación: {{ producto.Presentacion }}
           </span>
 
           <!-- Descuento -->
           <span v-if="producto.Descuento" class="badge badge-subtle-discount">
-            Desc: {{ producto.Descuento }}%
+            Descuento: {{ producto.Descuento }}%
           </span>
           <!--IVA -->
           <span v-if="producto.IVA" class="badge badge-subtle-tax">
@@ -200,6 +205,8 @@ const verDetalle = () => {
   color: #0277bd;
   /* Azul Médico Oscuro */
   border: 1px solid #b3e5fc;
+  border-radius: 5px;
+  padding: 5px;
   white-space: normal;
   word-wrap: break-word;
   max-width: 100%;
@@ -211,6 +218,26 @@ const verDetalle = () => {
   color: #424242;
   /* Gris Oscuro */
   border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+
+
+.badge-subtle-p_farmacia {
+  background-color: #f4fff5;
+  /* Gris Clínico Claro */
+  color: #424242;
+  /* Gris Oscuro */
+  border: 1px solid #8ec755;
+  border-radius: 5px;
+  padding: 0px 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .badge-subtle-discount {
@@ -219,6 +246,11 @@ const verDetalle = () => {
   color: #ef6c00;
   /* Naranja Fuerte */
   border: 1px solid #ffe0b2;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .badge-subtle-tax {
@@ -227,21 +259,37 @@ const verDetalle = () => {
   color: #455a64;
   /* Azul Grisáceo Oscuro */
   border: 1px solid #dcd2cf;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .badge-subtle-pvp {
-  background-color: rgb(252, 192, 249);
+  background-color: rgb(255, 225, 225);
   /* Azul Grisáceo */
-  color: #455a64;
+  color: #373a3b;
   /* Azul Grisáceo Oscuro */
-  border: 1px solid #dcd2cf;
+  border: 1px solid #ffa6a6;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
+
 .badge-subtle-promo {
   background-color: #e0f2f1;
   /* Teal/Verde Agua */
   color: #00695c;
   /* Teal Oscuro */
   border: 1px solid #b2dfdb;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 /* Asegurar que los iconos se vean bien */
@@ -265,15 +313,15 @@ const verDetalle = () => {
 }
 
 .precio-valor-inline {
-  font-size: 1.25rem;
-  color: #28a745;
+  font-size: 1.5rem;
+  color: #606462;
   font-weight: 700;
   display: flex;
   align-items: baseline;
 }
 
 .precio-decimales {
-  font-size: 0.75em;
+  font-size: 0.8em;
   /* 75% del tamaño de la fuente padre */
   opacity: 0.85;
 }
