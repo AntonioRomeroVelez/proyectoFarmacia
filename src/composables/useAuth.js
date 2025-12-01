@@ -131,7 +131,11 @@ export function useAuth() {
     removeInactivityListeners();
 
     toast.warning("⏱️ Sesión cerrada por inactividad");
-    router.push("/login");
+
+    // Forzar recarga completa hacia el login
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 1000);
   };
 
   // Función para cancelar la advertencia

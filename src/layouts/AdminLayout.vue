@@ -40,7 +40,10 @@
           <i class="bi bi-clock-history"></i> Historial
         </router-link>
         <router-link to="/agenda" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-calendar3"></i> Agenda
+          <i class="bi bi-calendar3"></i> Calendario
+        </router-link>
+        <router-link to="/eventos-list" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-list-check"></i> Eventos
         </router-link>
         <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-cash-coin"></i> Cobros
@@ -67,6 +70,9 @@
         </router-link>
         <router-link v-if="isAdmin" to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-people"></i> Usuarios
+        </router-link>
+        <router-link v-if="isAdmin" to="/backup" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-database"></i> Backup/Restaurar
         </router-link>
       </nav>
 

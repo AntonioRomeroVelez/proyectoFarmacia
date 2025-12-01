@@ -242,8 +242,109 @@ export const usePDFGenerator = () => {
     }
   };
 
+  const exportCobros = (cobrosData) => {
+    try {
+      if (!cobrosData || cobrosData.length === 0) {
+        toast.error("No hay datos para exportar");
+        return;
+      }
+
+      // Preparar datos para el PDF
+      const datos = cobrosData.map(cobro => ({
+        Fecha: cobro.fecha,
+        Cliente: cobro.cliente,
+        Cantidad: `$${Number(cobro.cantidad).toFixed(2)}`,
+        Tipo: cobro.tipo,
+        'Método': cobro.metodoPago,
+        'Nº Factura': cobro.numeroFactura || '-',
+        'Nº Recibo': cobro.numeroRecibo || '-',
+        Observaciones: cobro.observaciones || '-'
+      }));
+
+      // Calcular totales
+      const totalGeneral = cobrosData.reduce((sum, cobro) => sum + Number(cobro.cantidad), 0);
+      const totalAbonos = cobrosData
+        .filter(c => c.tipo === 'Abono')
+        .reduce((sum, cobro) => sum + Number(cobro.cantidad), 0);
+      const totalCancelaciones = cobrosData
+        .filter(c => c.tipo === 'Cancelación Total')
+        .reduce((sum, cobro) => sum + Number(cobro.cantidad), 0);
+
+      // Crear PDF con totales
+      const pdf = new jsPDF('l', 'mm', 'a4');
+
+      // Título
+      pdf.setFontSize(16);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Registro de Cobros', pdf.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+
+      // Fecha de generación
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 14, 25);
+      pdf.text(`Total de registros: ${cobrosData.length}`, 14, 30);
+
+      // Tabla
+      autoTable(pdf, {
+        head: [['Fecha', 'Cliente', 'Cantidad', 'Tipo', 'Método', 'Nº Factura', 'Nº Recibo', 'Observaciones']],
+        body: datos.map(d => Object.values(d)),
+        startY: 35,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center',
+          fontSize: 9,
+        },
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        columnStyles: {
+          2: { halign: 'right', fontStyle: 'bold' }, // Cantidad
+          7: { cellWidth: 50 } // Observaciones
+        },
+      });
+
+      // Resumen de totales
+      const finalY = pdf.lastAutoTable.finalY || 40;
+
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'bold');
+
+      const startX = 200;
+      pdf.text('Resumen:', startX, finalY + 10);
+
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Abonos (${cobrosData.filter(c => c.tipo === 'Abono').length}):`, startX, finalY + 16);
+      pdf.text(`$${totalAbonos.toFixed(2)}`, startX + 60, finalY + 16, { align: 'right' });
+
+      pdf.text(`Cancelaciones (${cobrosData.filter(c => c.tipo === 'Cancelación Total').length}):`, startX, finalY + 22);
+      pdf.text(`$${totalCancelaciones.toFixed(2)}`, startX + 60, finalY + 22, { align: 'right' });
+
+      pdf.setFont(undefined, 'bold');
+      pdf.setFontSize(11);
+      pdf.text('Total General:', startX, finalY + 28);
+      pdf.text(`$${totalGeneral.toFixed(2)}`, startX + 60, finalY + 28, { align: 'right' });
+
+      // Generar nombre de archivo
+      const fecha = new Date().toISOString().split('T')[0];
+      const filename = `Cobros-${fecha}.pdf`;
+
+      pdf.save(filename);
+      toast.success(`✅ PDF generado: ${filename}`);
+    } catch (error) {
+      console.error('Error al generar PDF de cobros:', error);
+      toast.error('❌ Error al generar el PDF');
+      throw error;
+    }
+  };
+
   return {
     downloadPDF,
     generatePDFFromData,
+    exportCobros,
   };
 };

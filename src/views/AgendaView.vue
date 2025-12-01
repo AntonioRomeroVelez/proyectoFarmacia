@@ -13,14 +13,18 @@
 
     <!-- Calendar Navigation -->
     <b-card class="shadow-sm mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <b-button variant="outline-secondary" size="sm" @click="mesAnterior">
-          ‹ Anterior
-        </b-button>
-        <h5 class="mb-0 fw-bold">{{ mesActualTexto }}</h5>
-        <b-button variant="outline-secondary" size="sm" @click="mesSiguiente">
-          Siguiente ›
-        </b-button>
+      <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+        <button class="btn-nav shadow-sm" @click="mesAnterior" title="Mes Anterior">
+          &#10094;
+        </button>
+
+        <h4 class="mb-0 fw-bold text-primary text-capitalize user-select-none">
+          {{ mesActualTexto }}
+        </h4>
+
+        <button class="btn-nav shadow-sm" @click="mesSiguiente" title="Mes Siguiente">
+          &#10095;
+        </button>
       </div>
 
       <!-- Calendar Grid (Desktop) -->
@@ -28,18 +32,12 @@
         <div v-for="dia in diasSemana" :key="dia" class="calendar-header">
           {{ dia }}
         </div>
-        <div
-          v-for="dia in diasDelMes"
-          :key="dia.fecha"
-          class="calendar-day"
-          :class="{
-            'other-month': !dia.mesActual,
-            'today': dia.esHoy,
-            'selected': dia.fecha === fechaSeleccionada,
-            'has-events': tieneEventos(dia.fecha)
-          }"
-          @click="seleccionarDia(dia)"
-        >
+        <div v-for="dia in diasDelMes" :key="dia.fecha" class="calendar-day" :class="{
+          'other-month': !dia.mesActual,
+          'today': dia.esHoy,
+          'selected': dia.fecha === fechaSeleccionada,
+          'has-events': tieneEventos(dia.fecha)
+        }" @click="seleccionarDia(dia)">
           <div class="day-number">{{ dia.numero }}</div>
           <div v-if="tieneEventos(dia.fecha)" class="event-indicator">
             <span class="badge bg-primary rounded-circle">{{ contarEventos(dia.fecha) }}</span>
@@ -53,17 +51,11 @@
           <small>Toca un día para ver o agregar eventos</small>
         </div>
         <div class="mobile-days-grid">
-          <div
-            v-for="dia in diasDelMesActual"
-            :key="dia.fecha"
-            class="mobile-day-item"
-            :class="{
-              'today': dia.esHoy,
-              'selected': dia.fecha === fechaSeleccionada,
-              'has-events': tieneEventos(dia.fecha)
-            }"
-            @click="seleccionarDia(dia)"
-          >
+          <div v-for="dia in diasDelMesActual" :key="dia.fecha" class="mobile-day-item" :class="{
+            'today': dia.esHoy,
+            'selected': dia.fecha === fechaSeleccionada,
+            'has-events': tieneEventos(dia.fecha)
+          }" @click="seleccionarDia(dia)">
             <div class="mobile-day-number">{{ dia.numero }}</div>
             <div class="mobile-day-name">{{ getNombreDia(dia.fecha) }}</div>
             <div v-if="tieneEventos(dia.fecha)" class="mobile-event-count">
@@ -88,12 +80,8 @@
       </div>
 
       <div v-else class="list-group">
-        <div
-          v-for="evento in eventosDiaSeleccionado"
-          :key="evento.id"
-          class="list-group-item"
-          :class="{ 'bg-light': evento.completada }"
-        >
+        <div v-for="evento in eventosDiaSeleccionado" :key="evento.id" class="list-group-item"
+          :class="{ 'bg-light': evento.completada }">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
               <h6 class="mb-1" :class="{ 'text-decoration-line-through text-muted': evento.completada }">
@@ -107,12 +95,8 @@
               </small>
             </div>
             <div class="d-flex gap-1">
-              <b-button
-                variant="outline-success"
-                size="sm"
-                @click="toggleCompletada(evento)"
-                :title="evento.completada ? 'Marcar como pendiente' : 'Marcar como hecho'"
-              >
+              <b-button variant="outline-success" size="sm" @click="toggleCompletada(evento)"
+                :title="evento.completada ? 'Marcar como pendiente' : 'Marcar como hecho'">
                 {{ evento.completada ? '↩️' : '✓' }}
               </b-button>
               <b-button variant="outline-primary" size="sm" @click="editarEvento(evento)">
@@ -128,21 +112,11 @@
     </b-card>
 
     <!-- Modal Nuevo/Editar Evento -->
-    <b-modal
-      v-model="showModal"
-      :title="eventoEditando ? 'Editar Evento' : 'Nuevo Evento'"
-      @ok="guardarEvento"
-      ok-title="Guardar"
-      cancel-title="Cancelar"
-    >
+    <b-modal v-model="showModal" :title="eventoEditando ? 'Editar Evento' : 'Nuevo Evento'" @ok="guardarEvento"
+      ok-title="Guardar" cancel-title="Cancelar">
       <b-form @submit.prevent="guardarEvento">
         <b-form-group label="Fecha:" label-for="fecha">
-          <b-form-input
-            id="fecha"
-            v-model="formulario.fecha"
-            type="date"
-            required
-          ></b-form-input>
+          <b-form-input id="fecha" v-model="formulario.fecha" type="date" required></b-form-input>
         </b-form-group>
 
         <b-form-group label="Tipo:" label-for="tipo">
@@ -155,21 +129,13 @@
         </b-form-group>
 
         <b-form-group label="Título:" label-for="titulo">
-          <b-form-input
-            id="titulo"
-            v-model="formulario.titulo"
-            placeholder="Ej: Visita Dr. Pérez - Hospital Central"
-            required
-          ></b-form-input>
+          <b-form-input id="titulo" v-model="formulario.titulo" placeholder="Ej: Visita Dr. Pérez - Hospital Central"
+            required></b-form-input>
         </b-form-group>
 
         <b-form-group label="Descripción:" label-for="descripcion">
-          <b-form-textarea
-            id="descripcion"
-            v-model="formulario.descripcion"
-            placeholder="Notas adicionales..."
-            rows="3"
-          ></b-form-textarea>
+          <b-form-textarea id="descripcion" v-model="formulario.descripcion" placeholder="Notas adicionales..."
+            rows="3"></b-form-textarea>
         </b-form-group>
       </b-form>
     </b-modal>
@@ -204,16 +170,18 @@ const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 // Computed
 const mesActualTexto = computed(() => {
   const fecha = new Date(anioActual.value, mesActual.value);
-  return fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const mes = fecha.toLocaleDateString('es-ES', { month: 'long' });
+  const anio = fecha.getFullYear();
+  return `${mes} ${anio}`;
 });
 
 const diasDelMes = computed(() => {
   const primerDia = new Date(anioActual.value, mesActual.value, 1);
   const ultimoDia = new Date(anioActual.value, mesActual.value + 1, 0);
   const diasPrevios = primerDia.getDay();
-  
+
   const dias = [];
-  
+
   // Días del mes anterior
   const ultimoDiaMesAnterior = new Date(anioActual.value, mesActual.value, 0).getDate();
   for (let i = diasPrevios - 1; i >= 0; i--) {
@@ -226,7 +194,7 @@ const diasDelMes = computed(() => {
       esHoy: false
     });
   }
-  
+
   // Días del mes actual
   for (let i = 1; i <= ultimoDia.getDate(); i++) {
     const fecha = new Date(anioActual.value, mesActual.value, i);
@@ -238,7 +206,7 @@ const diasDelMes = computed(() => {
       esHoy: fecha.toDateString() === hoy.toDateString()
     });
   }
-  
+
   // Días del mes siguiente
   const diasRestantes = 42 - dias.length;
   for (let i = 1; i <= diasRestantes; i++) {
@@ -250,7 +218,7 @@ const diasDelMes = computed(() => {
       esHoy: false
     });
   }
-  
+
   return dias;
 });
 
@@ -282,10 +250,10 @@ const formatearFechaDia = (fechaStr) => {
   if (!fechaStr) return '';
   const [y, m, d] = fechaStr.split('-');
   const fecha = new Date(y, m - 1, d);
-  return fecha.toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    day: 'numeric', 
-    month: 'long' 
+  return fecha.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
   });
 };
 
@@ -383,7 +351,7 @@ const confirmarEliminar = (evento) => {
     () => {
       deleteEvento(evento.id);
     },
-    () => {}
+    () => { }
   ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });
 };
 
@@ -547,5 +515,33 @@ fechaSeleccionada.value = formatearFecha(new Date());
 .mobile-event-count .badge {
   font-size: 0.65rem;
   padding: 0.15rem 0.35rem;
+}
+
+/* Navigation Buttons */
+.btn-nav {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.1rem;
+}
+
+.btn-nav:hover {
+  background-color: #f8f9fa;
+  color: #0d6efd;
+  border-color: #0d6efd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(13, 110, 253, 0.1) !important;
+}
+
+.btn-nav:active {
+  transform: translateY(0);
 }
 </style>

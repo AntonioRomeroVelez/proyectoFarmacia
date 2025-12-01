@@ -6,8 +6,8 @@
         <h2 class="fw-bold text-primary mb-1">💰 Registro de Cobros</h2>
         <p class="text-muted mb-0 small">Gestiona los pagos recibidos</p>
       </div>
-      <b-button variant="success" @click="exportarExcel" :disabled="cobros.length === 0">
-        📊 Exportar Excel
+      <b-button variant="danger" @click="exportarPDF" :disabled="cobros.length === 0">
+        📄 Exportar PDF
       </b-button>
     </div>
 
@@ -18,36 +18,21 @@
         <b-row>
           <b-col md="6">
             <b-form-group label="Cliente:" label-for="cliente">
-              <b-form-input
-                id="cliente"
-                v-model="formulario.cliente"
-                placeholder="Nombre del cliente"
-                required
-              ></b-form-input>
+              <b-form-input id="cliente" v-model="formulario.cliente" placeholder="Nombre del cliente"
+                required></b-form-input>
             </b-form-group>
           </b-col>
 
           <b-col md="3">
             <b-form-group label="Fecha:" label-for="fecha">
-              <b-form-input
-                id="fecha"
-                v-model="formulario.fecha"
-                type="date"
-                required
-              ></b-form-input>
+              <b-form-input id="fecha" v-model="formulario.fecha" type="date" required></b-form-input>
             </b-form-group>
           </b-col>
 
           <b-col md="3">
             <b-form-group label="Cantidad:" label-for="cantidad">
-              <b-form-input
-                id="cantidad"
-                v-model.number="formulario.cantidad"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                required
-              ></b-form-input>
+              <b-form-input id="cantidad" v-model.number="formulario.cantidad" type="number" step="0.01"
+                placeholder="0.00" required></b-form-input>
             </b-form-group>
           </b-col>
 
@@ -73,32 +58,21 @@
 
           <b-col md="3">
             <b-form-group label="Nº Factura:" label-for="numeroFactura">
-              <b-form-input
-                id="numeroFactura"
-                v-model="formulario.numeroFactura"
-                placeholder="001-001-000123"
-              ></b-form-input>
+              <b-form-input id="numeroFactura" v-model="formulario.numeroFactura"
+                placeholder="001-001-000123"></b-form-input>
             </b-form-group>
           </b-col>
 
           <b-col md="3">
             <b-form-group label="Nº Recibo:" label-for="numeroRecibo">
-              <b-form-input
-                id="numeroRecibo"
-                v-model="formulario.numeroRecibo"
-                placeholder="REC-001"
-              ></b-form-input>
+              <b-form-input id="numeroRecibo" v-model="formulario.numeroRecibo" placeholder="REC-001"></b-form-input>
             </b-form-group>
           </b-col>
 
           <b-col md="12">
             <b-form-group label="Observaciones:" label-for="observaciones">
-              <b-form-textarea
-                id="observaciones"
-                v-model="formulario.observaciones"
-                placeholder="Notas adicionales..."
-                rows="2"
-              ></b-form-textarea>
+              <b-form-textarea id="observaciones" v-model="formulario.observaciones" placeholder="Notas adicionales..."
+                rows="2"></b-form-textarea>
             </b-form-group>
           </b-col>
         </b-row>
@@ -119,21 +93,13 @@
       <b-row class="align-items-end">
         <b-col md="3">
           <b-form-group label="Fecha Inicio:" label-for="filtroInicio">
-            <b-form-input
-              id="filtroInicio"
-              v-model="filtros.fechaInicio"
-              type="date"
-            ></b-form-input>
+            <b-form-input id="filtroInicio" v-model="filtros.fechaInicio" type="date"></b-form-input>
           </b-form-group>
         </b-col>
 
         <b-col md="3">
           <b-form-group label="Fecha Fin:" label-for="filtroFin">
-            <b-form-input
-              id="filtroFin"
-              v-model="filtros.fechaFin"
-              type="date"
-            ></b-form-input>
+            <b-form-input id="filtroFin" v-model="filtros.fechaFin" type="date"></b-form-input>
           </b-form-group>
         </b-col>
 
@@ -298,12 +264,12 @@
 import { ref, computed } from 'vue';
 import { useCobros } from '@/composables/useCobros';
 import { useToast } from 'vue-toastification';
-import { useExcelHandler } from '@/utils/excelHandler';
+import { usePDFGenerator } from '@/utils/pdfGenerator';
 import alertify from 'alertifyjs';
 
 const toast = useToast();
 const { cobros, addCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
-const { exportarCobrosExcel } = useExcelHandler();
+const { exportCobros } = usePDFGenerator();
 
 const formulario = ref({
   cliente: '',
@@ -419,13 +385,13 @@ const confirmarBorrarTodos = () => {
   ).set('labels', { ok: 'Sí, Borrar Todos', cancel: 'Cancelar' });
 };
 
-const exportarExcel = () => {
+const exportarPDF = () => {
   if (cobrosFiltrados.value.length === 0) {
     toast.warning('No hay cobros para exportar');
     return;
   }
 
-  exportarCobrosExcel(cobrosFiltrados.value);
+  exportCobros(cobrosFiltrados.value);
 };
 </script>
 

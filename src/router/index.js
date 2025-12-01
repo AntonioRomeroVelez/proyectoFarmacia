@@ -14,6 +14,8 @@ import Login from "@/views/LoginView.vue";
 import Historial from "@/views/HistorialView.vue";
 import Agenda from "@/views/AgendaView.vue";
 import Cobros from "@/views/CobrosView.vue";
+import Backup from "@/views/BackupView.vue";
+import EventosList from "@/views/EventosListView.vue";
 
 const routes = [
   {
@@ -43,6 +45,7 @@ const routes = [
       { path: "carrito", component: Carrito },
       { path: "historial", component: Historial },
       { path: "agenda", component: Agenda },
+      { path: "eventos-list", component: EventosList },
       { path: "cobros", component: Cobros },
       { path: "visitas", component: Visitas },
       {
@@ -58,6 +61,11 @@ const routes = [
       {
         path: "usuarios",
         component: () => import("@/views/UsersManagementView.vue"),
+        meta: { requiresAdmin: true }
+      },
+      {
+        path: "backup",
+        component: Backup,
         meta: { requiresAdmin: true }
       },
     ],
