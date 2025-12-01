@@ -57,13 +57,13 @@
         <h2>📤 Exportar Datos</h2>
         <p>Descarga todos tus datos en un archivo JSON</p>
       </div>
-      
+
       <div class="export-options">
         <button @click="exportAllData" class="btn btn-primary">
           <span class="icon">⬇️</span>
           Descargar Backup Completo
         </button>
-        
+
         <button @click="exportSelectedData" class="btn btn-secondary">
           <span class="icon">📋</span>
           Exportar Selección
@@ -111,16 +111,16 @@
       </div>
 
       <div class="import-zone">
-        <input type="file" ref="fileInput" @change="handleFileSelect" accept=".json" style="display: none" />
-        
+        <input type="file" ref="fileInput" @change="handleFileSelect" accept=".json,.zip" style="display: none" />
+
         <div class="import-icon">📁</div>
         <p class="import-text">
-          <strong>Selecciona tu archivo JSON</strong>
+          <strong>Selecciona tu archivo JSON o ZIP</strong>
         </p>
         <button @click="triggerFileInput" class="btn-select-file">
           📂 Seleccionar Archivo
         </button>
-        <p class="import-hint">Formatos aceptados: .json</p>
+        <p class="import-hint">Formatos aceptados: .json, .zip</p>
       </div>
 
       <div class="import-options">
@@ -246,6 +246,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAutoBackup } from '@/composables/useAutoBackup';
+import JSZip from 'jszip';
 
 // Composable de backup automático
 const {
@@ -340,7 +341,7 @@ const exportAllData = () => {
 // Exportar datos seleccionados
 const exportSelectedData = () => {
   showExportOptions.value = !showExportOptions.value;
-  
+
   if (!showExportOptions.value) {
     const backupData = {
       exportDate: new Date().toISOString(),
@@ -360,17 +361,72 @@ const exportSelectedData = () => {
   }
 };
 
-// Descargar JSON
-const downloadJSON = (data, filename) => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+// Descargar JSON (mejorado para móviles)
+// Descargar JSON comprimido en ZIP
+const downloadJSON = async (data, filename) => {
+  try {
+    const zip = new JSZip();
+    const jsonString = JSON.stringify(data, null, 2);
+
+    // Agregar archivo JSON al ZIP
+    zip.file(filename, jsonString);
+
+    // Generar el archivo ZIP
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const zipFilename = filename.replace('.json', '.zip');
+
+    // Detectar si es móvil
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Opción 1: Intentar usar Web Share API con el ZIP
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([zipBlob], zipFilename, { type: 'application/zip' })] })) {
+        try {
+          const file = new File([zipBlob], zipFilename, { type: 'application/zip' });
+          await navigator.share({
+            files: [file],
+            title: 'Backup de Farmacia (ZIP)',
+            text: 'Archivo de respaldo comprimido'
+          });
+          showToast('✅ Archivo ZIP compartido exitosamente', 'success');
+          return;
+        } catch (error) {
+          console.log('Share API failed, trying download');
+        }
+      }
+    }
+
+    // Descarga tradicional del ZIP
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = zipFilename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+
+    showToast('✅ Backup comprimido descargado (.zip)', 'success');
+
+  } catch (error) {
+    console.error('Error generando ZIP:', error);
+    showToast('❌ Error al comprimir el archivo', 'error');
+
+    // Fallback: descargar JSON normal si falla el ZIP
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 // Manejar selección de archivo
@@ -385,23 +441,54 @@ const handleFileSelect = (event) => {
   }
 };
 
-// Leer archivo JSON
-const readFile = (file) => {
-  const reader = new FileReader();
-  reader.onload = (e) => {
+// Leer archivo (JSON o ZIP)
+const readFile = async (file) => {
+  try {
+    let jsonContent = '';
+
+    // Si es un archivo ZIP
+    if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
+      try {
+        const zip = new JSZip();
+        const zipContent = await zip.loadAsync(file);
+
+        // Buscar el primer archivo JSON dentro del ZIP
+        const jsonFileName = Object.keys(zipContent.files).find(name => name.endsWith('.json'));
+
+        if (jsonFileName) {
+          jsonContent = await zipContent.file(jsonFileName).async('string');
+          showToast('📦 Archivo ZIP descomprimido correctamente', 'success');
+        } else {
+          showToast('❌ El archivo ZIP no contiene ningún archivo JSON', 'error');
+          return;
+        }
+      } catch (error) {
+        console.error('Error leyendo ZIP:', error);
+        showToast('❌ Error al leer el archivo ZIP', 'error');
+        return;
+      }
+    } else {
+      // Leer como texto normal (JSON)
+      jsonContent = await file.text();
+    }
+
+// Parsear el contenido JSON
     try {
-      const data = JSON.parse(e.target.result);
+      const data = JSON.parse(jsonContent);
       if (data.data) {
         importPreview.value = data.data;
         pendingImportData.value = data;
       } else {
-        showToast('❌ Formato de archivo inválido', 'error');
+        showToast('❌ Formato de datos inválido', 'error');
       }
     } catch (error) {
-      showToast('❌ Error al leer el archivo JSON', 'error');
+      showToast('❌ Error al parsear el JSON', 'error');
     }
-  };
-  reader.readAsText(file);
+
+  } catch (error) {
+    console.error('Error general:', error);
+    showToast('❌ Error al procesar el archivo', 'error');
+  }
 };
 
 // Confirmar importación
