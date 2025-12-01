@@ -26,54 +26,73 @@
       </div>
 
       <nav class="sidebar-nav">
+        <!-- Principal -->
         <router-link to="/" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-house-door"></i> Inicio
+          <i class="bi bi-house-door-fill"></i> Inicio
         </router-link>
+
+        <!-- Ventas -->
+        <div class="nav-section-title">Ventas</div>
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-box-seam"></i> Productos
         </router-link>
         <router-link to="/carrito" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-cart"></i> Carrito
+          <i class="bi bi-cart3"></i> Carrito
         </router-link>
         <router-link v-if="documents.length > 0" to="/historial" class="nav-item" active-class="active"
           @click="closeSidebarOnMobile">
           <i class="bi bi-clock-history"></i> Historial
         </router-link>
+
+        <!-- Gestión Comercial -->
+        <div class="nav-section-title">Gestión Comercial</div>
+        <router-link to="/clientes" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-people-fill"></i> Clientes
+        </router-link>
+        <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-geo-alt-fill"></i> Visitas
+        </router-link>
+        <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-cash-coin"></i> Cobros
+        </router-link>
+
+        <!-- Agenda -->
+        <div class="nav-section-title">Agenda</div>
         <router-link to="/agenda" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-calendar3"></i> Calendario
         </router-link>
         <router-link to="/eventos-list" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-list-check"></i> Eventos
         </router-link>
-        <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-cash-coin"></i> Cobros
-        </router-link>
-        <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-geo-alt"></i> Visitas
+
+        <!-- Reportes -->
+        <div class="nav-section-title">Reportes</div>
+        <router-link to="/estadisticas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-bar-chart-fill"></i> Estadísticas
         </router-link>
         <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-file-earmark-pdf"></i> Reportes PDF
+          <i class="bi bi-file-earmark-pdf"></i> PDF
         </router-link>
 
-        <div v-if="isAdmin" class="my-2 border-top"></div>
-
-        <router-link v-if="isAdmin" to="/crear-producto" class="nav-item" active-class="active"
-          @click="closeSidebarOnMobile">
-          <i class="bi bi-plus-circle"></i> Registrar Producto
-        </router-link>
-        <router-link v-if="isAdmin" to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-file-earmark-excel"></i> Carga Excel
-        </router-link>
-        <router-link v-if="isAdmin" to="/comparacion" class="nav-item" active-class="active"
-          @click="closeSidebarOnMobile">
-          <i class="bi bi-diagram-3"></i> Comparación
-        </router-link>
-        <router-link v-if="isAdmin" to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-people"></i> Usuarios
-        </router-link>
-        <router-link v-if="isAdmin" to="/backup" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-database"></i> Backup/Restaurar
-        </router-link>
+        <!-- Administración (solo admin) -->
+        <template v-if="isAdmin">
+          <div class="nav-section-title">Administración</div>
+          <router-link to="/crear-producto" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+            <i class="bi bi-plus-circle"></i> Nuevo Producto
+          </router-link>
+          <router-link to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+            <i class="bi bi-file-earmark-excel"></i> Carga Excel
+          </router-link>
+          <router-link to="/comparacion" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+            <i class="bi bi-diagram-3"></i> Comparación
+          </router-link>
+          <router-link to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+            <i class="bi bi-people"></i> Usuarios
+          </router-link>
+          <router-link to="/backup" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+            <i class="bi bi-database"></i> Backup
+          </router-link>
+        </template>
       </nav>
 
       <div class="sidebar-footer">
@@ -161,8 +180,35 @@ const removeActivityListeners = () => {
   if (inactivityTimer) clearTimeout(inactivityTimer);
 };
 
+import { useAgenda } from '@/composables/useAgenda';
+
+const { eventos } = useAgenda();
+
 onMounted(() => {
   setupActivityListeners();
+
+  // Verificar eventos vencidos al cargar
+  const hoy = new Date().toISOString().split('T')[0];
+  const vencidos = eventos.value.filter(e => e.fecha < hoy && !e.completada).length;
+
+  if (vencidos > 0) {
+    // Pequeño delay para asegurar que la UI cargó
+    setTimeout(() => {
+      toast.error(`⚠️ Tienes ${vencidos} evento(s) vencido(s). Revisa tu agenda.`, {
+        timeout: 5000,
+        closeOnClick: true,
+        pauseOnFocusLoss: true,
+        pauseOnHover: true,
+        draggable: true,
+        draggablePercent: 0.6,
+        showCloseButtonOnHover: false,
+        hideProgressBar: false,
+        closeButton: "button",
+        icon: true,
+        rtl: false
+      });
+    }, 1000);
+  }
 });
 
 onUnmounted(() => {
@@ -291,6 +337,19 @@ const handleLogout = () => {
   overflow-y: auto;
 }
 
+.nav-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+  padding: 1rem 1rem 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nav-section-title:first-child {
+  margin-top: 0;
+}
 .nav-item {
   display: flex;
   align-items: center;

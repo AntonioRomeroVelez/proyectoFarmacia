@@ -12,6 +12,27 @@
 
     </div>
 
+    <!-- Alerta de Eventos Vencidos -->
+    <div v-if="eventosVencidos > 0" class="row mb-4">
+      <div class="col-12">
+        <div class="alert alert-danger shadow-sm d-flex align-items-center justify-content-between mb-0" role="alert">
+          <div class="d-flex align-items-center">
+            <div class="bg-danger text-white rounded-circle p-2 me-3 d-flex align-items-center justify-content-center"
+              style="width: 40px; height: 40px;">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div>
+              <h5 class="alert-heading mb-0 fw-bold">¡Atención! Tienes {{ eventosVencidos }} evento(s) vencido(s)</h5>
+              <p class="mb-0 small">Revisa tu agenda para ponerte al día con las tareas pendientes.</p>
+            </div>
+          </div>
+          <router-link to="/eventos-list" class="btn btn-light text-danger fw-bold btn-sm">
+            Ver Vencidos
+          </router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick Actions Section -->
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6">
@@ -218,7 +239,7 @@ import { useAgenda } from "@/composables/useAgenda";
 import { useCobros } from "@/composables/useCobros";
 
 const { cartCount, cartTotal } = useCart();
-const { getEventosPorFecha } = useAgenda();
+const { getEventosPorFecha, eventos } = useAgenda();
 const { cobros, getTotalCobros } = useCobros();
 
 const recentVisits = ref([]);
@@ -237,6 +258,12 @@ const fechaActual = computed(() => {
     month: 'long',
     day: 'numeric'
   });
+});
+
+// Eventos vencidos
+const eventosVencidos = computed(() => {
+  const hoy = new Date().toISOString().split('T')[0];
+  return eventos.value.filter(e => e.fecha < hoy && !e.completada).length;
 });
 
 // Eventos de hoy

@@ -155,10 +155,38 @@
 
     <!-- Modal de Datos del Cliente -->
     <b-modal v-model="showClientModal" title="Datos del Cliente" @ok="confirmarExportacion" ok-title="Generar"
-      cancel-title="Cancelar">
+      cancel-title="Cancelar" size="lg">
       <b-form>
-        <b-form-group label="Nombre del Cliente:" label-for="cliente-modal" class="mb-3">
-          <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente" required />
+        <!-- Selector de Cliente -->
+        <b-form-group label="Cliente:" label-for="cliente-selector" class="mb-3">
+          <div class="d-flex gap-2 mb-2">
+            <b-button :variant="modoCliente === 'registrado' ? 'primary' : 'outline-primary'" size="sm"
+              @click="cambiarModoCliente('registrado')">
+              📋 Cliente Registrado
+            </b-button>
+            <b-button :variant="modoCliente === 'manual' ? 'primary' : 'outline-primary'" size="sm"
+              @click="cambiarModoCliente('manual')">
+              ✏️ Nombre Manual
+            </b-button>
+          </div>
+
+          <!-- Selector de cliente registrado -->
+          <div v-if="modoCliente === 'registrado'">
+            <select v-model="clienteSeleccionadoId" class="form-select" @change="onClienteSeleccionado">
+              <option value="">Seleccione un cliente...</option>
+              <option v-for="cliente in clientesOrdenados" :key="cliente.id" :value="cliente.id">
+                {{ cliente.nombre }} {{ cliente.empresa ? `- ${cliente.empresa}` : '' }}
+              </option>
+            </select>
+            <small class="text-muted">Selecciona un cliente de tu lista registrada</small>
+          </div>
+
+          <!-- Input manual -->
+          <div v-else>
+            <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente"
+              required />
+            <small class="text-muted">Escribe el nombre del cliente manualmente</small>
+          </div>
         </b-form-group>
 
         <b-form-group label="Ciudad:" label-for="ciudad-modal" class="mb-3">
@@ -186,12 +214,14 @@ import { useToast } from "vue-toastification";
 import { useAuth } from "@/composables/useAuth";
 import { useUsuarios } from "@/composables/useUsuarios";
 import { useHistorial } from "@/composables/useHistorial";
+import { useClientes } from "@/composables/useClientes";
 import alertify from "alertifyjs";
 
 const toast = useToast();
 const { userName } = useAuth();
 const { users } = useUsuarios();
 const { saveDocument } = useHistorial();
+const { clientes, clientesOrdenados, getClienteById } = useClientes();
 
 const {
   cart,
@@ -209,6 +239,8 @@ const { exportCartToExcel, exportToExcel, exportCustomExcel } =
   useExcelHandler();
 
 // Estado del formulario de cliente
+const modoCliente = ref('registrado'); // 'registrado' o 'manual'
+const clienteSeleccionadoId = ref('');
 const clienteNombre = ref("");
 const ciudad = ref("");
 const vendedorNombre = ref("");
@@ -244,6 +276,29 @@ const handleClearCart = () => {
     .set("labels", { ok: "Sí, Vaciar", cancel: "Cancelar" });
 };
 
+// Cambiar modo de selección de cliente
+const cambiarModoCliente = (modo) => {
+  modoCliente.value = modo;
+  if (modo === 'manual') {
+    clienteSeleccionadoId.value = '';
+    clienteNombre.value = '';
+    ciudad.value = '';
+  } else {
+    clienteNombre.value = '';
+  }
+};
+
+// Cuando se selecciona un cliente registrado
+const onClienteSeleccionado = () => {
+  if (clienteSeleccionadoId.value) {
+    const cliente = getClienteById(clienteSeleccionadoId.value);
+    if (cliente) {
+      clienteNombre.value = cliente.nombre;
+      ciudad.value = cliente.ciudad || '';
+    }
+  }
+};
+
 // Preparar exportación (abrir modal)
 const prepararExportacion = (tipo) => {
   if (cartItemsWithPromotions.value.length === 0) {
@@ -256,51 +311,49 @@ const prepararExportacion = (tipo) => {
 
 // Confirmar exportación desde el modal
 const confirmarExportacion = (bvModalEvent) => {
-  if (!clienteNombre.value.trim()) {
-    bvModalEvent.preventDefault(); // Evitar cierre del modal
+  // Validar según el modo
+  if (modoCliente.value === 'registrado' && !clienteSeleccionadoId.value) {
+    bvModalEvent.preventDefault();
+    toast.warning("⚠️ Por favor seleccione un cliente");
+    return;
+  }
+
+  if (modoCliente.value === 'manual' && !clienteNombre.value.trim()) {
+    bvModalEvent.preventDefault();
     toast.warning("⚠️ Por favor ingrese el nombre del cliente");
     return;
   }
 
   // Ejecutar la acción pendiente
+  const documentData = {
+    clientName: clienteNombre.value,
+    clienteId: modoCliente.value === 'registrado' ? clienteSeleccionadoId.value : null,
+    date: fecha.value,
+    items: [...cartItemsWithPromotions.value],
+    totals: {
+      total: cartTotal.value,
+      subtotal: cartSubtotal.value,
+      iva: cartTotalIVA.value
+    }
+  };
+
   if (pendingAction.value === "proforma") {
     generarProformaPDF();
     saveDocument({
       type: 'Proforma',
-      clientName: clienteNombre.value,
-      date: fecha.value,
-      items: [...cartItemsWithPromotions.value],
-      totals: {
-        total: cartTotal.value,
-        subtotal: cartSubtotal.value,
-        iva: cartTotalIVA.value
-      }
+      ...documentData
     });
   } else if (pendingAction.value === "pedido") {
     generarPedidoExcel();
     saveDocument({
       type: 'Pedido',
-      clientName: clienteNombre.value,
-      date: fecha.value,
-      items: [...cartItemsWithPromotions.value],
-      totals: {
-        total: cartTotal.value,
-        subtotal: cartSubtotal.value,
-        iva: cartTotalIVA.value
-      }
+      ...documentData
     });
   } else if (pendingAction.value === "pdf") {
     exportarListaPrecioPDF();
     saveDocument({
       type: 'Lista de Precios',
-      clientName: clienteNombre.value,
-      date: fecha.value,
-      items: [...cartItemsWithPromotions.value],
-      totals: {
-        total: cartTotal.value,
-        subtotal: cartSubtotal.value,
-        iva: cartTotalIVA.value
-      }
+      ...documentData
     });
   }
 

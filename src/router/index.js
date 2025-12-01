@@ -16,6 +16,9 @@ import Agenda from "@/views/AgendaView.vue";
 import Cobros from "@/views/CobrosView.vue";
 import Backup from "@/views/BackupView.vue";
 import EventosList from "@/views/EventosListView.vue";
+import Estadisticas from "@/views/EstadisticasView.vue";
+import Clientes from "@/views/ClientesView.vue";
+import ClienteDetalle from "@/views/ClienteDetalleView.vue";
 
 const routes = [
   {
@@ -68,6 +71,9 @@ const routes = [
         component: Backup,
         meta: { requiresAdmin: true }
       },
+      { path: "estadisticas", component: Estadisticas },
+      { path: "clientes", component: Clientes },
+      { path: "clientes/:id", component: ClienteDetalle },
     ],
   },
 ];
