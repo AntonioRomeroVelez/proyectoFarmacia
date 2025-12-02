@@ -84,6 +84,9 @@ export function useAuth() {
     // Solo funciona si hay usuario autenticado
     if (!currentUser.value) return;
 
+    // Guardar timestamp de última actividad para PWA
+    localStorage.setItem('lastActivityTime', Date.now().toString());
+
     // Limpiar temporizadores existentes
     if (inactivityTimer) clearTimeout(inactivityTimer);
     if (warningTimer) clearTimeout(warningTimer);
@@ -126,6 +129,7 @@ export function useAuth() {
     showInactivityWarning.value = false;
     currentUser.value = null;
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("lastActivityTime");
 
     // Remover listeners
     removeInactivityListeners();
@@ -145,12 +149,47 @@ export function useAuth() {
     toast.success("✅ Sesión extendida");
   };
 
+  // Función para verificar tiempo transcurrido (para PWA)
+  const checkElapsedTime = () => {
+    if (!currentUser.value) return;
+
+    const lastActivity = localStorage.getItem('lastActivityTime');
+    if (lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity);
+
+      // Si pasó el tiempo de inactividad, cerrar sesión
+      if (elapsed >= INACTIVITY_TIMEOUT) {
+        forceLogout();
+        return;
+      }
+
+      // Si está cerca del límite, mostrar advertencia
+      const timeUntilWarning = INACTIVITY_TIMEOUT - WARNING_TIME - elapsed;
+      if (timeUntilWarning <= 0 && elapsed < INACTIVITY_TIMEOUT) {
+        // Calcular segundos restantes
+        const secondsRemaining = Math.ceil((INACTIVITY_TIMEOUT - elapsed) / 1000);
+        remainingSeconds.value = secondsRemaining;
+        startWarningCountdown();
+      }
+    }
+  };
+
+  // Listener para cuando la app vuelve a estar visible (PWA)
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      checkElapsedTime();
+    }
+  };
+
   // Configurar listeners de actividad
   const setupInactivityListeners = () => {
     const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
     events.forEach((event) => {
       window.addEventListener(event, resetInactivityTimer);
     });
+
+    // Agregar listener de visibilidad para PWA
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   };
 
   // Remover listeners de actividad
@@ -159,6 +198,9 @@ export function useAuth() {
     events.forEach((event) => {
       window.removeEventListener(event, resetInactivityTimer);
     });
+
+    // Remover listener de visibilidad
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   };
 
   // Login
@@ -225,6 +267,7 @@ export function useAuth() {
 
     currentUser.value = null;
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("lastActivityTime");
     showInactivityWarning.value = false;
 
     toast.info("Sesión cerrada");
