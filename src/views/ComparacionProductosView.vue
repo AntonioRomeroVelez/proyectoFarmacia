@@ -598,7 +598,7 @@ const descargarExcel = async () => {
         PVP: parseFloat(p.PVP || 0).toFixed(3),
         Promocion: p.Promocion,
         Descuento: p.Descuento,
-        IVA: p.IVA,
+        IVA: p.IVA || 0,
         Detalle_Cambios: [
           p.cambios?.P_Farmacia ? `Precio: ${p.cambios.P_Farmacia.anterior} -> ${p.cambios.P_Farmacia.nuevo}` : '',
           p.cambios?.PVP ? `PVP: ${p.cambios.PVP.anterior} -> ${p.cambios.PVP.nuevo}` : '',
