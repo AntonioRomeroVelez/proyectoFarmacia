@@ -67,6 +67,9 @@
 
         <!-- Reportes -->
         <div class="nav-section-title">Reportes</div>
+        <router-link to="/inventario-visual" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-grid-3x3-gap-fill"></i> Inventario Visual
+        </router-link>
         <router-link to="/estadisticas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-bar-chart-fill"></i> Estadísticas
         </router-link>

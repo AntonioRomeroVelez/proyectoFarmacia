@@ -30,10 +30,11 @@
 
         <!-- Filtros Select -->
         <b-col md="12" lg="3">
-          <b-form-select v-model="filtroMarca" class="form-select">
-            <option value="">Marca</option>
+          <input v-model="filtroMarca" list="marcas-list" class="form-control" placeholder="🏷️ Buscar marca..."
+            @input="onMarcaInput" />
+          <datalist id="marcas-list">
             <option v-for="m in opcionesMarcas" :key="m" :value="m">{{ m }}</option>
-          </b-form-select>
+          </datalist>
         </b-col>
 
         <!-- <b-col md="12" lg="3">
@@ -188,6 +189,16 @@ const paginatedProducts = computed(() => {
 
 const opcionesMarcas = ref([]);
 const opcionesPresentaciones = ref([]);
+
+// Validar marca ingresada
+const onMarcaInput = () => {
+  // Si la marca no está en la lista de opciones, limpiarla después de un delay
+  setTimeout(() => {
+    if (filtroMarca.value && !opcionesMarcas.value.includes(filtroMarca.value)) {
+      // Permitir búsqueda parcial, no limpiar automáticamente
+    }
+  }, 100);
+};
 
 onMounted(() => {
   cargarProductos();
