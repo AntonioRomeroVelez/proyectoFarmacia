@@ -34,14 +34,14 @@
         <!-- Ventas -->
         <div class="nav-section-title">Ventas</div>
         <router-link to="/productos" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-box-seam"></i> Productos
+          <i class="bi bi-box-seam"></i> Catálogo de Productos
         </router-link>
         <router-link to="/carrito" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-cart3"></i> Carrito
+          <i class="bi bi-cart3"></i> Carrito de Compras
         </router-link>
         <router-link v-if="documents.length > 0" to="/historial" class="nav-item" active-class="active"
           @click="closeSidebarOnMobile">
-          <i class="bi bi-clock-history"></i> Historial
+          <i class="bi bi-clock-history"></i> Historial de Ventas
         </router-link>
 
         <!-- Gestión Comercial -->
@@ -50,10 +50,10 @@
           <i class="bi bi-people-fill"></i> Clientes
         </router-link>
         <router-link to="/visitas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-geo-alt-fill"></i> Visitas
+          <i class="bi bi-geo-alt-fill"></i> Visitas Diarias
         </router-link>
         <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-cash-coin"></i> Cobros
+          <i class="bi bi-cash-coin"></i> Gestión de Cobros
         </router-link>
 
         <!-- Agenda -->
@@ -62,7 +62,7 @@
           <i class="bi bi-calendar3"></i> Calendario
         </router-link>
         <router-link to="/eventos-list" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-list-check"></i> Eventos
+          <i class="bi bi-list-check"></i> Lista de Eventos
         </router-link>
 
         <!-- Reportes -->
@@ -71,26 +71,26 @@
           <i class="bi bi-bar-chart-fill"></i> Estadísticas
         </router-link>
         <router-link to="/pdf" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-          <i class="bi bi-file-earmark-pdf"></i> PDF
+          <i class="bi bi-file-earmark-pdf"></i> Generar PDF
         </router-link>
 
         <!-- Administración (solo admin) -->
         <template v-if="isAdmin">
           <div class="nav-section-title">Administración</div>
           <router-link to="/crear-producto" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-            <i class="bi bi-plus-circle"></i> Nuevo Producto
+            <i class="bi bi-plus-circle"></i> Crear Producto
           </router-link>
           <router-link to="/excel" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-            <i class="bi bi-file-earmark-excel"></i> Carga Excel
+            <i class="bi bi-file-earmark-excel"></i> Importar/Exportar
           </router-link>
           <router-link to="/comparacion" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-            <i class="bi bi-diagram-3"></i> Comparación
+            <i class="bi bi-diagram-3"></i> Comparar Productos
           </router-link>
           <router-link to="/usuarios" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-            <i class="bi bi-people"></i> Usuarios
+            <i class="bi bi-people"></i> Gestión de Usuarios
           </router-link>
           <router-link to="/backup" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
-            <i class="bi bi-database"></i> Backup
+            <i class="bi bi-database"></i> Respaldo de Datos
           </router-link>
         </template>
       </nav>
@@ -350,6 +350,7 @@ const handleLogout = () => {
 .nav-section-title:first-child {
   margin-top: 0;
 }
+
 .nav-item {
   display: flex;
   align-items: center;

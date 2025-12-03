@@ -172,14 +172,18 @@
       </div>
 
       <!-- Información del último backup -->
-      <div v-if="lastBackupDate" class="backup-info">
+      <div v-if="lastBackupInfo" class="backup-info">
         <div class="info-item">
           <span class="info-label">📅 Último backup automático:</span>
           <span class="info-value">{{ formatLastBackupDate }}</span>
         </div>
+        <div v-if="lastBackupInfo.stats" class="info-item">
+          <span class="info-label">📋 Contenido del último backup:</span>
+          <span class="info-value">{{ formatBackupStats(lastBackupInfo.stats) }}</span>
+        </div>
         <div class="info-item">
           <span class="info-label">📦 Backups guardados:</span>
-          <span class="info-value">{{ autoBackups.length }} / 7</span>
+          <span class="info-value">{{ autoBackups.length }} (últimos 7 días)</span>
         </div>
       </div>
 
@@ -204,6 +208,9 @@
             <div class="backup-details">
               <strong>{{ backup.dateFormatted }}</strong>
               <small>{{ backup.auto ? 'Automático' : 'Manual' }}</small>
+              <div v-if="backup.stats" class="backup-stats">
+                {{ formatBackupStats(backup.stats) }}
+              </div>
             </div>
           </div>
           <div class="backup-item-actions">
@@ -219,7 +226,8 @@
 
       <div v-else class="no-backups">
         <p>📭 No hay backups automáticos guardados</p>
-        <small>El sistema creará backups automáticos a las 7:00 PM si hay cambios</small>
+        <small>El sistema creará backups automáticos después de las 7:00 PM si hay cambios (se mantienen por 7
+          días)</small>
       </div>
     </div>
 
@@ -472,7 +480,7 @@ const readFile = async (file) => {
       jsonContent = await file.text();
     }
 
-// Parsear el contenido JSON
+    // Parsear el contenido JSON
     try {
       const data = JSON.parse(jsonContent);
       if (data.data) {
@@ -572,6 +580,25 @@ const formatLastBackupDate = computed(() => {
     hour: '2-digit',
     minute: '2-digit'
   });
+});
+
+// Formatear estadísticas del backup
+const formatBackupStats = (stats) => {
+  if (!stats) return '';
+  const parts = [];
+  if (stats.productos > 0) parts.push(`${stats.productos} producto${stats.productos !== 1 ? 's' : ''}`);
+  if (stats.usuarios > 0) parts.push(`${stats.usuarios} usuario${stats.usuarios !== 1 ? 's' : ''}`);
+  if (stats.visitas > 0) parts.push(`${stats.visitas} visita${stats.visitas !== 1 ? 's' : ''}`);
+  if (stats.eventos > 0) parts.push(`${stats.eventos} evento${stats.eventos !== 1 ? 's' : ''}`);
+  if (stats.cobros > 0) parts.push(`${stats.cobros} cobro${stats.cobros !== 1 ? 's' : ''}`);
+  if (stats.historial > 0) parts.push(`${stats.historial} historial${stats.historial !== 1 ? 'es' : ''}`);
+  return parts.length > 0 ? parts.join(', ') : 'Sin datos';
+};
+
+// Computed property para obtener la información del último backup
+const lastBackupInfo = computed(() => {
+  if (autoBackups.value.length === 0) return null;
+  return autoBackups.value[0]; // Los backups están ordenados por fecha descendente
 });
 
 onMounted(() => {
@@ -942,6 +969,12 @@ onMounted(() => {
   font-size: 0.85rem;
 }
 
+.backup-stats {
+  color: #667eea;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
 .backup-item-actions {
   display: flex;
   gap: 0.5rem;

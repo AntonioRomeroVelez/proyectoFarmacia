@@ -64,11 +64,36 @@ export function useAutoBackup() {
     return 'Usuario';
   };
 
+  // Calcular estadísticas del backup
+  const calculateBackupStats = (data) => {
+    return {
+      productos: Array.isArray(data.productos) ? data.productos.length : 0,
+      usuarios: Array.isArray(data.usuarios) ? data.usuarios.length : 0,
+      visitas: Array.isArray(data.visitas) ? data.visitas.length : 0,
+      historial: Array.isArray(data.historial) ? data.historial.length : 0,
+      eventos: Array.isArray(data.agenda) ? data.agenda.length : 0,
+      cobros: Array.isArray(data.cobros) ? data.cobros.length : 0
+    };
+  };
+
   // Crear backup automático
   const createAutoBackup = () => {
     const now = new Date();
     const userName = getCurrentUser();
     
+    const data = {
+      productos: JSON.parse(localStorage.getItem(STORAGE_KEYS.productos) || '[]'),
+      usuarios: JSON.parse(localStorage.getItem(STORAGE_KEYS.usuarios) || '[]'),
+      visitas: JSON.parse(localStorage.getItem(STORAGE_KEYS.visitas) || '[]'),
+      historial: JSON.parse(localStorage.getItem(STORAGE_KEYS.historial) || '[]'),
+      agenda: JSON.parse(localStorage.getItem(STORAGE_KEYS.agenda) || '[]'),
+      cobros: JSON.parse(localStorage.getItem(STORAGE_KEYS.cobros) || '[]'),
+      currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
+      cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
+    };
+
+    const stats = calculateBackupStats(data);
+
     const backupData = {
       id: `backup_${now.getTime()}`,
       date: now.toISOString(),
@@ -84,24 +109,17 @@ export function useAutoBackup() {
       userName: userName,
       version: '1.0',
       auto: true,
-      data: {
-        productos: JSON.parse(localStorage.getItem(STORAGE_KEYS.productos) || '[]'),
-        usuarios: JSON.parse(localStorage.getItem(STORAGE_KEYS.usuarios) || '[]'),
-        visitas: JSON.parse(localStorage.getItem(STORAGE_KEYS.visitas) || '[]'),
-        historial: JSON.parse(localStorage.getItem(STORAGE_KEYS.historial) || '[]'),
-        agenda: JSON.parse(localStorage.getItem(STORAGE_KEYS.agenda) || '[]'),
-        cobros: JSON.parse(localStorage.getItem(STORAGE_KEYS.cobros) || '[]'),
-        currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
-        cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
-      }
+      stats: stats,
+      data: data
     };
 
     // Guardar backup en localStorage
     const existingBackups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
     existingBackups.push(backupData);
     
-    // Mantener solo los últimos 7 backups
-    const recentBackups = existingBackups.slice(-7);
+    // Mantener backups de los últimos 7 días (en lugar de solo los últimos 7 backups)
+    const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000); // 7 días en milisegundos
+    const recentBackups = existingBackups.filter(backup => backup.timestamp >= sevenDaysAgo);
     localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(recentBackups));
     
     // Actualizar hash de datos
@@ -121,22 +139,22 @@ export function useAutoBackup() {
     return backupData;
   };
 
-  // Verificar si es hora de hacer backup (7 PM)
+  // Verificar si es hora de hacer backup (después de las 7 PM)
   const checkBackupTime = () => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
     
-    // Verificar si es la hora de backup (7 PM, con ventana de 5 minutos)
-    if (currentHour === BACKUP_HOUR && currentMinute < 5) {
+    // Verificar si es después de las 7 PM (19:00)
+    if (currentHour >= BACKUP_HOUR) {
       const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
-      const today = new Date().toDateString();
+
+      // Permitir múltiples backups por día, pero con un intervalo mínimo de 1 hora
+      const oneHourAgo = now.getTime() - (60 * 60 * 1000); // 1 hora en milisegundos
       
-      // Verificar si ya se hizo backup hoy
-      if (!lastBackup || new Date(lastBackup).toDateString() !== today) {
+      if (!lastBackup || new Date(lastBackup).getTime() < oneHourAgo) {
         // Verificar si hay cambios
         if (checkForChanges()) {
-          console.log('🔄 Ejecutando backup automático a las 7 PM...');
+          console.log('🔄 Ejecutando backup automático después de las 7 PM...');
           createAutoBackup();
         }
       }
