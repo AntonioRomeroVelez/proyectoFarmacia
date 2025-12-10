@@ -1,31 +1,36 @@
-import { ref, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
-
-const STORAGE_KEY = 'farmacia_agenda';
+import { dbService } from '@/services/db';
 
 // Estado compartido
 const eventos = ref([]);
 const isLoaded = ref(false);
+let loadingPromise = null;
 
 export function useAgenda() {
   const toast = useToast();
 
-  // Cargar eventos
-  const loadEventos = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+  // Cargar eventos (Asíncrono)
+  const loadEventos = async () => {
+    if (loadingPromise) return loadingPromise;
+
+    loadingPromise = (async () => {
       try {
-        eventos.value = JSON.parse(stored);
+        const stored = await dbService.getAll('agenda');
+        eventos.value = stored.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        isLoaded.value = true;
       } catch (e) {
-        console.error('Error parsing agenda from localStorage', e);
-        eventos.value = [];
+        console.error('Error loading agenda:', e);
+        toast.error('Error al cargar la agenda');
+      } finally {
+        loadingPromise = null;
       }
-    }
-    isLoaded.value = true;
+    })();
+    return loadingPromise;
   };
 
   // Guardar evento
-  const addEvento = (evento) => {
+  const addEvento = async (evento) => {
     const newEvento = {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
@@ -33,32 +38,61 @@ export function useAgenda() {
       ...evento
     };
     
-    eventos.value.push(newEvento);
-    saveToStorage();
-    toast.success('Evento agendado correctamente');
-    return newEvento;
-  };
-
-  // Actualizar evento
-  const updateEvento = (id, updates) => {
-    const index = eventos.value.findIndex(e => e.id === id);
-    if (index !== -1) {
-      eventos.value[index] = { ...eventos.value[index], ...updates };
-      saveToStorage();
-      toast.success('Evento actualizado');
+    try {
+    // Optimistic Update
+      eventos.value.push(newEvento);
+      await dbService.add('agenda', newEvento);
+      toast.success('Evento agendado correctamente');
+      return newEvento;
+    } catch (e) {
+      console.error('Error adding evento:', e);
+      toast.error('Error al guardar evento');
+      // Revert
+      eventos.value = eventos.value.filter(ev => ev.id !== newEvento.id);
+      return null;
     }
   };
 
-  // Eliminar evento
-  const deleteEvento = (id) => {
-    eventos.value = eventos.value.filter(e => e.id !== id);
-    saveToStorage();
-    toast.info('Evento eliminado');
+  // Actualizar evento
+  const updateEvento = async (id, updates) => {
+    const index = eventos.value.findIndex(e => e.id === id);
+    if (index !== -1) {
+      const updatedEvento = { ...eventos.value[index], ...updates };
+
+      try {
+        eventos.value[index] = updatedEvento;
+        await dbService.update('agenda', updatedEvento);
+        toast.success('Evento actualizado');
+        return true;
+      } catch (e) {
+        console.error('Error updating evento:', e);
+        toast.error('Error al actualizar evento');
+        return false;
+      }
+    }
+    return false;
   };
 
-  // Helper para guardar
-  const saveToStorage = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(eventos.value));
+  // Eliminar evento
+  const deleteEvento = async (id) => {
+    const index = eventos.value.findIndex(e => e.id === id);
+    if (index !== -1) {
+      const deleted = eventos.value[index];
+
+      try {
+        eventos.value = eventos.value.filter(e => e.id !== id);
+        await dbService.delete('agenda', id);
+        toast.info('Evento eliminado');
+        return true;
+      } catch (e) {
+        console.error('Error deleting evento:', e);
+        toast.error('Error al eliminar evento');
+        // Revert
+        eventos.value.splice(index, 0, deleted);
+        return false;
+      }
+    }
+    return false;
   };
 
   // Obtener eventos de una fecha específica (YYYY-MM-DD)
@@ -92,19 +126,23 @@ export function useAgenda() {
   // Configurar intervalo de notificaciones (cada 30 minutos)
   let notificationInterval = null;
   
-  const iniciarNotificaciones = () => {
-    // Notificar inmediatamente al cargar si hay eventos hoy
-    const eventosPendientes = getEventosPendientesHoy();
-    if (eventosPendientes.length > 0) {
-      setTimeout(() => {
-        notificarEventosDelDia();
-      }, 2000); // Esperar 2 segundos después de cargar la app
+  const iniciarNotificaciones = async () => {
+    if (!isLoaded.value) {
+      await loadEventos();
     }
 
+    // Notificar inmediatamente al cargar si hay eventos hoy
+    // Pequeño delay para asegurar que la app esté lista
+    setTimeout(() => {
+        notificarEventosDelDia();
+    }, 1000);
+
     // Configurar intervalo cada 30 minutos (30 * 60 * 1000 ms)
-    notificationInterval = setInterval(() => {
-      notificarEventosDelDia();
-    }, 30 * 60 * 1000);
+    if (!notificationInterval) {
+      notificationInterval = setInterval(() => {
+        notificarEventosDelDia();
+      }, 30 * 60 * 1000);
+    }
   };
 
   const detenerNotificaciones = () => {
@@ -114,20 +152,26 @@ export function useAgenda() {
     }
   };
 
-  // Inicializar notificaciones automáticamente
-  if (!isLoaded.value) {
-    loadEventos();
-    iniciarNotificaciones();
+  // Inicializar automáticamente si no se ha cargado
+  if (!isLoaded.value && !loadingPromise) {
+    // Iniciar carga y notificaciones
+    (async () => {
+      await loadEventos();
+      iniciarNotificaciones();
+    })();
   }
 
   return {
     eventos,
+    isLoaded,
     addEvento,
     updateEvento,
     deleteEvento,
     getEventosPorFecha,
     getEventosPendientesHoy,
     iniciarNotificaciones,
-    detenerNotificaciones
+    detenerNotificaciones,
+    loadEventos
   };
 }
+

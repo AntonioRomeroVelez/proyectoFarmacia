@@ -202,15 +202,10 @@ const handleLoadToCart = (doc) => {
     'Cargar al Carrito',
     '⚠️ Esto reemplazará los productos actuales en tu carrito. ¿Deseas continuar?',
     () => {
-      clearCart();
+      clearCart(true);
       // Reconstruir el carrito item por item
       doc.items.forEach(item => {
-        // Asumiendo que addToCart toma el producto completo
-        // Si addToCart es simple, podríamos necesitar lógica más compleja
-        // Pero useCart generalmente maneja esto.
-        // Simularemos agregar y luego actualizar cantidad
-        addToCart(item);
-        updateQuantity(item.ID, item.quantity);
+        addToCart(item, item.quantity, true);
       });
       toast.success('Productos cargados al carrito');
       router.push('/carrito');

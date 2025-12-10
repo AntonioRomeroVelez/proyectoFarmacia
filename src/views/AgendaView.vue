@@ -324,32 +324,32 @@ const editarEvento = (evento) => {
   showModal.value = true;
 };
 
-const guardarEvento = () => {
+const guardarEvento = async () => {
   if (!formulario.value.titulo.trim()) {
     toast.warning('El título es obligatorio');
     return;
   }
 
   if (eventoEditando.value) {
-    updateEvento(eventoEditando.value.id, formulario.value);
+    await updateEvento(eventoEditando.value.id, formulario.value);
   } else {
-    addEvento(formulario.value);
+    await addEvento(formulario.value);
   }
 
   showModal.value = false;
   fechaSeleccionada.value = formulario.value.fecha;
 };
 
-const toggleCompletada = (evento) => {
-  updateEvento(evento.id, { completada: !evento.completada });
+const toggleCompletada = async (evento) => {
+  await updateEvento(evento.id, { completada: !evento.completada });
 };
 
 const confirmarEliminar = (evento) => {
   alertify.confirm(
     'Eliminar Evento',
     `¿Eliminar "${evento.titulo}"?`,
-    () => {
-      deleteEvento(evento.id);
+    async () => {
+      await deleteEvento(evento.id);
     },
     () => { }
   ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });

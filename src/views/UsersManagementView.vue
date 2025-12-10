@@ -268,7 +268,7 @@ const editarUsuario = (user) => {
   showModal.value = true;
 };
 
-const guardarUsuario = () => {
+const guardarUsuario = async () => {
   if (isEditing.value) {
     // Si es edición y password está vacío, mantenemos el anterior
     // Esto requiere que el composable maneje esa lógica o pasemos el objeto completo
@@ -280,26 +280,26 @@ const guardarUsuario = () => {
       userData.password = oldUser.password;
     }
     
-    if (updateUser(editingId.value, userData)) {
+    if (await updateUser(editingId.value, userData)) {
       showModal.value = false;
     }
   } else {
-    if (createUser(form)) {
+    if (await createUser(form)) {
       showModal.value = false;
     }
   }
 };
 
-const toggleStatus = (user) => {
-  toggleUserStatus(user.id);
+const toggleStatus = async (user) => {
+  await toggleUserStatus(user.id);
 };
 
 const confirmarEliminar = (user) => {
   alertify.confirm(
     'Eliminar Usuario',
     `¿Estás seguro de eliminar al usuario <b>${user.nombre}</b>?`,
-    () => {
-      deleteUser(user.id);
+    async () => {
+      await deleteUser(user.id);
     },
     () => {}
   ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });

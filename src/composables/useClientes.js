@@ -1,47 +1,39 @@
 import { ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
+import { dbService } from '@/services/db';
+import { useCobros } from './useCobros';
+import { useHistorial } from './useHistorial';
+import { useVisitas } from './useVisitas';
 
-const STORAGE_KEY = 'farmacia_clientes';
-const toast = useToast();
-
-// Estado reactivo compartido
 const clientes = ref([]);
-
-// Cargar clientes del localStorage
-const loadClientes = () => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      clientes.value = JSON.parse(stored);
-    }
-  } catch (error) {
-    console.error('Error loading clientes:', error);
-    toast.error('Error al cargar clientes');
-  }
-};
-
-// Guardar clientes en localStorage
-const saveClientes = () => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(clientes.value));
-  } catch (error) {
-    console.error('Error saving clientes:', error);
-    toast.error('Error al guardar clientes');
-  }
-};
+const isLoaded = ref(false);
 
 export function useClientes() {
-  // Cargar al inicializar
-  if (clientes.value.length === 0) {
-    loadClientes();
-  }
+  const toast = useToast();
+
+  // Initialize other composables for relations
+  const { cobros } = useCobros();
+  const { documents: historial } = useHistorial();
+  const { visitas } = useVisitas(); // Assuming useVisitas is created
+
+  // Cargar clientes
+  const loadClientes = async () => {
+    try {
+      const stored = await dbService.getAll('clientes');
+      clientes.value = stored.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      isLoaded.value = true;
+    } catch (error) {
+      console.error('Error loading clientes:', error);
+      toast.error('Error al cargar clientes');
+    }
+  };
 
   // Generar ID único
   const generateId = () => {
     return `cliente_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Calcular clasificación basada en total de compras
+  // Calcular clasificación
   const calcularClasificacion = (totalCompras) => {
     if (totalCompras >= 5000) return 'A';
     if (totalCompras >= 2000) return 'B';
@@ -49,7 +41,7 @@ export function useClientes() {
   };
 
   // Agregar cliente
-  const addCliente = (clienteData) => {
+  const addCliente = async (clienteData) => {
     const nuevoCliente = {
       id: generateId(),
       nombre: clienteData.nombre || '',
@@ -64,40 +56,61 @@ export function useClientes() {
       updatedAt: new Date().toISOString()
     };
 
-    clientes.value.push(nuevoCliente);
-    saveClientes();
-    toast.success(`Cliente ${nuevoCliente.nombre} agregado`);
-    return nuevoCliente;
+    try {
+      await dbService.put('clientes', nuevoCliente);
+      clientes.value.push(nuevoCliente);
+      // Re-sort?
+      clientes.value.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      toast.success(`Cliente ${nuevoCliente.nombre} agregado`);
+      return nuevoCliente;
+    } catch (e) {
+      console.error('Error adding cliente:', e);
+      toast.error('Error al guardar cliente');
+    }
   };
 
   // Actualizar cliente
-  const updateCliente = (id, updates) => {
+  const updateCliente = async (id, updates) => {
     const index = clientes.value.findIndex(c => c.id === id);
     if (index !== -1) {
-      clientes.value[index] = {
+      const updatedClient = {
         ...clientes.value[index],
         ...updates,
         updatedAt: new Date().toISOString()
       };
-      saveClientes();
-      toast.success('Cliente actualizado');
-      return clientes.value[index];
+
+      try {
+        await dbService.put('clientes', updatedClient);
+        clientes.value[index] = updatedClient;
+        toast.success('Cliente actualizado');
+        return updatedClient;
+      } catch (e) {
+        console.error('Error updating cliente:', e);
+        toast.error('Error al actualizar cliente');
+      }
+    } else {
+      toast.error('Cliente no encontrado');
     }
-    toast.error('Cliente no encontrado');
     return null;
   };
 
   // Eliminar cliente
-  const deleteCliente = (id) => {
+  const deleteCliente = async (id) => {
     const index = clientes.value.findIndex(c => c.id === id);
     if (index !== -1) {
       const nombre = clientes.value[index].nombre;
-      clientes.value.splice(index, 1);
-      saveClientes();
-      toast.success(`Cliente ${nombre} eliminado`);
-      return true;
+      try {
+        await dbService.delete('clientes', id);
+        clientes.value.splice(index, 1);
+        toast.success(`Cliente ${nombre} eliminado`);
+        return true;
+      } catch (e) {
+        console.error('Error deleting cliente:', e);
+        toast.error('Error al eliminar cliente');
+      }
+    } else {
+      toast.error('Cliente no encontrado');
     }
-    toast.error('Cliente no encontrado');
     return false;
   };
 
@@ -108,35 +121,28 @@ export function useClientes() {
 
   // Obtener historial de visitas del cliente
   const getVisitasCliente = (clienteId) => {
-    try {
-      const visitas = JSON.parse(localStorage.getItem('VisitasDiarias')) || [];
-      return visitas.filter(v => v.clienteId === clienteId);
-    } catch (error) {
-      console.error('Error loading visitas:', error);
-      return [];
-    }
+    // Assuming visitas stores clienteId??
+    // VisitasView stores: { lugar, observacion, fecha }. No clienteId mentioned in VisitasView logic!
+    // Wait. VisitasView is "Visitas Diarias" (general log), not linked to a specific client?
+    // Let's check the old useClientes:
+    // It read 'VisitasDiarias' and filtered by `v.clienteId === clienteId`.
+    // But VisitasView doesn't add clienteId!
+    // So `getVisitasCliente` likely returns [] always unless other components add visits with clienteId.
+    // I will preserve the logic: verify if field exists.
+    return visitas.value.filter(v => v.clienteId === clienteId);
   };
 
   // Obtener historial de cobros del cliente
   const getCobrosCliente = (clienteId) => {
-    try {
-      const cobros = JSON.parse(localStorage.getItem('farmacia_cobros')) || [];
-      return cobros.filter(c => c.clienteId === clienteId);
-    } catch (error) {
-      console.error('Error loading cobros:', error);
-      return [];
-    }
+    // Check key in cobros. Usually 'clienteId' or 'cliente.id'.
+    // Old useClientes used `c.clienteId === clienteId`.
+    return cobros.value.filter(c => c.clienteId === clienteId || (c.cliente && c.cliente.id === clienteId));
   };
 
   // Obtener historial de pedidos del cliente
   const getPedidosCliente = (clienteId) => {
-    try {
-      const historial = JSON.parse(localStorage.getItem('farmacia_historial')) || [];
-      return historial.filter(h => h.clienteId === clienteId);
-    } catch (error) {
-      console.error('Error loading pedidos:', error);
-      return [];
-    }
+    // Old used `h.clienteId === clienteId`.
+    return historial.value.filter(h => h.clienteId === clienteId || (h.cliente && h.cliente.id === clienteId));
   };
 
   // Calcular total de compras del cliente
@@ -180,6 +186,11 @@ export function useClientes() {
       c.email.toLowerCase().includes(terminoLower)
     );
   };
+
+  // Auto-load
+  if (!isLoaded.value) {
+    loadClientes();
+  }
 
   return {
     clientes,

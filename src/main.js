@@ -1,4 +1,4 @@
-import { createApp } from "vue";
+import { createApp, h } from "vue";
 import App from "./App.vue";
 import router from "./router";
 
@@ -38,11 +38,21 @@ app.use(router);
 app.use(VueVirtualScroller);
 app.use(BootstrapVue3);
 
+// Custom close button to fix Vue 3.5 incompatibility
+const CloseBtn = {
+  render: () => h('button', {
+    class: ['Toastify__close-button', 'vue-toastification__close-button'],
+    type: 'button',
+    'aria-label': 'close'
+  }, '✖')
+};
+
 app.use(Toast, {
   position: POSITION.TOP_RIGHT,
-  timeout: 1000,
+  timeout: 3000,
   closeOnClick: true,
   draggable: true,
+  closeButton: CloseBtn,
 });
 
 // Registrar iconos globalmente
@@ -51,6 +61,12 @@ app.component("BIconCartPlus", BIconCartPlus);
 app.component("BIconCartDash", BIconCartDash);
 app.component("BIconBox", BIconBox);
 app.component("BIconGift", BIconGift);
+
+// DB Service
+import { dbService } from './services/db';
+
+// Trigger migration
+dbService.migrateFromLocalStorage();
 
 // Montar app
 app.mount("#app");

@@ -1,81 +1,106 @@
 import { ref } from 'vue';
 import { useToast } from 'vue-toastification';
+import { dbService } from '@/services/db';
 
-const STORAGE_KEY = 'farmacia_cobros';
-
-// Estado compartido
 const cobros = ref([]);
 const isLoaded = ref(false);
 
 export function useCobros() {
   const toast = useToast();
 
-  // Cargar cobros
-  const loadCobros = () => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        cobros.value = JSON.parse(stored);
-      } catch (e) {
-        console.error('Error parsing cobros from localStorage', e);
-        cobros.value = [];
-      }
+  // Cargar cobros desde DB
+  const loadCobros = async () => {
+    try {
+      const data = await dbService.getAll('cobros');
+      // Sort desc by date/id
+      cobros.value = data.sort((a, b) => b.id.localeCompare(a.id));
+      isLoaded.value = true;
+    } catch (e) {
+      console.error('Error loading cobros:', e);
+      toast.error('Error al cargar cobros');
     }
-    isLoaded.value = true;
   };
 
   // Guardar cobro
-  const addCobro = (cobro) => {
+  const addCobro = async (cobro) => {
+    // Clone to remove Vue reactivity
+    const plainCobro = JSON.parse(JSON.stringify(cobro));
+
     const newCobro = {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
-      ...cobro
+      ...plainCobro
     };
     
-    cobros.value.unshift(newCobro);
-    saveToStorage();
-    toast.success('💰 Cobro registrado correctamente');
-    return newCobro;
+    try {
+      await dbService.put('cobros', newCobro);
+      cobros.value.unshift(newCobro);
+      toast.success('💰 Cobro registrado correctamente');
+      return newCobro;
+    } catch (e) {
+      console.error('Error adding cobro:', e);
+      toast.error('Error al registrar cobro');
+      throw e;
+    }
   };
 
   // Actualizar cobro
-  const updateCobro = (updatedCobro) => {
-    const index = cobros.value.findIndex(c => c.id === updatedCobro.id);
-    if (index !== -1) {
-      cobros.value[index] = { ...updatedCobro };
-      saveToStorage();
+  const updateCobro = async (updatedCobro) => {
+    // Clone to remove Vue reactivity
+    const plainCobro = JSON.parse(JSON.stringify(updatedCobro));
+
+    try {
+      await dbService.put('cobros', plainCobro);
+      const index = cobros.value.findIndex(c => c.id === plainCobro.id);
+      if (index !== -1) {
+        cobros.value[index] = { ...plainCobro };
+      }
       toast.success('✏️ Cobro actualizado correctamente');
       return true;
+    } catch (e) {
+      console.error('Error updating cobro:', e);
+      toast.error('Error al actualizar cobro');
+      return false;
     }
-    return false;
   };
 
   // Eliminar cobro
-  const deleteCobro = (id) => {
-    cobros.value = cobros.value.filter(c => c.id !== id);
-    saveToStorage();
-    toast.info('Cobro eliminado');
-  };
-
-  // Eliminar todos los cobros
-  const clearAllCobros = () => {
-    cobros.value = [];
-    localStorage.removeItem(STORAGE_KEY);
-    toast.info('Todos los cobros han sido eliminados');
-  };
-
-  // Helper para guardar
-  const saveToStorage = () => {
+  const deleteCobro = async (id) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cobros.value));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-      toast.error('Error al guardar datos. Es posible que el almacenamiento esté lleno.');
-      throw error; // Re-throw to let caller know
+      await dbService.delete('cobros', id);
+      cobros.value = cobros.value.filter(c => c.id !== id);
+      toast.info('Cobro eliminado');
+    } catch (e) {
+      console.error('Error deleting cobro:', e);
+      toast.error('Error al eliminar cobro');
     }
   };
 
-  // Obtener cobros en un rango de fechas
+  // Eliminar todos los cobros
+  const clearAllCobros = async () => { // Note: This might be dangerous if user has huge amount
+    try {
+      // In IDB, clearing a store is one transaction
+      // But we don't have a clear() method exposed in dbService yet
+      // For now, let's delete strictly what is in list or use a bulk delete if simple
+      // Actually, IDB 'clear' is standard. Let's assume we might need to add it to dbService or iterate.
+      // Iterating delete is slow.
+      // Ideally dbService should have .clear('cobros').
+      // Check dbService... it doesn't have clear.
+      // Let's rely on iterating purely UI side or add clear to dbService.
+      // Added instruction: I will update dbService to have clear() next, but for now:
+      const db = await import('@/services/db').then(m => m.dbRequest);
+      const tx = db.transaction('cobros', 'readwrite');
+      await tx.objectStore('cobros').clear();
+
+      cobros.value = [];
+      toast.info('Todos los cobros han sido eliminados');
+    } catch (e) {
+      console.error('Error clearing cobros:', e);
+      toast.error('Error al vaciar cobros');
+    }
+  };
+
+  // Obtener cobros en un rango de fechas (Client side filtering for now)
   const getCobrosRango = (fechaInicio, fechaFin) => {
     return cobros.value.filter(c => {
       const fecha = c.fecha;

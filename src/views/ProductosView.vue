@@ -150,6 +150,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -158,13 +159,14 @@ import alertify from "alertifyjs";
 import Producto from "@/components/Productos/Producto.vue";
 import { useCart } from "@/composables/useCart";
 import { useAuth } from "@/composables/useAuth";
+import { useProductos } from "@/composables/useProductos";
 
 const router = useRouter();
 const toast = useToast();
 const { cartCount } = useCart();
 const { isAdmin } = useAuth();
+const { productos, loadProductos, deleteProducto } = useProductos();
 
-const productos = ref([]);
 const productosFiltrados = ref([]);
 const productoSeleccionado = ref(null);
 const showModal = ref(false);
@@ -200,33 +202,33 @@ const onMarcaInput = () => {
   }, 100);
 };
 
-onMounted(() => {
-  cargarProductos();
+// Replacing logic:
+onMounted(async () => {
+  await cargarProductos();
 });
 
-const cargarProductos = () => {
+const cargarProductos = async () => {
   cargando.value = true;
+  // useProductos auto-loads but we might want to ensure it is fresh
+  // await loadProductos();
+  // No need to setTimeout, db is async.
 
-  // Simulate async loading
-  setTimeout(() => {
-    const lista = JSON.parse(localStorage.getItem("ListaProductos")) || [];
-    productos.value = lista;
+  // Logic to extract brands/presentations
+  const lista = productos.value;
 
-    // Extraer marcas y presentaciones únicas
-    const marcas = new Set();
-    const presentaciones = new Set();
+  const marcas = new Set();
+  const presentaciones = new Set();
 
-    for (const p of lista) {
-      if (p.Marca) marcas.add(p.Marca);
-      if (p.Presentacion) presentaciones.add(p.Presentacion);
-    }
+  for (const p of lista) {
+    if (p.Marca) marcas.add(p.Marca);
+    if (p.Presentacion) presentaciones.add(p.Presentacion);
+  }
 
-    opcionesMarcas.value = Array.from(marcas).sort();
-    opcionesPresentaciones.value = Array.from(presentaciones).sort();
+  opcionesMarcas.value = Array.from(marcas).sort();
+  opcionesPresentaciones.value = Array.from(presentaciones).sort();
 
-    productosFiltrados.value = lista;
-    cargando.value = false;
-  }, 300);
+  productosFiltrados.value = lista;
+  cargando.value = false;
 };
 
 // Filtrar productos
@@ -298,18 +300,14 @@ const confirmarEliminacion = () => {
   alertify.confirm(
     "Confirmar Eliminación",
     "¿Estás seguro de que deseas eliminar este producto?",
-    () => {
+    async () => {
       try {
-        const productos = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-        const filtered = productos.filter(p => p.ID !== productoSeleccionado.value.ID);
-        localStorage.setItem('ListaProductos', JSON.stringify(filtered));
-
+        await deleteProducto(productoSeleccionado.value.ID);
         toast.success('🗑️ Producto eliminado correctamente');
         showModal.value = false;
         cargarProductos();
       } catch (error) {
-        console.error('Error deleting product:', error);
-        toast.error('Error al eliminar el producto');
+        // toast handled in composable
       }
     },
     () => {

@@ -99,10 +99,12 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import { useProductos } from '@/composables/useProductos';
 
 const router = useRouter();
 const toast = useToast();
 const loading = ref(false);
+const { productos, addProducto } = useProductos();
 
 const form = reactive({
   Codigo: '',
@@ -121,13 +123,8 @@ const guardarProducto = async () => {
   loading.value = true;
 
   try {
-    // Simular pequeño delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const existingProducts = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-
     // Validar código único
-    if (existingProducts.some(p => p.Codigo === form.Codigo)) {
+    if (productos.value.some(p => p.Codigo === form.Codigo)) {
       toast.error('❌ Ya existe un producto con este código');
       loading.value = false;
       return;
@@ -135,8 +132,8 @@ const guardarProducto = async () => {
 
     // Generar nuevo ID
     let maxId = 0;
-    if (existingProducts.length > 0) {
-      existingProducts.forEach(p => {
+    if (productos.value.length > 0) {
+      productos.value.forEach(p => {
         const idNum = typeof p.ID === 'number' ? p.ID : parseInt(p.ID);
         if (!isNaN(idNum) && idNum > maxId) {
           maxId = idNum;
@@ -150,14 +147,12 @@ const guardarProducto = async () => {
       isDuplicate: false
     };
 
-    existingProducts.push(newProduct);
-    localStorage.setItem('ListaProductos', JSON.stringify(existingProducts));
+    await addProducto(newProduct);
 
     toast.success('✅ Producto creado correctamente');
     router.push('/productos');
   } catch (error) {
-    console.error('Error saving product:', error);
-    toast.error('❌ Error al guardar el producto');
+    // Error handled in composable/toast
   } finally {
     loading.value = false;
   }

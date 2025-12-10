@@ -5,6 +5,23 @@
       <p class="subtitle">Exporta e importa todos tus datos entre dispositivos</p>
     </div>
 
+    <!-- Storage Usage Indicator -->
+    <div class="storage-card mb-4 p-4 bg-white rounded-3 shadow-sm">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="m-0">💾 Almacenamiento Local (LocalStorage)</h5>
+        <span :class="`text-${storageStats.color} fw-bold`">
+          {{ storageStats.percent }}% Usado
+        </span>
+      </div>
+      <b-progress :value="Number(storageStats.percent)" :variant="storageStats.color" striped animated class="mb-2"
+        height="1.5rem"></b-progress>
+      <div class="d-flex justify-content-between text-muted small">
+        <span>Usado: {{ storageStats.usedKB }} KB</span>
+        <span>Límite (aprox): 5 MB</span>
+      </div>
+      <!-- Removed optimization button as it was for LS -->
+    </div>
+
     <!-- Estadísticas de datos -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -16,6 +33,13 @@
       </div>
       <div class="stat-card">
         <div class="stat-icon">👥</div>
+        <div class="stat-info">
+          <h3>{{ stats.clientes }}</h3>
+          <p>Clientes</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👤</div>
         <div class="stat-info">
           <h3>{{ stats.usuarios }}</h3>
           <p>Usuarios</p>
@@ -75,6 +99,10 @@
         <label class="checkbox-label">
           <input type="checkbox" v-model="exportOptions.productos" />
           <span>Productos</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="exportOptions.clientes" />
+          <span>Clientes</span>
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="exportOptions.usuarios" />
@@ -254,6 +282,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAutoBackup } from '@/composables/useAutoBackup';
+import { dbService } from '@/services/db';
 import JSZip from 'jszip';
 
 // Composable de backup automático
@@ -269,6 +298,7 @@ const {
 
 const stats = ref({
   productos: 0,
+  clientes: 0,
   usuarios: 0,
   visitas: 0,
   historial: 0,
@@ -276,9 +306,35 @@ const stats = ref({
   cobros: 0
 });
 
+const storageStats = ref({
+  usedKB: 0,
+  totalKB: 5120, // 5MB standard limit
+  percent: 0,
+  color: 'success'
+});
+
+const calculateStorageUsage = () => {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += ((localStorage[key].length + key.length) * 2); // char = 2 bytes approx
+    }
+  }
+  const usedKB = (total / 1024).toFixed(2);
+  const percent = ((total / (5 * 1024 * 1024)) * 100).toFixed(1);
+
+  storageStats.value = {
+    usedKB: usedKB,
+    totalKB: 5120,
+    percent: percent,
+    color: percent > 90 ? 'danger' : (percent > 70 ? 'warning' : 'success')
+  };
+};
+
 const showExportOptions = ref(false);
 const exportOptions = ref({
   productos: true,
+  clientes: true,
   usuarios: true,
   visitas: true,
   historial: true,
@@ -302,92 +358,125 @@ const toast = ref({
   type: 'success'
 });
 
-// Mapeo de claves de localStorage
+// Mapeo de claves de localStorage (solo para lo que queda en localStorage)
 const STORAGE_KEYS = {
-  productos: 'ListaProductos',
-  usuarios: 'app_users',
-  visitas: 'VisitasDiarias',
-  historial: 'farmacia_historial',
-  agenda: 'farmacia_agenda',
-  cobros: 'farmacia_cobros',
   currentUser: 'currentUser',
   cart: 'shoppingCart'
 };
 
 // Cargar estadísticas
-const loadStats = () => {
-  stats.value.productos = JSON.parse(localStorage.getItem(STORAGE_KEYS.productos) || '[]').length;
-  stats.value.usuarios = JSON.parse(localStorage.getItem(STORAGE_KEYS.usuarios) || '[]').length;
-  stats.value.visitas = JSON.parse(localStorage.getItem(STORAGE_KEYS.visitas) || '[]').length;
-  stats.value.historial = JSON.parse(localStorage.getItem(STORAGE_KEYS.historial) || '[]').length;
-  stats.value.agenda = JSON.parse(localStorage.getItem(STORAGE_KEYS.agenda) || '[]').length;
-  stats.value.cobros = JSON.parse(localStorage.getItem(STORAGE_KEYS.cobros) || '[]').length;
+const loadStats = async () => {
+  try {
+    const [productos, clientes, usuarios, visitas, historial, agenda, cobros] = await Promise.all([
+      dbService.getAll('productos'),
+      dbService.getAll('clientes'),
+      dbService.getAll('usuarios'),
+      dbService.getAll('visitas'),
+      dbService.getAll('historial'),
+      dbService.getAll('agenda'),
+      dbService.getAll('cobros')
+    ]);
+
+    stats.value = {
+      productos: productos.length,
+      clientes: clientes.length,
+      usuarios: usuarios.length,
+      visitas: visitas.length,
+      historial: historial.length,
+      agenda: agenda.length,
+      cobros: cobros.length
+    };
+  } catch (e) {
+    console.error('Error loading stats from IDB:', e);
+  }
+
+  calculateStorageUsage();
 };
 
 // Exportar todos los datos
-const exportAllData = () => {
-  const backupData = {
-    exportDate: new Date().toISOString(),
-    version: '1.0',
-    data: {
-      productos: JSON.parse(localStorage.getItem(STORAGE_KEYS.productos) || '[]'),
-      usuarios: JSON.parse(localStorage.getItem(STORAGE_KEYS.usuarios) || '[]'),
-      visitas: JSON.parse(localStorage.getItem(STORAGE_KEYS.visitas) || '[]'),
-      historial: JSON.parse(localStorage.getItem(STORAGE_KEYS.historial) || '[]'),
-      agenda: JSON.parse(localStorage.getItem(STORAGE_KEYS.agenda) || '[]'),
-      cobros: JSON.parse(localStorage.getItem(STORAGE_KEYS.cobros) || '[]'),
-      currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
-      cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
-    }
-  };
+const exportAllData = async () => {
+  try {
+    const [productos, clientes, usuarios, visitas, historial, agenda, cobros] = await Promise.all([
+      dbService.getAll('productos'),
+      dbService.getAll('clientes'),
+      dbService.getAll('usuarios'),
+      dbService.getAll('visitas'),
+      dbService.getAll('historial'),
+      dbService.getAll('agenda'),
+      dbService.getAll('cobros')
+    ]);
 
-  downloadJSON(backupData, `farmacia-backup-${formatDate(new Date())}.json`);
-  lastExport.value = new Date().toLocaleString();
-  showToast('✅ Backup exportado exitosamente', 'success');
-};
-
-// Exportar datos seleccionados
-const exportSelectedData = () => {
-  showExportOptions.value = !showExportOptions.value;
-
-  if (!showExportOptions.value) {
     const backupData = {
       exportDate: new Date().toISOString(),
-      version: '1.0',
-      data: {}
+      version: '3.0', // Updated version for IDB migration
+      data: {
+        productos,
+        clientes,
+        usuarios,
+        visitas,
+        historial,
+        agenda,
+        cobros,
+        // LocalStorage leftovers
+        currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
+        cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
+      }
     };
 
-    Object.keys(exportOptions.value).forEach(key => {
-      if (exportOptions.value[key]) {
-        backupData.data[key] = JSON.parse(localStorage.getItem(STORAGE_KEYS[key]) || '[]');
-      }
-    });
-
-    downloadJSON(backupData, `farmacia-backup-partial-${formatDate(new Date())}.json`);
+    downloadJSON(backupData, `farmacia-backup-${formatDate(new Date())}.json`);
     lastExport.value = new Date().toLocaleString();
-    showToast('✅ Backup parcial exportado', 'success');
+    showToast('✅ Backup exportado exitosamente', 'success');
+  } catch (e) {
+    console.error('Export error:', e);
+    showToast('❌ Error al exportar datos', 'error');
   }
 };
 
-// Descargar JSON (mejorado para móviles)
+// Exportar datos seleccionados
+const exportSelectedData = async () => {
+  showExportOptions.value = !showExportOptions.value;
+
+  if (!showExportOptions.value) {
+    try {
+      const data = {};
+      if (exportOptions.value.productos) data.productos = await dbService.getAll('productos');
+      if (exportOptions.value.clientes) data.clientes = await dbService.getAll('clientes');
+      if (exportOptions.value.usuarios) data.usuarios = await dbService.getAll('usuarios');
+      if (exportOptions.value.visitas) data.visitas = await dbService.getAll('visitas');
+      if (exportOptions.value.historial) data.historial = await dbService.getAll('historial');
+      if (exportOptions.value.agenda) data.agenda = await dbService.getAll('agenda');
+      if (exportOptions.value.cobros) data.cobros = await dbService.getAll('cobros');
+
+      const backupData = {
+        exportDate: new Date().toISOString(),
+        version: '3.0',
+        data: data
+      };
+
+      downloadJSON(backupData, `farmacia-backup-partial-${formatDate(new Date())}.json`);
+      lastExport.value = new Date().toLocaleString();
+      showToast('✅ Backup parcial exportado', 'success');
+    } catch (e) {
+      console.error('Partial export error:', e);
+      showToast('❌ Error al exportar selección', 'error');
+    }
+  }
+};
+
 // Descargar JSON comprimido en ZIP
 const downloadJSON = async (data, filename) => {
   try {
     const zip = new JSZip();
     const jsonString = JSON.stringify(data, null, 2);
 
-    // Agregar archivo JSON al ZIP
     zip.file(filename, jsonString);
 
-    // Generar el archivo ZIP
     const zipBlob = await zip.generateAsync({ type: 'blob' });
     const zipFilename = filename.replace('.json', '.zip');
 
-    // Detectar si es móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     if (isMobile) {
-      // Opción 1: Intentar usar Web Share API con el ZIP
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([zipBlob], zipFilename, { type: 'application/zip' })] })) {
         try {
           const file = new File([zipBlob], zipFilename, { type: 'application/zip' });
@@ -404,7 +493,6 @@ const downloadJSON = async (data, filename) => {
       }
     }
 
-    // Descarga tradicional del ZIP
     const url = URL.createObjectURL(zipBlob);
     const link = document.createElement('a');
     link.href = url;
@@ -413,7 +501,6 @@ const downloadJSON = async (data, filename) => {
     document.body.appendChild(link);
     link.click();
 
-    // Cleanup
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
@@ -425,7 +512,7 @@ const downloadJSON = async (data, filename) => {
     console.error('Error generando ZIP:', error);
     showToast('❌ Error al comprimir el archivo', 'error');
 
-    // Fallback: descargar JSON normal si falla el ZIP
+    // Fallback: descargar JSON normal
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -437,7 +524,6 @@ const downloadJSON = async (data, filename) => {
   }
 };
 
-// Manejar selección de archivo
 const triggerFileInput = () => {
   fileInput.value.click();
 };
@@ -449,18 +535,14 @@ const handleFileSelect = (event) => {
   }
 };
 
-// Leer archivo (JSON o ZIP)
 const readFile = async (file) => {
   try {
     let jsonContent = '';
 
-    // Si es un archivo ZIP
     if (file.name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed') {
       try {
         const zip = new JSZip();
         const zipContent = await zip.loadAsync(file);
-
-        // Buscar el primer archivo JSON dentro del ZIP
         const jsonFileName = Object.keys(zipContent.files).find(name => name.endsWith('.json'));
 
         if (jsonFileName) {
@@ -476,11 +558,9 @@ const readFile = async (file) => {
         return;
       }
     } else {
-      // Leer como texto normal (JSON)
       jsonContent = await file.text();
     }
 
-    // Parsear el contenido JSON
     try {
       const data = JSON.parse(jsonContent);
       if (data.data) {
@@ -499,52 +579,41 @@ const readFile = async (file) => {
   }
 };
 
-// Confirmar importación
-const confirmImport = () => {
+const confirmImport = async () => {
   if (!pendingImportData.value) return;
 
-  // Crear backup automático si está habilitado
   if (importOptions.value.backup) {
-    exportAllData();
+    await exportAllData();
   }
 
   const importData = pendingImportData.value.data;
+  const idbStores = ['productos', 'clientes', 'usuarios', 'visitas', 'historial', 'agenda', 'cobros'];
 
-  Object.keys(importData).forEach(key => {
-    const storageKey = STORAGE_KEYS[key];
-    if (!storageKey) return;
-
-    if (importOptions.value.merge && Array.isArray(importData[key])) {
-      // Fusionar datos
-      const existing = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      const merged = [...existing, ...importData[key]];
-      // Eliminar duplicados por id si existe
-      const unique = merged.filter((item, index, self) =>
-        index === self.findIndex(t => t.id === item.id)
-      );
-      localStorage.setItem(storageKey, JSON.stringify(unique));
-    } else {
-      // Sobrescribir datos
-      localStorage.setItem(storageKey, JSON.stringify(importData[key]));
+  for (const store of idbStores) {
+    if (importData[store] && Array.isArray(importData[store])) {
+      await dbService.bulkPut(store, importData[store]);
     }
-  });
+  }
 
-  loadStats();
+  // Handle remaining LS keys if any
+  if (importData.currentUser) localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(importData.currentUser));
+  if (importData.cart) localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(importData.cart));
+
+  await loadStats();
   cancelImport();
   showToast('✅ Datos importados exitosamente. Recarga la página para ver los cambios.', 'success');
 };
 
-// Cancelar importación
 const cancelImport = () => {
   importPreview.value = null;
   pendingImportData.value = null;
   fileInput.value.value = '';
 };
 
-// Formatear clave
 const formatKey = (key) => {
   const labels = {
     productos: 'Productos',
+    clientes: 'Clientes',
     usuarios: 'Usuarios',
     visitas: 'Visitas',
     historial: 'Historial',
@@ -556,12 +625,10 @@ const formatKey = (key) => {
   return labels[key] || key;
 };
 
-// Formatear fecha
 const formatDate = (date) => {
   return date.toISOString().split('T')[0];
 };
 
-// Toast de notificación
 const showToast = (message, type = 'success') => {
   toast.value = { show: true, message, type };
   setTimeout(() => {
@@ -569,7 +636,6 @@ const showToast = (message, type = 'success') => {
   }, 3000);
 };
 
-// Computed property para formatear la fecha del último backup
 const formatLastBackupDate = computed(() => {
   if (!lastBackupDate.value) return '';
   const date = new Date(lastBackupDate.value);
@@ -582,23 +648,17 @@ const formatLastBackupDate = computed(() => {
   });
 });
 
-// Formatear estadísticas del backup
 const formatBackupStats = (stats) => {
   if (!stats) return '';
-  const parts = [];
-  if (stats.productos > 0) parts.push(`${stats.productos} producto${stats.productos !== 1 ? 's' : ''}`);
-  if (stats.usuarios > 0) parts.push(`${stats.usuarios} usuario${stats.usuarios !== 1 ? 's' : ''}`);
-  if (stats.visitas > 0) parts.push(`${stats.visitas} visita${stats.visitas !== 1 ? 's' : ''}`);
-  if (stats.eventos > 0) parts.push(`${stats.eventos} evento${stats.eventos !== 1 ? 's' : ''}`);
-  if (stats.cobros > 0) parts.push(`${stats.cobros} cobro${stats.cobros !== 1 ? 's' : ''}`);
-  if (stats.historial > 0) parts.push(`${stats.historial} historial${stats.historial !== 1 ? 'es' : ''}`);
-  return parts.length > 0 ? parts.join(', ') : 'Sin datos';
+  return Object.entries(stats)
+    .filter(([_, count]) => count > 0)
+    .map(([key, count]) => `${count} ${key}`)
+    .join(', ');
 };
 
-// Computed property para obtener la información del último backup
 const lastBackupInfo = computed(() => {
   if (autoBackups.value.length === 0) return null;
-  return autoBackups.value[0]; // Los backups están ordenados por fecha descendente
+  return autoBackups.value[0];
 });
 
 onMounted(() => {

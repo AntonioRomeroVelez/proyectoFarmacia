@@ -1,35 +1,41 @@
 import { ref, computed } from 'vue';
+import { dbService } from '@/services/db';
 
 export function useEstadisticas() {
-  // Obtener datos de localStorage
-  const getProductos = () => {
+
+  // Helpers internos para cargar datos
+  const getProductos = async () => {
     try {
-      return JSON.parse(localStorage.getItem('ListaProductos')) || [];
+      return await dbService.getAll('productos');
     } catch (error) {
+      console.error('Error loading productos stats:', error);
       return [];
     }
   };
 
-  const getVisitas = () => {
+  const getVisitas = async () => {
     try {
-      return JSON.parse(localStorage.getItem('VisitasDiarias')) || [];
+      return await dbService.getAll('visitas');
     } catch (error) {
+      console.error('Error loading visitas stats:', error);
       return [];
     }
   };
 
-  const getCobros = () => {
+  const getCobros = async () => {
     try {
-      return JSON.parse(localStorage.getItem('farmacia_cobros')) || [];
+      return await dbService.getAll('cobros');
     } catch (error) {
+      console.error('Error loading cobros stats:', error);
       return [];
     }
   };
 
-  const getHistorial = () => {
+  const getHistorial = async () => {
     try {
-      return JSON.parse(localStorage.getItem('farmacia_historial')) || [];
+      return await dbService.getAll('historial');
     } catch (error) {
+      console.error('Error loading historial stats:', error);
       return [];
     }
   };
@@ -57,19 +63,30 @@ export function useEstadisticas() {
     }
 
     return items.filter(item => {
-      const fechaItem = new Date(item[campoFecha]);
+      // Handle createdAt vs fecha vs date
+      // Historial uses 'createdAt' or 'date'? Earlier analysis said 'createdAt'.
+      // Visitas uses 'fecha'. Cobros uses 'fecha' (from useCobros filter).
+      // Let's be robust
+      const dateStr = item[campoFecha] || item.createdAt || item.date;
+      if (!dateStr) return false;
+      const fechaItem = new Date(dateStr);
       return fechaItem >= fechaInicio && fechaItem <= hoy;
     });
   };
 
   // Estadísticas de ventas
-  const getEstadisticasVentas = (periodo = 'mes') => {
-    const historial = filtrarPorPeriodo(getHistorial(), periodo, 'fecha');
+  const getEstadisticasVentas = async (periodo = 'mes') => {
+    const rawHistorial = await getHistorial();
+    const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt'); // Historial uses createdAt mostly
     
     // Agrupar por día
     const ventasPorDia = {};
     historial.forEach(pedido => {
-      const fecha = pedido.fecha.split('T')[0];
+      // Robust date parsing
+      const dateStr = pedido.createdAt || pedido.date;
+      if (!dateStr) return;
+      const fecha = dateStr.split('T')[0];
+
       const total = pedido.productos?.reduce((sum, p) => sum + (p.precio * p.cantidad), 0) || 0;
       
       if (!ventasPorDia[fecha]) {
@@ -90,8 +107,9 @@ export function useEstadisticas() {
   };
 
   // Top productos más vendidos
-  const getTopProductos = (periodo = 'mes', limit = 10) => {
-    const historial = filtrarPorPeriodo(getHistorial(), periodo, 'fecha');
+  const getTopProductos = async (periodo = 'mes', limit = 10) => {
+    const rawHistorial = await getHistorial();
+    const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
     
     const productosCantidad = {};
     historial.forEach(pedido => {
@@ -115,8 +133,10 @@ export function useEstadisticas() {
   };
 
   // Estadísticas de cobros
-  const getEstadisticasCobros = (periodo = 'mes') => {
-    const cobros = filtrarPorPeriodo(getCobros(), periodo);
+  const getEstadisticasCobros = async (periodo = 'mes') => {
+    const rawCobros = await getCobros();
+    // Cobros usually have 'fecha'
+    const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
     
     let totalAbonos = 0;
     let totalCancelaciones = 0;
@@ -143,8 +163,9 @@ export function useEstadisticas() {
   };
 
   // Estadísticas de visitas
-  const getEstadisticasVisitas = (periodo = 'mes') => {
-    const visitas = filtrarPorPeriodo(getVisitas(), periodo);
+  const getEstadisticasVisitas = async (periodo = 'mes') => {
+    const rawVisitas = await getVisitas();
+    const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
     
     // Agrupar por día
     const visitasPorDia = {};
@@ -167,10 +188,17 @@ export function useEstadisticas() {
   };
 
   // KPIs generales
-  const getKPIs = (periodo = 'mes') => {
-    const historial = filtrarPorPeriodo(getHistorial(), periodo, 'fecha');
-    const cobros = filtrarPorPeriodo(getCobros(), periodo);
-    const visitas = filtrarPorPeriodo(getVisitas(), periodo);
+  const getKPIs = async (periodo = 'mes') => {
+    // Parallel fetch
+    const [rawHistorial, rawCobros, rawVisitas] = await Promise.all([
+      getHistorial(),
+      getCobros(),
+      getVisitas()
+    ]);
+
+    const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
+    const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
+    const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
 
     const totalVentas = historial.reduce((sum, pedido) => {
       const total = pedido.productos?.reduce((s, p) => s + (p.precio * p.cantidad), 0) || 0;

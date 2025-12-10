@@ -1,35 +1,11 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
+import { useUsuarios } from "./useUsuarios";
 
 // Configuración de inactividad
 const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hora en milisegundos
 const WARNING_TIME = 60 * 1000; // 1 minuto en milisegundos
-
-// Usuarios predefinidos
-const USERS = [
-  {
-    id: 1,
-    username: "romero30",
-    password: "romero_30",
-    nombre: "Antonio Romero",
-    role: "admin",
-  },
-  {
-    id: 2,
-    username: "dianita26",
-    password: "dianita_26",
-    nombre: "Diana Benálcazar",
-    role: "admin",
-  },
-  {
-    id: 3,
-    username: "vendedor26",
-    password: "vendedor_26",
-    nombre: "Diana Benálcazar",
-    role: "vendedor",
-  },
-];
 
 const currentUser = ref(null);
 const showInactivityWarning = ref(false);
@@ -38,6 +14,8 @@ const remainingSeconds = ref(60);
 export function useAuth() {
   const router = useRouter();
   const toast = useToast();
+  // We use useUsuarios inside login to avoid early initialization issues or circular deps if any,
+  // but it's safe to import here as useUsuarios doesn't import useAuth.
 
   // Computed properties
   const isAuthenticated = computed(() => !!currentUser.value);
@@ -47,22 +25,11 @@ export function useAuth() {
   const userName = computed(() => currentUser.value?.nombre || "");
 
   // Verificar si hay sesión guardada al cargar
-  // Verificar si hay sesión guardada al cargar
   const checkAuth = () => {
     const savedUser = localStorage.getItem("currentUser");
     if (savedUser) {
       try {
-        let userObj = JSON.parse(savedUser);
-
-        // Sincronizar con usuarios predefinidos para asegurar datos actualizados (nombre, rol, etc.)
-        const defaultUser = USERS.find(u => u.username === userObj.username);
-        if (defaultUser) {
-          const { password, ...defaultUserSafe } = defaultUser;
-          userObj = { ...userObj, ...defaultUserSafe };
-          // Actualizar storage con datos frescos
-          localStorage.setItem("currentUser", JSON.stringify(userObj));
-        }
-
+        const userObj = JSON.parse(savedUser);
         currentUser.value = userObj;
         return true;
       } catch (error) {
@@ -96,12 +63,12 @@ export function useAuth() {
     showInactivityWarning.value = false;
     remainingSeconds.value = 60;
 
-    // Configurar nuevo temporizador de advertencia (29 minutos)
+    // Configurar nuevo temporizador de advertencia
     warningTimer = setTimeout(() => {
       startWarningCountdown();
     }, INACTIVITY_TIMEOUT - WARNING_TIME);
 
-    // Configurar temporizador de cierre forzado (30 minutos)
+    // Configurar temporizador de cierre forzado
     inactivityTimer = setTimeout(() => {
       forceLogout();
     }, INACTIVITY_TIMEOUT);
@@ -204,31 +171,15 @@ export function useAuth() {
   };
 
   // Login
-  const login = (username, password) => {
-    // Cargar usuarios más recientes del storage
-    const storedUsers = localStorage.getItem("app_users");
-    let allUsers = [];
+  const login = async (username, password) => {
+    // Usar useUsuarios para obtener la lista de usuarios (asegura carga e inicialización)
+    const { users, isLoaded, loadUsers } = useUsuarios();
 
-    if (storedUsers) {
-      allUsers = JSON.parse(storedUsers);
+    if (!isLoaded.value) {
+      await loadUsers();
     }
 
-    // Asegurar que los usuarios predefinidos estén actualizados en la lista
-    USERS.forEach(defaultUser => {
-      const index = allUsers.findIndex(u => u.username === defaultUser.username);
-      if (index !== -1) {
-        // Actualizar usuario existente con datos frescos (nombre, rol, password)
-        allUsers[index] = { ...allUsers[index], ...defaultUser };
-      } else {
-        // Agregar si no existe (inicialización o nuevo usuario default)
-        allUsers.push(defaultUser);
-      }
-    });
-
-    // Guardar lista actualizada en storage
-    localStorage.setItem("app_users", JSON.stringify(allUsers));
-
-    const user = allUsers.find(
+    const user = users.value.find(
       (u) => u.username === username && u.password === password
     );
 
@@ -320,3 +271,4 @@ export function useAuth() {
     dismissWarning,
   };
 }
+

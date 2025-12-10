@@ -313,6 +313,7 @@ export const usePDFGenerator = () => {
         body: datos.map(d => Object.values(d)),
         startY: headerY + 5,
         theme: 'grid',
+        margin: { left: 10, right: 10 },
         headStyles: {
           fillColor: [41, 128, 185],
           textColor: 255,
@@ -323,10 +324,17 @@ export const usePDFGenerator = () => {
         styles: {
           fontSize: 8,
           cellPadding: 2,
+          overflow: 'linebreak', // Ensure text wraps
         },
         columnStyles: {
-          2: { halign: 'right', fontStyle: 'bold' }, // Cantidad
-          7: { cellWidth: 50 } // Observaciones
+          0: { cellWidth: 22 }, // Fecha
+          1: { cellWidth: 45 }, // Cliente
+          2: { halign: 'right', fontStyle: 'bold', cellWidth: 25 }, // Cantidad
+          3: { cellWidth: 25 }, // Tipo
+          4: { cellWidth: 25 }, // Método
+          5: { cellWidth: 25 }, // Factura
+          6: { cellWidth: 25 }, // Recibo
+          7: { cellWidth: 'auto' } // Observaciones (takes remaining space)
         },
       });
 

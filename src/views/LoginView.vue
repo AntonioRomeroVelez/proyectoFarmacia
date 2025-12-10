@@ -64,7 +64,7 @@ const handleLogin = async () => {
   // Pequeño delay para mejor UX
   await new Promise(resolve => setTimeout(resolve, 500));
 
-  const success = login(username.value, password.value);
+  const success = await login(username.value, password.value);
 
   if (success) {
     router.push('/productos');

@@ -45,22 +45,22 @@
     <b-card class="shadow-sm" v-if="visitas.length > 0">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">📋 Visitas Registradas ({{ visitas.length }})</h5>
-        <b-button variant="outline-danger" size="sm" @click="borrarTodasLasVisitas">
+        <b-button variant="outline-danger" size="sm" @click="borrarTodas">
           🗑️ Borrar Todas
         </b-button>
       </div>
 
       <div class="row g-3">
-        <div v-for="(visita, index) in visitas" :key="index" class="col-12 col-md-12 col-lg-6">
+        <div v-for="(visita, index) in visitas" :key="visita.id || index" class="col-12 col-md-12 col-lg-6">
           <b-card class="h-100 visita-card">
             <template #header>
               <div class="d-flex justify-content-between align-items-start">
                 <strong class="text-primary">Visita #{{ index + 1 }}</strong>
                 <div class="d-flex gap-1">
-                  <b-button variant="outline-primary" size="sm" @click="editarVisita(index)">
+                  <b-button variant="outline-primary" size="sm" @click="editarVisita(visita)">
                     ✏️
                   </b-button>
-                  <b-button variant="outline-danger" size="sm" @click="eliminarVisita(index)">
+                  <b-button variant="outline-danger" size="sm" @click="eliminarVisitaConfirm(visita)">
                     🗑️
                   </b-button>
                 </div>
@@ -97,23 +97,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useToast } from 'vue-toastification';
 import alertify from 'alertifyjs';
+import { useVisitas } from '@/composables/useVisitas';
 
 const toast = useToast();
+const { visitas, addVisita, updateVisita, deleteVisita, deleteAllVisitas } = useVisitas();
 
 // Refs para textareas
 const lugarTextarea = ref(null);
 const observacionTextarea = ref(null);
 
 // Estado
-const visitas = ref([]);
 const nuevaVisita = ref({
   lugar: '',
   observacion: ''
 });
-const editandoIndex = ref(null);
+const editandoId = ref(null); // Changed from index to ID
 
 // Función para auto-ajustar altura del textarea
 const autoResizeTextarea = (refName) => {
@@ -127,41 +128,23 @@ const autoResizeTextarea = (refName) => {
   });
 };
 
-// Cargar visitas desde localStorage
-onMounted(() => {
-  const visitasGuardadas = localStorage.getItem('VisitasDiarias');
-  if (visitasGuardadas) {
-    visitas.value = JSON.parse(visitasGuardadas);
-  }
-});
-
-// Guardar en localStorage
-const guardarEnLocalStorage = () => {
-  localStorage.setItem('VisitasDiarias', JSON.stringify(visitas.value));
-};
-
 // Agregar o actualizar visita
-const agregarOActualizarVisita = () => {
+const agregarOActualizarVisita = async () => {
   if (!nuevaVisita.value.lugar.trim() || !nuevaVisita.value.observacion.trim()) {
     toast.warning('⚠️ Por favor completa todos los campos');
     return;
   }
 
-  if (editandoIndex.value !== null) {
+  if (editandoId.value !== null) {
     // Actualizar visita existente
-    visitas.value[editandoIndex.value] = {
-      ...nuevaVisita.value,
-      fecha: visitas.value[editandoIndex.value].fecha // Mantener fecha original
-    };
-    toast.success('✅ Visita actualizada correctamente');
-    editandoIndex.value = null;
+    await updateVisita(editandoId.value, {
+      lugar: nuevaVisita.value.lugar,
+      observacion: nuevaVisita.value.observacion
+    });
+    editandoId.value = null;
   } else {
     // Agregar nueva visita
-    visitas.value.push({
-      ...nuevaVisita.value,
-      fecha: new Date().toISOString()
-    });
-    toast.success('✅ Visita agregada correctamente');
+    await addVisita({ ...nuevaVisita.value });
   }
 
   // Limpiar formulario
@@ -169,16 +152,14 @@ const agregarOActualizarVisita = () => {
     lugar: '',
     observacion: ''
   };
-
-  guardarEnLocalStorage();
 };
 
 // Editar visita
-const editarVisita = (index) => {
-  editandoIndex.value = index;
+const editarVisita = (visita) => {
+  editandoId.value = visita.id;
   nuevaVisita.value = {
-    lugar: visitas.value[index].lugar,
-    observacion: visitas.value[index].observacion
+    lugar: visita.lugar,
+    observacion: visita.observacion
   };
 
   // Scroll al formulario
@@ -193,7 +174,7 @@ const editarVisita = (index) => {
 
 // Cancelar edición
 const cancelarEdicion = () => {
-  editandoIndex.value = null;
+  editandoId.value = null;
   nuevaVisita.value = {
     lugar: '',
     observacion: ''
@@ -201,14 +182,12 @@ const cancelarEdicion = () => {
 };
 
 // Eliminar visita con confirmación Alertify
-const eliminarVisita = (index) => {
+const eliminarVisitaConfirm = (visita) => {
   alertify.confirm(
     "Eliminar Visita",
-    `⚠️ ¿Eliminar visita #${index + 1}?`,
+    `⚠️ ¿Eliminar visita en ${visita.lugar}?`,
     () => {
-      visitas.value.splice(index, 1);
-      guardarEnLocalStorage();
-      toast.success('🗑️ Visita eliminada');
+      deleteVisita(visita.id);
     },
     () => {
       // Cancel action
@@ -217,14 +196,12 @@ const eliminarVisita = (index) => {
 };
 
 // Borrar todas las visitas
-const borrarTodasLasVisitas = () => {
+const borrarTodas = () => {
   alertify.confirm(
     "Eliminar Todas las Visitas",
     `⚠️ ¿Eliminar TODAS las ${visitas.value.length} visitas?<br><br>Esta acción NO se puede deshacer.`,
     () => {
-      visitas.value = [];
-      guardarEnLocalStorage();
-      toast.success('🗑️ Todas las visitas han sido eliminadas');
+      deleteAllVisitas();
     },
     () => {
       // Cancel action
@@ -256,6 +233,7 @@ const copiarParaWhatsApp = () => {
 
 // Formatear fecha
 const formatearFecha = (fechaISO) => {
+  if (!fechaISO) return '';
   const fecha = new Date(fechaISO);
   return fecha.toLocaleString('es-ES', {
     day: '2-digit',

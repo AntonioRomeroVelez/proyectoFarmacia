@@ -97,7 +97,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -137,15 +138,58 @@ const {
 } = useEstadisticas();
 
 const periodoSeleccionado = ref('mes');
+const isLoading = ref(true);
 
-// KPIs
-const kpis = computed(() => getKPIs(periodoSeleccionado.value));
+// Initial State
+const kpis = ref({
+  totalVentas: 0,
+  totalCobrado: 0,
+  totalPedidos: 0,
+  totalVisitas: 0,
+  promedioVenta: 0,
+  tasaConversion: 0
+});
 
-// Estadísticas de ventas
-const estadisticasVentas = computed(() => getEstadisticasVentas(periodoSeleccionado.value));
-const estadisticasProductos = computed(() => getTopProductos(periodoSeleccionado.value));
-const estadisticasCobros = computed(() => getEstadisticasCobros(periodoSeleccionado.value));
-const estadisticasVisitas = computed(() => getEstadisticasVisitas(periodoSeleccionado.value));
+const estadisticasVentas = ref({ labels: [], data: [], total: 0 });
+const estadisticasProductos = ref({ labels: [], data: [] });
+const estadisticasCobros = ref({ labels: [], data: [], counts: [], total: 0 });
+const estadisticasVisitas = ref({ labels: [], data: [], total: 0 });
+
+// Load Data Function
+const loadData = async () => {
+  isLoading.value = true;
+  try {
+    const periodo = periodoSeleccionado.value;
+
+    // Fetch all in parallel
+    const [kpiData, ventasData, prodData, cobrosData, visitasData] = await Promise.all([
+      getKPIs(periodo),
+      getEstadisticasVentas(periodo),
+      getTopProductos(periodo),
+      getEstadisticasCobros(periodo),
+      getEstadisticasVisitas(periodo)
+    ]);
+
+    kpis.value = kpiData;
+    estadisticasVentas.value = ventasData;
+    estadisticasProductos.value = prodData;
+    estadisticasCobros.value = cobrosData;
+    estadisticasVisitas.value = visitasData;
+  } catch (e) {
+    console.error('Error loading dashboard data:', e);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Watchers and lifecycle
+watch(periodoSeleccionado, () => {
+  loadData();
+});
+
+onMounted(() => {
+  loadData();
+});
 
 // Configuración de gráficos responsivos
 const responsiveOptions = {

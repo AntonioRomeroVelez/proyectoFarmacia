@@ -24,18 +24,18 @@ watch(
 );
 
 export const useCart = () => {
-  const addToCart = (product, quantity) => {
+  const addToCart = (product, quantity = 1, silent = false) => {
     const existingItem = cart.value.find((item) => item.ID === product.ID);
 
     if (existingItem) {
       existingItem.quantity += quantity;
-      toast.info(`Cantidad actualizada: ${product.NombreProducto}`);
+      if (!silent) toast.info(`Cantidad actualizada: ${product.NombreProducto}`);
     } else {
       cart.value.push({
         ...product,
         quantity,
       });
-      toast.success(`Agregado al carrito: ${product.NombreProducto}`);
+      if (!silent) toast.success(`Agregado al carrito: ${product.NombreProducto}`);
     }
   };
 
@@ -58,9 +58,9 @@ export const useCart = () => {
     }
   };
 
-  const clearCart = () => {
+  const clearCart = (silent = false) => {
     cart.value = [];
-    toast.info("Carrito vaciado");
+    if (!silent) toast.info("Carrito vaciado");
   };
 
   const cartCount = computed(() => {
