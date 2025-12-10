@@ -1,9 +1,8 @@
 <template>
   <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4  flex-wrap">
+    <div class="d-flex justify-content-center align-items-center mb-4  flex-wrap">
       <div class="text-center">
-        <h2 class="fw-bold text-primary mb-1">💰 Registro de Cobros</h2>
         <p class="text-muted mb-0 small">Gestiona los pagos recibidos</p>
       </div>
       <div class="d-flex gap-2">
@@ -430,7 +429,7 @@ const registrarCobro = async () => {
       // Modo Edición
       updateCobro({ ...formulario.value, id: editingId.value });
     } else {
-  // Modo Creación
+      // Modo Creación
       addCobro({ ...formulario.value });
     }
 
@@ -478,7 +477,7 @@ const limpiarFormulario = () => {
   };
   imagenesPreview.value = [];
   if (fileInput.value) {
-    fileInput.value.reset();
+    fileInput.value.value = '';
   }
 };
 
@@ -641,7 +640,7 @@ const procesarExportacion = (action) => {
   showPdfOptions.value = false;
   const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
 
-// Import dynamically or ensure it's destructured correctly if not already
+  // Import dynamically or ensure it's destructured correctly if not already
   const { exportCobrosImagenes } = usePDFGenerator();
   exportCobrosImagenes(cobrosConImagen, action);
 };
