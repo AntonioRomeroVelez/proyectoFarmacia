@@ -1,12 +1,15 @@
 <template>
   <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
+    <div class="d-flex justify-content-between align-items-center mb-4  flex-wrap">
+      <div class="text-center">
         <h2 class="fw-bold text-primary mb-1">💰 Registro de Cobros</h2>
         <p class="text-muted mb-0 small">Gestiona los pagos recibidos</p>
       </div>
       <div class="d-flex gap-2">
+        <b-button variant="primary" @click="showRegistroModal = true">
+          ➕ Registrar Cobro
+        </b-button>
         <b-button variant="danger" @click="exportarPDF" :disabled="cobros.length === 0">
           📄 Exportar PDF
         </b-button>
@@ -16,9 +19,8 @@
       </div>
     </div>
 
-    <!-- Formulario de Registro -->
-    <b-card class="shadow-sm mb-4">
-      <h5 class="mb-3">➕ Registrar Nuevo Cobro</h5>
+    <!-- Modal de Registro -->
+    <b-modal v-model="showRegistroModal" title="➕ Registrar Nuevo Cobro" size="lg" hide-footer>
       <b-form @submit.prevent="registrarCobro">
         <b-row>
           <b-col md="6">
@@ -104,16 +106,19 @@
           </b-col>
         </b-row>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 justify-content-end mt-3">
+          <b-button variant="secondary" @click="showRegistroModal = false">
+            Cancelar
+          </b-button>
+          <b-button variant="outline-secondary" @click="limpiarFormulario">
+            Limpiar
+          </b-button>
           <b-button type="submit" variant="primary">
             💾 Guardar Cobro
           </b-button>
-          <b-button variant="outline-secondary" @click="limpiarFormulario">
-            ✖ Limpiar
-          </b-button>
         </div>
       </b-form>
-    </b-card>
+    </b-modal>
 
     <!-- Filtros y Resumen -->
     <b-card class="shadow-sm mb-4">
@@ -324,6 +329,18 @@
       <h5 class="text-muted mt-3">No hay cobros registrados</h5>
       <p class="text-muted mb-0">Completa el formulario para registrar tu primer cobro</p>
     </b-card>
+
+    <!-- Modal de Opciones PDF -->
+    <b-modal v-model="showPdfOptions" title="Opciones de PDF" hide-footer centered>
+      <div class="d-grid gap-3 p-3">
+        <b-button variant="primary" size="lg" @click="procesarExportacion('save')">
+          💾 Guardar PDF
+        </b-button>
+        <b-button variant="info" size="lg" class="text-white" @click="procesarExportacion('print')">
+          🖨️ Imprimir PDF
+        </b-button>
+      </div>
+    </b-modal>
   </div>
 </template>
 
@@ -338,6 +355,8 @@ const toast = useToast();
 const { cobros, addCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
 const { exportCobros } = usePDFGenerator();
 
+const showRegistroModal = ref(false);
+
 const formulario = ref({
   cliente: '',
   fecha: new Date().toISOString().split('T')[0],
@@ -345,8 +364,6 @@ const formulario = ref({
   tipo: 'Abono',
   metodoPago: 'Efectivo',
   numeroFactura: '',
-  numeroRecibo: '',
-  observaciones: '',
   numeroRecibo: '',
   observaciones: '',
   imagenes: [] // Array de imágenes en base64
@@ -402,6 +419,7 @@ const registrarCobro = () => {
 
   addCobro({ ...formulario.value });
   limpiarFormulario();
+  showRegistroModal.value = false;
 };
 
 const limpiarFormulario = () => {
@@ -566,6 +584,8 @@ const limpiarImagenes = () => {
 };
 
 // Exportar PDF con imágenes
+const showPdfOptions = ref(false);
+
 const exportarPDFImagenes = () => {
   const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
 
@@ -574,8 +594,16 @@ const exportarPDFImagenes = () => {
     return;
   }
 
+  showPdfOptions.value = true;
+};
+
+const procesarExportacion = (action) => {
+  showPdfOptions.value = false;
+  const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
+
+// Import dynamically or ensure it's destructured correctly if not already
   const { exportCobrosImagenes } = usePDFGenerator();
-  exportCobrosImagenes(cobrosConImagen);
+  exportCobrosImagenes(cobrosConImagen, action);
 };
 
 // Ver imagen en modal
