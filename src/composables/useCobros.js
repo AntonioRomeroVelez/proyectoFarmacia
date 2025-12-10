@@ -38,6 +38,18 @@ export function useCobros() {
     return newCobro;
   };
 
+  // Actualizar cobro
+  const updateCobro = (updatedCobro) => {
+    const index = cobros.value.findIndex(c => c.id === updatedCobro.id);
+    if (index !== -1) {
+      cobros.value[index] = { ...updatedCobro };
+      saveToStorage();
+      toast.success('✏️ Cobro actualizado correctamente');
+      return true;
+    }
+    return false;
+  };
+
   // Eliminar cobro
   const deleteCobro = (id) => {
     cobros.value = cobros.value.filter(c => c.id !== id);
@@ -54,7 +66,13 @@ export function useCobros() {
 
   // Helper para guardar
   const saveToStorage = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cobros.value));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cobros.value));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+      toast.error('Error al guardar datos. Es posible que el almacenamiento esté lleno.');
+      throw error; // Re-throw to let caller know
+    }
   };
 
   // Obtener cobros en un rango de fechas
@@ -81,6 +99,7 @@ export function useCobros() {
   return {
     cobros,
     addCobro,
+    updateCobro,
     deleteCobro,
     clearAllCobros,
     getCobrosRango,

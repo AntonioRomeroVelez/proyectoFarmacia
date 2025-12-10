@@ -20,7 +20,8 @@
     </div>
 
     <!-- Modal de Registro -->
-    <b-modal v-model="showRegistroModal" title="➕ Registrar Nuevo Cobro" size="lg" hide-footer>
+    <b-modal v-model="showRegistroModal" :title="editingId ? '✏️ Editar Cobro' : '➕ Registrar Nuevo Cobro'" size="lg"
+      hide-footer>
       <b-form @submit.prevent="registrarCobro">
         <b-row>
           <b-col md="6">
@@ -252,6 +253,9 @@
                 </div>
               </td>
               <td class="text-end">
+                <b-button variant="outline-primary" size="sm" class="me-1" @click="prepararEdicion(cobro)">
+                  ✏️
+                </b-button>
                 <b-button variant="outline-danger" size="sm" @click="confirmarEliminar(cobro)">
                   🗑️
                 </b-button>
@@ -315,6 +319,9 @@
           </div>
 
           <div class="text-end">
+            <b-button variant="outline-primary" size="sm" class="me-1" @click="prepararEdicion(cobro)">
+              ✏️ Editar
+            </b-button>
             <b-button variant="outline-danger" size="sm" @click="confirmarEliminar(cobro)">
               🗑️ Eliminar
             </b-button>
@@ -345,17 +352,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import { useCobros } from '@/composables/useCobros';
 import { useToast } from 'vue-toastification';
 import { usePDFGenerator } from '@/utils/pdfGenerator';
 import alertify from 'alertifyjs';
 
 const toast = useToast();
-const { cobros, addCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
+const { cobros, addCobro, updateCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
 const { exportCobros } = usePDFGenerator();
 
 const showRegistroModal = ref(false);
+const editingId = ref(null); // Estado para saber si estamos editando
 
 const formulario = ref({
   cliente: '',
@@ -411,18 +419,52 @@ const hayImagenes = computed(() => {
 });
 
 // Methods
-const registrarCobro = () => {
+const registrarCobro = async () => {
   if (!formulario.value.cantidad || formulario.value.cantidad <= 0) {
     toast.warning('La cantidad debe ser mayor a 0');
     return;
   }
 
-  addCobro({ ...formulario.value });
-  limpiarFormulario();
-  showRegistroModal.value = false;
+  try {
+    if (editingId.value) {
+      // Modo Edición
+      updateCobro({ ...formulario.value, id: editingId.value });
+    } else {
+  // Modo Creación
+      addCobro({ ...formulario.value });
+    }
+
+    // Cerrar modal primero
+    showRegistroModal.value = false;
+
+    // Esperar a que Vue procese el cambio de estado antes de limpiar
+    await nextTick();
+    limpiarFormulario();
+
+  } catch (error) {
+    console.error('Error al registrar cobro:', error);
+  }
+};
+
+const prepararEdicion = (cobro) => {
+  editingId.value = cobro.id;
+  formulario.value = {
+    cliente: cobro.cliente,
+    fecha: cobro.fecha,
+    cantidad: cobro.cantidad,
+    tipo: cobro.tipo,
+    metodoPago: cobro.metodoPago,
+    numeroFactura: cobro.numeroFactura || '',
+    numeroRecibo: cobro.numeroRecibo || '',
+    observaciones: cobro.observaciones || '',
+    imagenes: cobro.imagenes ? [...cobro.imagenes] : (cobro.imagen ? [cobro.imagen] : [])
+  };
+  imagenesPreview.value = [...formulario.value.imagenes];
+  showRegistroModal.value = true;
 };
 
 const limpiarFormulario = () => {
+  editingId.value = null; // Reiniciar estado de edición
   formulario.value = {
     cliente: '',
     fecha: new Date().toISOString().split('T')[0],
@@ -430,8 +472,6 @@ const limpiarFormulario = () => {
     tipo: 'Abono',
     metodoPago: 'Efectivo',
     numeroFactura: '',
-    numeroRecibo: '',
-    observaciones: '',
     numeroRecibo: '',
     observaciones: '',
     imagenes: []
@@ -493,7 +533,7 @@ const exportarPDF = () => {
     return;
   }
 
-  exportCobros(cobrosFiltrados.value);
+  exportCobros(cobrosFiltrados.value, filtros.value);
 };
 
 // Manejar selección de imágenes

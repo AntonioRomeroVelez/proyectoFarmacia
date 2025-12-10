@@ -242,7 +242,7 @@ export const usePDFGenerator = () => {
     }
   };
 
-  const exportCobros = (cobrosData) => {
+  const exportCobros = (cobrosData, filtros = {}) => {
     try {
       if (!cobrosData || cobrosData.length === 0) {
         toast.error("No hay datos para exportar");
@@ -278,17 +278,40 @@ export const usePDFGenerator = () => {
       pdf.setFont(undefined, 'bold');
       pdf.text('Registro de Cobros', pdf.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
 
-      // Fecha de generación
+      // Fecha de generación + Filtros aplicados
       pdf.setFontSize(10);
       pdf.setFont(undefined, 'normal');
-      pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 14, 25);
-      pdf.text(`Total de registros: ${cobrosData.length}`, 14, 30);
+
+      let headerY = 25;
+      pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, 14, headerY);
+      headerY += 5;
+      pdf.text(`Total de registros: ${cobrosData.length}`, 14, headerY);
+
+      // Mostrar filtros si existen
+      headerY += 5;
+      let filterText = [];
+      if (filtros.fechaInicio || filtros.fechaFin) {
+        filterText.push(`Rango: ${filtros.fechaInicio || 'Inicio'} al ${filtros.fechaFin || 'Hoy'}`);
+      }
+      if (filtros.tipo) {
+        filterText.push(`Tipo: ${filtros.tipo}`);
+      }
+      if (filtros.metodoPago) {
+        filterText.push(`Método: ${filtros.metodoPago}`);
+      }
+
+      if (filterText.length > 0) {
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`Filtros: ${filterText.join(' | ')}`, 14, headerY);
+        pdf.setFont(undefined, 'normal');
+        headerY += 5;
+      }
 
       // Tabla
       autoTable(pdf, {
         head: [['Fecha', 'Cliente', 'Cantidad', 'Tipo', 'Método', 'Nº Factura', 'Nº Recibo', 'Observaciones']],
         body: datos.map(d => Object.values(d)),
-        startY: 35,
+        startY: headerY + 5,
         theme: 'grid',
         headStyles: {
           fillColor: [41, 128, 185],
@@ -307,27 +330,40 @@ export const usePDFGenerator = () => {
         },
       });
 
-      // Resumen de totales
-      const finalY = pdf.lastAutoTable.finalY || 40;
+      // Resumen de totales (Tabla Estilizada)
+      const finalY = pdf.lastAutoTable.finalY + 10;
 
-      pdf.setFontSize(11);
-      pdf.setFont(undefined, 'bold');
+      // Datos para la tabla de resumen
+      const resumenData = [
+        ['Abonos:', `$${totalAbonos.toFixed(2)}`],
+        ['Cancelaciones:', `$${totalCancelaciones.toFixed(2)}`],
+        ['TOTAL GENERAL:', `$${totalGeneral.toFixed(2)}`]
+      ];
 
-      const startX = 200;
-      pdf.text('Resumen:', startX, finalY + 10);
-
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      pdf.text(`Abonos (${cobrosData.filter(c => c.tipo === 'Abono').length}):`, startX, finalY + 16);
-      pdf.text(`$${totalAbonos.toFixed(2)}`, startX + 60, finalY + 16, { align: 'right' });
-
-      pdf.text(`Cancelaciones (${cobrosData.filter(c => c.tipo === 'Cancelación Total').length}):`, startX, finalY + 22);
-      pdf.text(`$${totalCancelaciones.toFixed(2)}`, startX + 60, finalY + 22, { align: 'right' });
-
-      pdf.setFont(undefined, 'bold');
-      pdf.setFontSize(11);
-      pdf.text('Total General:', startX, finalY + 28);
-      pdf.text(`$${totalGeneral.toFixed(2)}`, startX + 60, finalY + 28, { align: 'right' });
+      autoTable(pdf, {
+        body: resumenData,
+        startY: finalY,
+        theme: 'grid',
+        tableWidth: 80,
+        margin: { left: pdf.internal.pageSize.getWidth() - 90 }, // Alinear a la derecha
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          valign: 'middle'
+        },
+        columnStyles: {
+          0: { fontStyle: 'bold', halign: 'right', fillColor: [240, 240, 240] },
+          1: { halign: 'right', fontStyle: 'bold' }
+        },
+        didParseCell: function (data) {
+          // Resaltar la fila de TOTAL GENERAL
+          if (data.row.index === 2) {
+            data.cell.styles.fillColor = [41, 128, 185];
+            data.cell.styles.textColor = 255;
+            data.cell.styles.fontSize = 11;
+          }
+        }
+      });
 
       // Generar nombre de archivo
       const fecha = new Date().toISOString().split('T')[0];
@@ -367,10 +403,6 @@ export const usePDFGenerator = () => {
       pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, pageWidth / 2, 22, { align: 'center' });
       pdf.text(`Total de comprobantes: ${cobrosData.length}`, pageWidth / 2, 27, { align: 'center' });
 
-      let currentX = margin;
-      let currentY = 35;
-      let itemsInRow = 0;
-
       // Aplanar la lista de imágenes para procesar
       const itemsParaPDF = [];
       cobrosData.forEach(cobro => {
@@ -391,7 +423,11 @@ export const usePDFGenerator = () => {
         return;
       }
 
-      pdf.text(`Total de imágenes: ${itemsParaPDF.length}`, pageWidth / 2, 27, { align: 'center' });
+      pdf.text(`Total de imágenes: ${itemsParaPDF.length}`, pageWidth / 2, 32, { align: 'center' });
+
+      let currentX = margin;
+      let currentY = 40;
+      let itemsInRow = 0;
 
       itemsParaPDF.forEach((item) => {
 
