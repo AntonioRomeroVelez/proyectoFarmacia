@@ -5,22 +5,7 @@
       <p class="subtitle">Exporta e importa todos tus datos entre dispositivos</p>
     </div>
 
-    <!-- Storage Usage Indicator -->
-    <div class="storage-card mb-4 p-4 bg-white rounded-3 shadow-sm">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="m-0">💾 Almacenamiento Local (LocalStorage)</h5>
-        <span :class="`text-${storageStats.color} fw-bold`">
-          {{ storageStats.percent }}% Usado
-        </span>
-      </div>
-      <b-progress :value="Number(storageStats.percent)" :variant="storageStats.color" striped animated class="mb-2"
-        height="1.5rem"></b-progress>
-      <div class="d-flex justify-content-between text-muted small">
-        <span>Usado: {{ storageStats.usedKB }} KB</span>
-        <span>Límite (aprox): 5 MB</span>
-      </div>
-      <!-- Removed optimization button as it was for LS -->
-    </div>
+
 
     <!-- Estadísticas de datos -->
     <div class="stats-grid">
@@ -306,31 +291,6 @@ const stats = ref({
   cobros: 0
 });
 
-const storageStats = ref({
-  usedKB: 0,
-  totalKB: 5120, // 5MB standard limit
-  percent: 0,
-  color: 'success'
-});
-
-const calculateStorageUsage = () => {
-  let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += ((localStorage[key].length + key.length) * 2); // char = 2 bytes approx
-    }
-  }
-  const usedKB = (total / 1024).toFixed(2);
-  const percent = ((total / (5 * 1024 * 1024)) * 100).toFixed(1);
-
-  storageStats.value = {
-    usedKB: usedKB,
-    totalKB: 5120,
-    percent: percent,
-    color: percent > 90 ? 'danger' : (percent > 70 ? 'warning' : 'success')
-  };
-};
-
 const showExportOptions = ref(false);
 const exportOptions = ref({
   productos: true,
@@ -390,7 +350,6 @@ const loadStats = async () => {
     console.error('Error loading stats from IDB:', e);
   }
 
-  calculateStorageUsage();
 };
 
 // Exportar todos los datos

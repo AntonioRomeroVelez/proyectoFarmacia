@@ -60,8 +60,20 @@ export const dbService = {
     return db.get(storeName, key);
   },
 
+  // Add item (fails if key exists)
+  async add(storeName, value) {
+    const db = await dbRequest;
+    return db.add(storeName, value);
+  },
+
   // Add or update item
   async put(storeName, value) {
+    const db = await dbRequest;
+    return db.put(storeName, value);
+  },
+
+  // Update existing item (alias for put)
+  async update(storeName, value) {
     const db = await dbRequest;
     return db.put(storeName, value);
   },

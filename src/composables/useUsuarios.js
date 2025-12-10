@@ -88,7 +88,7 @@ export function useUsuarios() {
 
     // Generar nuevo ID (max + 1)
     const newId = users.value.length > 0
-      ? Math.max(...users.value.map(u => u.id || 0)) + 1
+      ? Math.max(...users.value.map(u => Number(u.id) || 0)) + 1
       : 1;
 
     const newUser = {
