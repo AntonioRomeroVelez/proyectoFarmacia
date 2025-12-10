@@ -6,9 +6,14 @@
         <h2 class="fw-bold text-primary mb-1">💰 Registro de Cobros</h2>
         <p class="text-muted mb-0 small">Gestiona los pagos recibidos</p>
       </div>
-      <b-button variant="danger" @click="exportarPDF" :disabled="cobros.length === 0">
-        📄 Exportar PDF
-      </b-button>
+      <div class="d-flex gap-2">
+        <b-button variant="danger" @click="exportarPDF" :disabled="cobros.length === 0">
+          📄 Exportar PDF
+        </b-button>
+        <b-button variant="success" @click="exportarPDFImagenes" :disabled="!hayImagenes">
+          📸 PDF Imágenes
+        </b-button>
+      </div>
     </div>
 
     <!-- Formulario de Registro -->
@@ -74,6 +79,28 @@
               <b-form-textarea id="observaciones" v-model="formulario.observaciones" placeholder="Notas adicionales..."
                 rows="2"></b-form-textarea>
             </b-form-group>
+          </b-col>
+
+          <b-col md="12">
+            <b-form-group label="Imágenes del Comprobante:" label-for="imagen">
+              <input type="file" id="imagen" class="form-control" @change="handleImagenChange" accept="image/*" multiple
+                ref="fileInput" />
+              <small class="text-muted">Opcional: Subir una o más imágenes (JPG, PNG)</small>
+            </b-form-group>
+
+            <!-- Vista previa de imágenes -->
+            <div v-if="imagenesPreview.length > 0" class="d-flex flex-wrap gap-2 mt-2">
+              <div v-for="(img, index) in imagenesPreview" :key="index" class="position-relative"
+                style="width: 100px; height: 100px;">
+                <img :src="img" alt="Vista previa" class="img-fluid rounded border w-100 h-100"
+                  style="object-fit: cover;" />
+                <b-button variant="danger" size="sm"
+                  class="position-absolute top-0 end-0 m-1 p-0 d-flex align-items-center justify-content-center"
+                  style="width: 20px; height: 20px; font-size: 12px;" @click="eliminarImagen(index)">
+                  ✖
+                </b-button>
+              </div>
+            </div>
           </b-col>
         </b-row>
 
@@ -175,6 +202,7 @@
               <th>Nº Factura</th>
               <th>Nº Recibo</th>
               <th>Observaciones</th>
+              <th>Imagen</th>
               <th class="text-end">Acciones</th>
             </tr>
           </thead>
@@ -194,6 +222,30 @@
               <td><small>{{ cobro.numeroFactura || '-' }}</small></td>
               <td><small>{{ cobro.numeroRecibo || '-' }}</small></td>
               <td><small class="text-muted">{{ cobro.observaciones || '-' }}</small></td>
+              <td>
+                <div class="d-flex align-items-center gap-1">
+                  <!-- Caso: Array de imágenes -->
+                  <template v-if="cobro.imagenes && cobro.imagenes.length > 0">
+                    <div class="position-relative">
+                      <img :src="cobro.imagenes[0]" alt="Comprobante" class="rounded"
+                        style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                        @click="verImagenModal(cobro.imagenes[0])" />
+                      <span v-if="cobro.imagenes.length > 1"
+                        class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger"
+                        style="font-size: 0.6rem;">
+                        +{{ cobro.imagenes.length - 1 }}
+                      </span>
+                    </div>
+                  </template>
+                  <!-- Caso: Imagen única (legacy) -->
+                  <template v-else-if="cobro.imagen">
+                    <img :src="cobro.imagen" alt="Comprobante" class="rounded"
+                      style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                      @click="verImagenModal(cobro.imagen)" />
+                  </template>
+                  <small v-else class="text-muted">-</small>
+                </div>
+              </td>
               <td class="text-end">
                 <b-button variant="outline-danger" size="sm" @click="confirmarEliminar(cobro)">
                   🗑️
@@ -242,6 +294,21 @@
             <small class="text-muted">{{ cobro.observaciones }}</small>
           </div>
 
+          <!-- Imágenes en móvil -->
+          <div v-if="(cobro.imagenes && cobro.imagenes.length > 0) || cobro.imagen" class="mb-2">
+            <div class="d-flex flex-wrap gap-2">
+              <template v-if="cobro.imagenes && cobro.imagenes.length > 0">
+                <img v-for="(img, idx) in cobro.imagenes" :key="idx" :src="img" alt="Comprobante"
+                  class="img-fluid rounded border"
+                  style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" @click="verImagenModal(img)" />
+              </template>
+              <template v-else-if="cobro.imagen">
+                <img :src="cobro.imagen" alt="Comprobante" class="img-fluid rounded border"
+                  style="max-height: 200px; cursor: pointer;" @click="verImagenModal(cobro.imagen)" />
+              </template>
+            </div>
+          </div>
+
           <div class="text-end">
             <b-button variant="outline-danger" size="sm" @click="confirmarEliminar(cobro)">
               🗑️ Eliminar
@@ -279,8 +346,14 @@ const formulario = ref({
   metodoPago: 'Efectivo',
   numeroFactura: '',
   numeroRecibo: '',
-  observaciones: ''
+  observaciones: '',
+  numeroRecibo: '',
+  observaciones: '',
+  imagenes: [] // Array de imágenes en base64
 });
+
+const imagenesPreview = ref([]);
+const fileInput = ref(null);
 
 const filtros = ref({
   fechaInicio: '',
@@ -316,6 +389,10 @@ const totalFiltrado = computed(() => {
   return getTotalCobros(cobrosFiltrados.value);
 });
 
+const hayImagenes = computed(() => {
+  return cobros.value.some(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
+});
+
 // Methods
 const registrarCobro = () => {
   if (!formulario.value.cantidad || formulario.value.cantidad <= 0) {
@@ -336,8 +413,15 @@ const limpiarFormulario = () => {
     metodoPago: 'Efectivo',
     numeroFactura: '',
     numeroRecibo: '',
-    observaciones: ''
+    observaciones: '',
+    numeroRecibo: '',
+    observaciones: '',
+    imagenes: []
   };
+  imagenesPreview.value = [];
+  if (fileInput.value) {
+    fileInput.value.reset();
+  }
 };
 
 const limpiarFiltros = () => {
@@ -370,7 +454,7 @@ const confirmarEliminar = (cobro) => {
     () => {
       deleteCobro(cobro.id);
     },
-    () => {}
+    () => { }
   ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });
 };
 
@@ -381,7 +465,7 @@ const confirmarBorrarTodos = () => {
     () => {
       clearAllCobros();
     },
-    () => {}
+    () => { }
   ).set('labels', { ok: 'Sí, Borrar Todos', cancel: 'Cancelar' });
 };
 
@@ -392,6 +476,117 @@ const exportarPDF = () => {
   }
 
   exportCobros(cobrosFiltrados.value);
+};
+
+// Manejar selección de imágenes
+const handleImagenChange = async (event) => {
+  const files = Array.from(event.target.files);
+  if (files.length === 0) return;
+
+  // Validar y procesar cada archivo
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) {
+      toast.error(`El archivo ${file.name} no es una imagen válida`);
+      continue;
+    }
+
+    try {
+      const base64 = await convertirImagenABase64(file);
+      formulario.value.imagenes.push(base64);
+      imagenesPreview.value.push(base64);
+    } catch (error) {
+      console.error('Error al procesar imagen:', error);
+      toast.error(`Error al procesar la imagen ${file.name}`);
+    }
+  }
+
+  toast.success(`✅ ${files.length} imagen(es) cargada(s)`);
+
+  // Limpiar input para permitir seleccionar las mismas imágenes de nuevo si se desea
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
+
+// Convertir imagen a Base64
+// Convertir imagen a Base64 con compresión
+const convertirImagenABase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Redimensionar si es muy grande (max 1000px)
+        const maxSize = 1000;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height *= maxSize / width;
+            width = maxSize;
+          } else {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Comprimir a JPEG con calidad 0.7
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(compressedBase64);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+// Eliminar imagen seleccionada
+const eliminarImagen = (index) => {
+  formulario.value.imagenes.splice(index, 1);
+  imagenesPreview.value.splice(index, 1);
+};
+
+// Limpiar todas las imágenes (opcional, si se requiere)
+const limpiarImagenes = () => {
+  formulario.value.imagenes = [];
+  imagenesPreview.value = [];
+  if (fileInput.value) {
+    fileInput.value.value = '';
+  }
+};
+
+// Exportar PDF con imágenes
+const exportarPDFImagenes = () => {
+  const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
+
+  if (cobrosConImagen.length === 0) {
+    toast.warning('No hay cobros con imágenes para exportar');
+    return;
+  }
+
+  const { exportCobrosImagenes } = usePDFGenerator();
+  exportCobrosImagenes(cobrosConImagen);
+};
+
+// Ver imagen en modal
+const verImagenModal = (imagenSrc) => {
+  const dialog = alertify.dialog('alert');
+  dialog.set({
+    title: 'Comprobante de Pago',
+    message: `<img src="${imagenSrc}" style="max-width: 100%; height: auto; border-radius: 8px;" />`,
+    transition: 'fade'
+  });
+  dialog.show();
 };
 </script>
 

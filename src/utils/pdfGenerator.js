@@ -346,5 +346,161 @@ export const usePDFGenerator = () => {
     downloadPDF,
     generatePDFFromData,
     exportCobros,
+    exportCobrosImagenes,
   };
+};
+
+const exportCobrosImagenes = (cobrosData) => {
+  try {
+    if (!cobrosData || cobrosData.length === 0) {
+      toast.error("No hay datos para exportar");
+      return;
+    }
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    const imageWidth = (pageWidth - 3 * margin) / 2;
+    const imageHeight = imageWidth * 1.2; // Aumentar altura para recibos verticales
+    const infoHeight = 25;
+    const totalBlockHeight = imageHeight + infoHeight + 10;
+
+    pdf.setFontSize(18);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('Comprobantes de Cobros - Imágenes', pageWidth / 2, 15, { align: 'center' });
+
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+    pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, pageWidth / 2, 22, { align: 'center' });
+    pdf.text(`Total de comprobantes: ${cobrosData.length}`, pageWidth / 2, 27, { align: 'center' });
+
+    let currentX = margin;
+    let currentY = 35;
+    let itemsInRow = 0;
+
+    // Aplanar la lista de imágenes para procesar
+    const itemsParaPDF = [];
+    cobrosData.forEach(cobro => {
+      const imagenes = cobro.imagenes && cobro.imagenes.length > 0
+        ? cobro.imagenes
+        : (cobro.imagen ? [cobro.imagen] : []);
+
+      imagenes.forEach(img => {
+        itemsParaPDF.push({
+          ...cobro,
+          imagenActual: img
+        });
+      });
+    });
+
+    if (itemsParaPDF.length === 0) {
+      toast.warning("No hay imágenes para exportar");
+      return;
+    }
+
+    pdf.text(`Total de imágenes: ${itemsParaPDF.length}`, pageWidth / 2, 27, { align: 'center' });
+
+    itemsParaPDF.forEach((item) => {
+
+      if (currentY + totalBlockHeight > pageHeight - margin) {
+        pdf.addPage();
+        currentY = margin;
+        currentX = margin;
+        itemsInRow = 0;
+      }
+
+      if (itemsInRow >= 2) {
+        currentY += totalBlockHeight;
+        currentX = margin;
+        itemsInRow = 0;
+
+        if (currentY + totalBlockHeight > pageHeight - margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
+      }
+
+      pdf.setDrawColor(200, 200, 200);
+      pdf.rect(currentX, currentY, imageWidth, totalBlockHeight - 5);
+
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'bold');
+      pdf.text(item.cliente || 'Sin cliente', currentX + 5, currentY + 5);
+
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Fecha: ${item.fecha}`, currentX + 5, currentY + 10);
+      pdf.setFont(undefined, 'bold');
+      pdf.setTextColor(0, 128, 0);
+      pdf.text(`Monto: $${Number(item.cantidad).toFixed(2)}`, currentX + 5, currentY + 15);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont(undefined, 'normal');
+      pdf.text(`Tipo: ${item.tipo}`, currentX + 5, currentY + 20);
+
+      try {
+        // Obtener propiedades de la imagen para calcular aspect ratio
+        const imgProps = pdf.getImageProperties(item.imagenActual);
+        const imgRatio = imgProps.width / imgProps.height;
+
+        // Calcular dimensiones máximas permitidas
+        const maxWidth = imageWidth - 4;
+        const maxHeight = imageHeight;
+
+        // Calcular dimensiones finales manteniendo aspect ratio
+        let finalWidth = maxWidth;
+        let finalHeight = maxWidth / imgRatio;
+
+        if (finalHeight > maxHeight) {
+          finalHeight = maxHeight;
+          finalWidth = maxHeight * imgRatio;
+        }
+
+        // Calcular posición para centrar la imagen
+        const xOffset = (maxWidth - finalWidth) / 2;
+        const yOffset = (maxHeight - finalHeight) / 2;
+
+        pdf.addImage(
+          item.imagenActual,
+          'JPEG',
+          currentX + 2 + xOffset,
+          currentY + 23 + yOffset,
+          finalWidth,
+          finalHeight,
+          undefined,
+          'MEDIUM'
+        );
+      } catch (error) {
+        console.error('Error al agregar imagen:', error);
+        pdf.setFontSize(8);
+        pdf.setTextColor(255, 0, 0);
+        pdf.text('Error al cargar imagen', currentX + imageWidth / 2, currentY + imageHeight / 2 + 23, { align: 'center' });
+        pdf.setTextColor(0, 0, 0);
+      }
+
+      currentX += imageWidth + margin;
+      itemsInRow++;
+    });
+
+    const fecha = new Date().toISOString().split('T')[0];
+    const filename = `Cobros-Imagenes-${fecha}.pdf`;
+
+    pdf.save(filename);
+    toast.success(`✅ PDF de imágenes generado: ${filename}`);
+
+    setTimeout(() => {
+      const pdfBlob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const printWindow = window.open(blobUrl);
+      if (printWindow) {
+        printWindow.addEventListener('load', () => {
+          printWindow.print();
+        });
+      }
+    }, 500);
+  } catch (error) {
+    console.error('Error al generar PDF de imágenes:', error);
+    toast.error('❌ Error al generar el PDF de imágenes');
+    throw error;
+  }
 };
