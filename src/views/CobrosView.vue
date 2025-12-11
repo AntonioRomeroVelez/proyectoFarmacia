@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-center align-items-center mb-4  flex-wrap">
+    <div class="d-flex justify-content-center align-items-center mb-4  flex-wrap flex-column">
       <div class="text-center">
         <p class="text-muted mb-0 small">Gestiona los pagos recibidos</p>
       </div>
@@ -336,17 +336,8 @@
       <p class="text-muted mb-0">Completa el formulario para registrar tu primer cobro</p>
     </b-card>
 
-    <!-- Modal de Opciones PDF -->
-    <b-modal v-model="showPdfOptions" title="Opciones de PDF" hide-footer centered>
-      <div class="d-grid gap-3 p-3">
-        <b-button variant="primary" size="lg" @click="procesarExportacion('save')">
-          💾 Guardar PDF
-        </b-button>
-        <b-button variant="info" size="lg" class="text-white" @click="procesarExportacion('print')">
-          🖨️ Imprimir PDF
-        </b-button>
-      </div>
-    </b-modal>
+    <!-- Modal de Selección de Imágenes -->
+    <ImageSelectionModal v-model="showImageSelection" :cobros="cobrosConImagen" @export="handleImageExport" />
   </div>
 </template>
 
@@ -356,6 +347,7 @@ import { useCobros } from '@/composables/useCobros';
 import { useToast } from 'vue-toastification';
 import { usePDFGenerator } from '@/utils/pdfGenerator';
 import alertify from 'alertifyjs';
+import ImageSelectionModal from '@/components/ImageSelectionModal.vue';
 
 const toast = useToast();
 const { cobros, addCobro, updateCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
@@ -623,26 +615,29 @@ const limpiarImagenes = () => {
 };
 
 // Exportar PDF con imágenes
-const showPdfOptions = ref(false);
+const showImageSelection = ref(false);
+
+const cobrosConImagen = computed(() => {
+  return cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
+});
 
 const exportarPDFImagenes = () => {
-  const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
-
-  if (cobrosConImagen.length === 0) {
+  if (cobrosConImagen.value.length === 0) {
     toast.warning('No hay cobros con imágenes para exportar');
     return;
   }
 
-  showPdfOptions.value = true;
+  showImageSelection.value = true;
 };
 
-const procesarExportacion = (action) => {
-  showPdfOptions.value = false;
-  const cobrosConImagen = cobros.value.filter(c => (c.imagenes && c.imagenes.length > 0) || c.imagen);
+const handleImageExport = (selectedImages) => {
+  if (!selectedImages || selectedImages.length === 0) {
+    toast.warning('No hay imágenes seleccionadas');
+    return;
+  }
 
-  // Import dynamically or ensure it's destructured correctly if not already
-  const { exportCobrosImagenes } = usePDFGenerator();
-  exportCobrosImagenes(cobrosConImagen, action);
+  const { exportCobrosImagenesFromSelection } = usePDFGenerator();
+  exportCobrosImagenesFromSelection(selectedImages);
 };
 
 // Ver imagen en modal

@@ -220,7 +220,8 @@ export function useUsuarios() {
     updateUser,
     toggleUserStatus,
     deleteUser,
-    reloadUsers
+    reloadUsers,
+    loadUsers
   };
 }
 
