@@ -109,6 +109,128 @@
     <!-- Overlay for mobile -->
     <div class="sidebar-overlay" :class="{ 'show': isSidebarOpen }" @click="closeSidebar"></div>
 
+    <!-- Vista de Menú Móvil a Pantalla Completa -->
+    <Transition name="menu-fullscreen">
+      <div v-if="isSidebarOpen && isMobile" class="mobile-menu-fullscreen">
+        <div class="mobile-menu-container">
+          <!-- Header del menú móvil -->
+          <div class="mobile-menu-header">
+            <div class="mobile-menu-brand">
+              <span class="brand-icon">📱</span>
+              <span class="brand-title">App Ventas</span>
+            </div>
+            <button class="mobile-menu-close" @click="closeSidebar">
+              <span>×</span>
+            </button>
+          </div>
+
+          <!-- Perfil de usuario -->
+          <div class="mobile-menu-user">
+            <div class="mobile-user-avatar">{{ userInitial }}</div>
+            <div class="mobile-user-info">
+              <span class="mobile-user-name">{{ userName }}</span>
+              <span :class="isAdmin ? 'mobile-badge-admin' : 'mobile-badge-vendedor'">
+                {{ isAdmin ? 'Administrador' : 'Vendedor' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Navegación -->
+          <nav class="mobile-menu-nav">
+            <!-- Principal -->
+            <router-link to="/" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-house-door-fill"></i>
+              <span>Inicio</span>
+            </router-link>
+
+            <div class="mobile-nav-divider">Ventas</div>
+            <router-link to="/productos" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-box-seam"></i>
+              <span>Catálogo de Productos</span>
+            </router-link>
+            <router-link to="/carrito" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-cart3"></i>
+              <span>Carrito de Compras</span>
+            </router-link>
+            <router-link v-if="documents.length > 0" to="/historial" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-clock-history"></i>
+              <span>Historial de Ventas</span>
+            </router-link>
+
+            <div class="mobile-nav-divider">Gestión Comercial</div>
+            <router-link to="/clientes" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-people-fill"></i>
+              <span>Clientes</span>
+            </router-link>
+            <router-link to="/visitas" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-geo-alt-fill"></i>
+              <span>Visitas Diarias</span>
+            </router-link>
+            <router-link to="/cobros" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-cash-coin"></i>
+              <span>Gestión de Cobros</span>
+            </router-link>
+
+            <div class="mobile-nav-divider">Agenda</div>
+            <router-link to="/agenda" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-calendar3"></i>
+              <span>Calendario</span>
+            </router-link>
+            <router-link to="/eventos-list" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-list-check"></i>
+              <span>Lista de Eventos</span>
+            </router-link>
+
+            <div class="mobile-nav-divider">Reportes</div>
+            <router-link to="/inventario-visual" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-grid-3x3-gap-fill"></i>
+              <span>Inventario Visual</span>
+            </router-link>
+            <router-link to="/estadisticas" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-bar-chart-fill"></i>
+              <span>Estadísticas</span>
+            </router-link>
+            <router-link to="/pdf" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-file-earmark-pdf"></i>
+              <span>Generar PDF</span>
+            </router-link>
+
+            <template v-if="isAdmin">
+              <div class="mobile-nav-divider">Administración</div>
+              <router-link to="/crear-producto" class="mobile-nav-item" @click="closeSidebar">
+                <i class="bi bi-plus-circle"></i>
+                <span>Crear Producto</span>
+              </router-link>
+              <router-link to="/excel" class="mobile-nav-item" @click="closeSidebar">
+                <i class="bi bi-file-earmark-excel"></i>
+                <span>Importar/Exportar</span>
+              </router-link>
+              <router-link to="/comparacion" class="mobile-nav-item" @click="closeSidebar">
+                <i class="bi bi-diagram-3"></i>
+                <span>Comparar Productos</span>
+              </router-link>
+              <router-link to="/usuarios" class="mobile-nav-item" @click="closeSidebar">
+                <i class="bi bi-people"></i>
+                <span>Gestión de Usuarios</span>
+              </router-link>
+              <router-link to="/backup" class="mobile-nav-item" @click="closeSidebar">
+                <i class="bi bi-database"></i>
+                <span>Respaldo de Datos</span>
+              </router-link>
+            </template>
+          </nav>
+
+          <!-- Footer con logout -->
+          <div class="mobile-menu-footer">
+            <button class="mobile-logout-btn" @click="handleLogout">
+              🚪 Cerrar Sesión
+            </button>
+            <small class="text-muted">v1.0.0</small>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Floating Toggle Button (Mobile Only) -->
     <button class="floating-toggle d-md-none" @click="toggleSidebar" v-if="!isSidebarOpen">
       <BIconList />
@@ -148,6 +270,8 @@ import { useToast } from 'vue-toastification';
 const toast = useToast();
 const isSidebarOpen = ref(false);
 const isDesktopSidebarOpen = ref(true);
+const windowWidth = ref(window.innerWidth);
+const isMobile = computed(() => windowWidth.value < 768);
 let inactivityTimer = null;
 const INACTIVITY_LIMIT = 3600000; // 1 hora en milisegundos
 
@@ -189,6 +313,11 @@ const { eventos } = useAgenda();
 
 onMounted(() => {
   setupActivityListeners();
+
+  // Listener para detectar cambios de tamaño de pantalla
+  window.addEventListener('resize', () => {
+    windowWidth.value = window.innerWidth;
+  });
 
   // Verificar eventos vencidos al cargar
   const hoy = new Date().toISOString().split('T')[0];

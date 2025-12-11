@@ -78,7 +78,7 @@ export function useEstadisticas() {
   const getEstadisticasVentas = async (periodo = 'mes') => {
     const rawHistorial = await getHistorial();
     const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt'); // Historial uses createdAt mostly
-    
+
     // Agrupar por día
     const ventasPorDia = {};
     historial.forEach(pedido => {
@@ -87,8 +87,19 @@ export function useEstadisticas() {
       if (!dateStr) return;
       const fecha = dateStr.split('T')[0];
 
-      const total = pedido.productos?.reduce((sum, p) => sum + (p.precio * p.cantidad), 0) || 0;
-      
+      // El historial guarda items (no productos) con PrecioFarmacia y quantity
+      // También puede tener totals.total precalculado
+      let total = 0;
+      if (pedido.totals?.total) {
+        total = Number(pedido.totals.total) || 0;
+      } else if (pedido.items && Array.isArray(pedido.items)) {
+        total = pedido.items.reduce((sum, p) => {
+          const precio = Number(p.PrecioFarmacia || p.precio || 0);
+          const cantidad = Number(p.quantity || p.cantidad || 0);
+          return sum + (precio * cantidad);
+        }, 0);
+      }
+
       if (!ventasPorDia[fecha]) {
         ventasPorDia[fecha] = 0;
       }
@@ -110,14 +121,18 @@ export function useEstadisticas() {
   const getTopProductos = async (periodo = 'mes', limit = 10) => {
     const rawHistorial = await getHistorial();
     const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
-    
+
     const productosCantidad = {};
     historial.forEach(pedido => {
-      pedido.productos?.forEach(p => {
-        if (!productosCantidad[p.nombre]) {
-          productosCantidad[p.nombre] = 0;
+      // El historial guarda items (no productos) con NombreProducto y quantity
+      const items = pedido.items || pedido.productos || [];
+      items.forEach(p => {
+        const nombre = p.NombreProducto || p.nombre || 'Sin nombre';
+        const cantidad = Number(p.quantity || p.cantidad || 1);
+        if (!productosCantidad[nombre]) {
+          productosCantidad[nombre] = 0;
         }
-        productosCantidad[p.nombre] += p.cantidad;
+        productosCantidad[nombre] += cantidad;
       });
     });
 
@@ -126,8 +141,14 @@ export function useEstadisticas() {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, limit);
 
+    // Truncar nombres largos para mejor visualización en el gráfico
+    const truncarNombre = (nombre, maxLen = 12) => {
+      if (nombre.length <= maxLen) return nombre;
+      return nombre.substring(0, maxLen) + '...';
+    };
+
     return {
-      labels: productosArray.map(p => p.nombre),
+      labels: productosArray.map(p => truncarNombre(p.nombre)),
       data: productosArray.map(p => p.cantidad)
     };
   };
@@ -137,7 +158,7 @@ export function useEstadisticas() {
     const rawCobros = await getCobros();
     // Cobros usually have 'fecha'
     const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
-    
+
     let totalAbonos = 0;
     let totalCancelaciones = 0;
     let countAbonos = 0;
@@ -145,10 +166,13 @@ export function useEstadisticas() {
 
     cobros.forEach(cobro => {
       const cantidad = Number(cobro.cantidad) || 0;
-      if (cobro.tipo === 'Abono') {
+      const tipo = (cobro.tipo || '').toLowerCase();
+
+      if (tipo === 'abono') {
         totalAbonos += cantidad;
         countAbonos++;
-      } else if (cobro.tipo === 'Cancelación') {
+      } else if (tipo.includes('cancelación') || tipo.includes('cancelacion')) {
+        // Incluye "Cancelación", "Cancelación Total", "Cancelación Parcial", etc.
         totalCancelaciones += cantidad;
         countCancelaciones++;
       }
@@ -166,7 +190,7 @@ export function useEstadisticas() {
   const getEstadisticasVisitas = async (periodo = 'mes') => {
     const rawVisitas = await getVisitas();
     const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
-    
+
     // Agrupar por día
     const visitasPorDia = {};
     visitas.forEach(visita => {
@@ -200,8 +224,18 @@ export function useEstadisticas() {
     const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
     const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
 
+    // Calcular total ventas usando la estructura correcta del historial
     const totalVentas = historial.reduce((sum, pedido) => {
-      const total = pedido.productos?.reduce((s, p) => s + (p.precio * p.cantidad), 0) || 0;
+      let total = 0;
+      if (pedido.totals?.total) {
+        total = Number(pedido.totals.total) || 0;
+      } else if (pedido.items && Array.isArray(pedido.items)) {
+        total = pedido.items.reduce((s, p) => {
+          const precio = Number(p.PrecioFarmacia || p.precio || 0);
+          const cantidad = Number(p.quantity || p.cantidad || 0);
+          return s + (precio * cantidad);
+        }, 0);
+      }
       return sum + total;
     }, 0);
 
@@ -219,11 +253,77 @@ export function useEstadisticas() {
     };
   };
 
+  // Clientes con saldo pendiente (deudores)
+  const getSaldosPendientes = async () => {
+    const [rawHistorial, rawCobros] = await Promise.all([
+      getHistorial(),
+      getCobros()
+    ]);
+
+    // Calcular ventas totales por cliente
+    const ventasPorCliente = {};
+    rawHistorial.forEach(pedido => {
+      const cliente = pedido.clientName || pedido.cliente || 'Sin nombre';
+      let total = 0;
+
+      if (pedido.totals?.total) {
+        total = Number(pedido.totals.total) || 0;
+      } else if (pedido.items && Array.isArray(pedido.items)) {
+        total = pedido.items.reduce((sum, p) => {
+          const precio = Number(p.PrecioFarmacia || p.precio || 0);
+          const cantidad = Number(p.quantity || p.cantidad || 0);
+          return sum + (precio * cantidad);
+        }, 0);
+      }
+
+      if (!ventasPorCliente[cliente]) {
+        ventasPorCliente[cliente] = 0;
+      }
+      ventasPorCliente[cliente] += total;
+    });
+
+    // Calcular cobros totales por cliente
+    const cobrosPorCliente = {};
+    rawCobros.forEach(cobro => {
+      const cliente = cobro.cliente || 'Sin nombre';
+      const cantidad = Number(cobro.cantidad) || 0;
+
+      if (!cobrosPorCliente[cliente]) {
+        cobrosPorCliente[cliente] = 0;
+      }
+      cobrosPorCliente[cliente] += cantidad;
+    });
+
+    // Calcular saldo pendiente (ventas - cobros)
+    const saldos = [];
+    const todosClientes = new Set([...Object.keys(ventasPorCliente), ...Object.keys(cobrosPorCliente)]);
+
+    todosClientes.forEach(cliente => {
+      const ventas = ventasPorCliente[cliente] || 0;
+      const cobros = cobrosPorCliente[cliente] || 0;
+      const saldo = ventas - cobros;
+
+      // Solo mostrar clientes con saldo pendiente positivo
+      if (saldo > 0.01) { // Tolerancia para decimales
+        saldos.push({
+          cliente,
+          ventas,
+          cobros,
+          saldo
+        });
+      }
+    });
+
+    // Ordenar por saldo descendente (mayor deuda primero)
+    return saldos.sort((a, b) => b.saldo - a.saldo);
+  };
+
   return {
     getEstadisticasVentas,
     getTopProductos,
     getEstadisticasCobros,
     getEstadisticasVisitas,
-    getKPIs
+    getKPIs,
+    getSaldosPendientes
   };
 }

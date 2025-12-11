@@ -72,6 +72,22 @@ export function useProductos() {
     }
   };
 
+  // Clear all products
+  const clearAllProductos = async () => {
+    try {
+      // Delete each product individually
+      for (const producto of productos.value) {
+        await dbService.delete('productos', producto.ID);
+      }
+      productos.value = [];
+      return true;
+    } catch (e) {
+      console.error('Error clearing all products:', e);
+      toast.error('Error al eliminar todos los productos');
+      throw e;
+    }
+  };
+
   // Initialize if needed
   if (!loaded.value) {
     loadProductos();
@@ -83,7 +99,8 @@ export function useProductos() {
     addProducto,
     updateProducto,
     deleteProducto,
-    bulkAddProductos
+    bulkAddProductos,
+    clearAllProductos
     // TODO: Add search/filter here if we want to move logic from view
   };
 }

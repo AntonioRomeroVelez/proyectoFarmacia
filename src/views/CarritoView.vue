@@ -186,6 +186,15 @@
             <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente"
               required />
             <small class="text-muted">Escribe el nombre del cliente manualmente</small>
+
+            <div class="mt-3">
+              <b-form-checkbox v-model="registrarCliente" switch>
+                📝 Registrar como cliente nuevo
+              </b-form-checkbox>
+              <small v-if="registrarCliente" class="text-success d-block">
+                Se guardará el cliente con los datos ingresados
+              </small>
+            </div>
           </div>
         </b-form-group>
 
@@ -221,7 +230,7 @@ const toast = useToast();
 const { userName } = useAuth();
 const { users } = useUsuarios();
 const { saveDocument } = useHistorial();
-const { clientes, clientesOrdenados, getClienteById } = useClientes();
+const { clientes, clientesOrdenados, getClienteById, addCliente } = useClientes();
 
 const {
   cart,
@@ -247,6 +256,7 @@ const vendedorNombre = ref("");
 const fecha = ref("");
 const showClientModal = ref(false);
 const pendingAction = ref(null); // 'proforma', 'pedido', 'pdf'
+const registrarCliente = ref(false);
 
 onMounted(() => {
   // Set default date to today
@@ -310,7 +320,7 @@ const prepararExportacion = (tipo) => {
 };
 
 // Confirmar exportación desde el modal
-const confirmarExportacion = (bvModalEvent) => {
+const confirmarExportacion = async (bvModalEvent) => {
   // Validar según el modo
   if (modoCliente.value === 'registrado' && !clienteSeleccionadoId.value) {
     bvModalEvent.preventDefault();
@@ -322,6 +332,23 @@ const confirmarExportacion = (bvModalEvent) => {
     bvModalEvent.preventDefault();
     toast.warning("⚠️ Por favor ingrese el nombre del cliente");
     return;
+  }
+
+  // Registrar cliente si está marcada la opción (solo en modo manual)
+  if (modoCliente.value === 'manual' && registrarCliente.value) {
+    const clienteExistente = clientes.value.find(
+      c => c.nombre.toLowerCase() === clienteNombre.value.toLowerCase()
+    );
+
+    if (!clienteExistente) {
+      await addCliente({
+        nombre: clienteNombre.value,
+        ciudad: ciudad.value,
+        clasificacion: 'C'
+      });
+    } else {
+      toast.info(`ℹ️ El cliente "${clienteNombre.value}" ya existe en el sistema`);
+    }
   }
 
   // Ejecutar la acción pendiente

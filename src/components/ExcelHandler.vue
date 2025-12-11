@@ -234,13 +234,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import { useExcelHandler } from "@/utils/excelHandler";
 import { useToast } from "vue-toastification";
 import alertify from "alertifyjs";
+import { useProductos } from '@/composables/useProductos';
 
 const { readExcelHandler } = useExcelHandler();
 const toast = useToast();
+const { productos: productosDB, addProducto, bulkAddProductos, loadProductos, clearAllProductos } = useProductos();
 
 const file = ref(null);
 const productos = ref([]);
@@ -458,9 +460,8 @@ const handleFileUpload = async (event) => {
     // Función para normalizar strings
     const normalizeString = (str) => String(str || "").replace(/\s+/g, "").toLowerCase();
 
-    // Cargar productos existentes de localStorage y agregarlos al mapa de claves
-    const existingProducts = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-    existingProducts.forEach(p => {
+    // Cargar productos existentes de IndexedDB y agregarlos al mapa de claves
+    productosDB.value.forEach(p => {
       const productKey = `${normalizeString(p.Marca)}-${normalizeString(p.NombreProducto)}-${normalizeString(p.Presentacion)}-${normalizeString(p.PrincipioActivo)}`;
       productoKeys[productKey] = { existing: true }; // Marcar como existente en sistema
     });
@@ -588,8 +589,7 @@ const guardarProductos = async () => {
   await new Promise(resolve => setTimeout(resolve, 500));
 
   try {
-    const existingProducts =
-      JSON.parse(localStorage.getItem("ListaProductos")) || [];
+    const existingProducts = productosDB.value;
     const existingCount = existingProducts.length;
 
     const productosValidos = productos.value.filter((p) => !p.hasErrors);
@@ -627,9 +627,9 @@ const guardarProductos = async () => {
       isDuplicate: p.isDuplicate,
     }));
 
-    const allProducts = [...existingProducts, ...productosConId];
-
-    localStorage.setItem("ListaProductos", JSON.stringify(allProducts));
+    // Guardar en IndexedDB usando bulkAdd
+    await bulkAddProductos(productosConId);
+    const allProducts = productosDB.value;
 
     const skipped = productos.value.length - productosValidos.length;
     toast.success(
@@ -675,20 +675,29 @@ const limpiarFiltros = () => {
 };
 
 // Cargar conteo de productos al montar el componente
-onMounted(() => {
-  const existingProducts = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-  productosEnSistema.value = existingProducts.length;
+onMounted(async () => {
+  await loadProductos();
+  productosEnSistema.value = productosDB.value.length;
 });
+
+// Watch para actualizar el conteo cuando cambien los productos
+watch(productosDB, (newVal) => {
+  productosEnSistema.value = newVal.length;
+}, { immediate: true });
 
 // Borrar todos los productos del sistema
 const borrarTodosLosProductos = () => {
   alertify.confirm(
     "Eliminar Todos los Productos",
     `⚠️ ¿Eliminar TODOS los ${productosEnSistema.value} productos del sistema?<br><br>Esta acción NO se puede deshacer.`,
-    () => {
-      localStorage.removeItem('ListaProductos');
-      productosEnSistema.value = 0;
-      toast.success('🗑️ Todos los productos han sido eliminados del sistema');
+    async () => {
+      try {
+        await clearAllProductos();
+        productosEnSistema.value = 0;
+        toast.success('🗑️ Todos los productos han sido eliminados del sistema');
+      } catch (e) {
+        toast.error('❌ Error al eliminar productos');
+      }
     },
     () => {
       // Cancel action
@@ -699,7 +708,7 @@ const borrarTodosLosProductos = () => {
 // Descargar todos los productos en Excel
 const descargarProductosExcel = async () => {
   try {
-    const productosGuardados = JSON.parse(localStorage.getItem('ListaProductos')) || [];
+    const productosGuardados = productosDB.value;
 
     if (productosGuardados.length === 0) {
       toast.warning('No hay productos para descargar');

@@ -167,6 +167,15 @@
         <b-form-group label="Tipo de Documento:" label-for="pdf-type" class="mb-3">
           <b-form-select id="pdf-type" v-model="pdfType" :options="documentTypeOptions" required></b-form-select>
         </b-form-group>
+
+        <hr class="my-3">
+
+        <b-form-checkbox v-model="registrarCliente" switch class="mb-2">
+          📝 Registrar como cliente nuevo
+        </b-form-checkbox>
+        <small v-if="registrarCliente" class="text-muted d-block mb-2">
+          Se guardará el cliente con nombre "{{ pdfClient }}" y ciudad "{{ pdfCity }}"
+        </small>
       </b-form>
     </b-modal>
   </div>
@@ -179,6 +188,7 @@ import { usePDFGenerator } from "@/utils/pdfGenerator";
 import { useToast } from "vue-toastification";
 import { useAuth } from '@/composables/useAuth';
 import { useUsuarios } from '@/composables/useUsuarios';
+import { useClientes } from '@/composables/useClientes';
 import alertify from 'alertifyjs';
 
 const { cart, clearCart } = useCart();
@@ -186,6 +196,7 @@ const { generatePDFFromData } = usePDFGenerator();
 const toast = useToast();
 const { userName } = useAuth();
 const { users } = useUsuarios();
+const { clientes, addCliente } = useClientes();
 
 // Título personalizado para el PDF
 // Título personalizado para el PDF
@@ -198,6 +209,7 @@ const pdfClient = ref("");
 const pdfCity = ref("");
 const pdfSeller = ref("");
 const pdfType = ref("Proforma");
+const registrarCliente = ref(false);
 
 const documentTypeOptions = [
   { value: 'Proforma', text: 'Proforma' },
@@ -316,11 +328,28 @@ const generatePDF = () => {
   showPdfModal.value = true;
 };
 
-const confirmGeneratePDF = (bvModalEvent) => {
+const confirmGeneratePDF = async (bvModalEvent) => {
   if (!pdfClient.value || !pdfCity.value || !pdfSeller.value) {
     bvModalEvent.preventDefault();
     toast.warning("⚠️ Por favor complete todos los campos obligatorios Nombre y Ciudad");
     return;
+  }
+
+  // Registrar cliente si está marcada la opción
+  if (registrarCliente.value) {
+    const clienteExistente = clientes.value.find(
+      c => c.nombre.toLowerCase() === pdfClient.value.toLowerCase()
+    );
+
+    if (!clienteExistente) {
+      await addCliente({
+        nombre: pdfClient.value,
+        ciudad: pdfCity.value,
+        clasificacion: 'C' // Clasificación inicial
+      });
+    } else {
+      toast.info(`ℹ️ El cliente "${pdfClient.value}" ya existe en el sistema`);
+    }
   }
 
   // Preparar datos para el PDF con solo las columnas seleccionadas

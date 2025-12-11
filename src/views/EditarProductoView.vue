@@ -80,13 +80,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { useProductos } from '@/composables/useProductos'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { productos, updateProducto } = useProductos()
 
 const form = ref({
   ID: null,
@@ -102,15 +104,13 @@ const form = ref({
   Promocion: ''
 })
 
-onMounted(() => {
+const findAndLoadProduct = () => {
   const productId = route.params.id
   console.log('Route param ID:', productId, 'Type:', typeof productId)
-
-  const productos = JSON.parse(localStorage.getItem('ListaProductos')) || []
-  console.log('Total products:', productos.length)
+  console.log('Total products:', productos.value.length)
 
   // Try to find product by comparing both as strings and numbers
-  const producto = productos.find(p => {
+  const producto = productos.value.find(p => {
     return p.ID == productId || p.ID === parseInt(productId) || String(p.ID) === String(productId)
   })
 
@@ -118,25 +118,29 @@ onMounted(() => {
 
   if (producto) {
     form.value = { ...producto }
-  } else {
+  } else if (productos.value.length > 0) {
+    // Only show error if products are loaded but not found
     toast.error('Producto no encontrado')
     router.push('/productos')
   }
+}
+
+onMounted(() => {
+  findAndLoadProduct()
 })
 
-const guardarProducto = () => {
-  try {
-    const productos = JSON.parse(localStorage.getItem('ListaProductos')) || []
-    const index = productos.findIndex(p => p.ID === form.value.ID)
+// Watch for productos to load (async from IndexedDB)
+watch(productos, () => {
+  if (!form.value.ID && productos.value.length > 0) {
+    findAndLoadProduct()
+  }
+}, { immediate: true })
 
-    if (index !== -1) {
-      productos[index] = { ...form.value }
-      localStorage.setItem('ListaProductos', JSON.stringify(productos))
-      toast.success('✅ Producto actualizado correctamente')
-      router.push('/productos')
-    } else {
-      toast.error('Error al actualizar el producto')
-    }
+const guardarProducto = async () => {
+  try {
+    await updateProducto({ ...form.value })
+    toast.success('✅ Producto actualizado correctamente')
+    router.push('/productos')
   } catch (error) {
     console.error('Error saving product:', error)
     toast.error('Error al guardar los cambios')

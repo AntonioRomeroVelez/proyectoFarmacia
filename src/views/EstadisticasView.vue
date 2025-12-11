@@ -93,6 +93,49 @@
         </b-card>
       </div>
     </div>
+
+    <!-- Tabla de Clientes con Saldo Pendiente -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <b-card class="border-0 shadow-sm">
+          <h5 class="fw-bold mb-3">📋 Clientes con Saldo Pendiente</h5>
+
+          <div v-if="saldosPendientes.length === 0" class="text-center py-4 text-muted">
+            <div style="font-size: 2rem;">✅</div>
+            <p class="mb-0 mt-2">No hay clientes con saldo pendiente</p>
+          </div>
+
+          <div v-else class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Cliente</th>
+                  <th class="text-end">Ventas</th>
+                  <th class="text-end">Cobrado</th>
+                  <th class="text-end">Saldo Pendiente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, idx) in saldosPendientes" :key="idx">
+                  <td class="fw-medium">{{ item.cliente }}</td>
+                  <td class="text-end text-muted">${{ item.ventas.toFixed(2) }}</td>
+                  <td class="text-end text-success">${{ item.cobros.toFixed(2) }}</td>
+                  <td class="text-end fw-bold text-danger">${{ item.saldo.toFixed(2) }}</td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td class="fw-bold">TOTAL</td>
+                  <td class="text-end fw-bold">${{ totalSaldosPendientes.ventas.toFixed(2) }}</td>
+                  <td class="text-end fw-bold text-success">${{ totalSaldosPendientes.cobros.toFixed(2) }}</td>
+                  <td class="text-end fw-bold text-danger">${{ totalSaldosPendientes.saldo.toFixed(2) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </b-card>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -134,7 +177,8 @@ const {
   getTopProductos,
   getEstadisticasCobros,
   getEstadisticasVisitas,
-  getKPIs
+  getKPIs,
+  getSaldosPendientes
 } = useEstadisticas();
 
 const periodoSeleccionado = ref('mes');
@@ -154,6 +198,18 @@ const estadisticasVentas = ref({ labels: [], data: [], total: 0 });
 const estadisticasProductos = ref({ labels: [], data: [] });
 const estadisticasCobros = ref({ labels: [], data: [], counts: [], total: 0 });
 const estadisticasVisitas = ref({ labels: [], data: [], total: 0 });
+const saldosPendientes = ref([]);
+
+// Computed para sumar totales de saldos pendientes
+const totalSaldosPendientes = computed(() => {
+  return saldosPendientes.value.reduce((acc, item) => {
+    return {
+      ventas: acc.ventas + item.ventas,
+      cobros: acc.cobros + item.cobros,
+      saldo: acc.saldo + item.saldo
+    };
+  }, { ventas: 0, cobros: 0, saldo: 0 });
+});
 
 // Load Data Function
 const loadData = async () => {
@@ -175,6 +231,10 @@ const loadData = async () => {
     estadisticasProductos.value = prodData;
     estadisticasCobros.value = cobrosData;
     estadisticasVisitas.value = visitasData;
+
+    // Cargar saldos pendientes (sin filtro de periodo)
+    const saldosData = await getSaldosPendientes();
+    saldosPendientes.value = saldosData;
   } catch (e) {
     console.error('Error loading dashboard data:', e);
   } finally {

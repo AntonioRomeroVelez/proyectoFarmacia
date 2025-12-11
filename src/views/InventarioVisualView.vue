@@ -201,14 +201,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { BIconGridFill, BIconListUl } from 'bootstrap-icons-vue';
+import { useProductos } from '@/composables/useProductos';
+
+const { productos } = useProductos();
 
 const viewMode = ref('grid'); // 'grid' | 'list'
 const cargando = ref(true);
 const busqueda = ref(''); // Input del usuario
 const terminoBusqueda = ref(''); // Término aplicado al filtro
-const productos = ref([]);
 const marcasExpandidas = ref({});
 
 // Cambiar modo de vista
@@ -240,21 +242,28 @@ const formatPrice = (val) => {
   return isNaN(num) ? '0.000' : num.toFixed(3);
 };
 
-// Cargar productos
-onMounted(() => {
-  setTimeout(() => {
-    const lista = JSON.parse(localStorage.getItem('ListaProductos')) || [];
-    productos.value = lista;
-    
+// Watch for products to load from IndexedDB
+watch(productos, (lista) => {
+  if (lista.length > 0 && cargando.value) {
     // Inicializar todas las marcas como colapsadas (false)
     const marcas = new Set(lista.map(p => p.Marca));
     marcas.forEach(marca => {
-      marcasExpandidas.value[marca] = false;
+      if (marcasExpandidas.value[marca] === undefined) {
+        marcasExpandidas.value[marca] = false;
+      }
     });
-    
     cargando.value = false;
-  }, 300);
-});
+  }
+}, { immediate: true });
+
+// Also check initial state
+if (productos.value.length > 0) {
+  const marcas = new Set(productos.value.map(p => p.Marca));
+  marcas.forEach(marca => {
+    marcasExpandidas.value[marca] = false;
+  });
+  cargando.value = false;
+}
 
 // Agrupar productos por marca
 const productosPorMarca = computed(() => {
