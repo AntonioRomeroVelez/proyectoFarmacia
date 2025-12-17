@@ -20,6 +20,7 @@ import Estadisticas from "@/views/EstadisticasView.vue";
 import Clientes from "@/views/ClientesView.vue";
 import ClienteDetalle from "@/views/ClienteDetalleView.vue";
 import InventarioVisual from "@/views/InventarioVisualView.vue";
+import SeguimientoVentas from "@/views/SeguimientoVentasView.vue";
 
 const routes = [
   {
@@ -76,6 +77,7 @@ const routes = [
       { path: "clientes", component: Clientes },
       { path: "clientes/:id", component: ClienteDetalle },
       { path: "inventario-visual", component: InventarioVisual },
+      { path: "seguimiento-ventas", component: SeguimientoVentas },
     ],
   },
 ];

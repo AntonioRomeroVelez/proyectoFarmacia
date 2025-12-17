@@ -55,6 +55,9 @@
         <router-link to="/cobros" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
           <i class="bi bi-cash-coin"></i> Gestión de Cobros
         </router-link>
+        <router-link to="/seguimiento-ventas" class="nav-item" active-class="active" @click="closeSidebarOnMobile">
+          <i class="bi bi-wallet2"></i> Seguimiento de Ventas
+        </router-link>
 
         <!-- Agenda -->
         <div class="nav-section-title">Agenda</div>
@@ -169,6 +172,10 @@
             <router-link to="/cobros" class="mobile-nav-item" @click="closeSidebar">
               <i class="bi bi-cash-coin"></i>
               <span>Gestión de Cobros</span>
+            </router-link>
+            <router-link to="/seguimiento-ventas" class="mobile-nav-item" @click="closeSidebar">
+              <i class="bi bi-wallet2"></i>
+              <span>Seguimiento de Ventas</span>
             </router-link>
 
             <div class="mobile-nav-divider">Agenda</div>
@@ -319,28 +326,28 @@ onMounted(() => {
     windowWidth.value = window.innerWidth;
   });
 
-  // Verificar eventos vencidos al cargar
-  const hoy = new Date().toISOString().split('T')[0];
-  const vencidos = eventos.value.filter(e => e.fecha < hoy && !e.completada).length;
+  // Verificar eventos vencidos al cargar - REMOVIDO PARA EVITAR DUPLICIDAD CON EL DASHBOARD
+  // const hoy = new Date().toISOString().split('T')[0];
+  // const vencidos = eventos.value.filter(e => e.fecha < hoy && !e.completada).length;
 
-  if (vencidos > 0) {
-    // Pequeño delay para asegurar que la UI cargó
-    setTimeout(() => {
-      toast.error(`⚠️ Tienes ${vencidos} evento(s) vencido(s). Revisa tu agenda.`, {
-        timeout: 5000,
-        closeOnClick: true,
-        pauseOnFocusLoss: true,
-        pauseOnHover: true,
-        draggable: true,
-        draggablePercent: 0.6,
-        showCloseButtonOnHover: false,
-        hideProgressBar: false,
-        closeButton: "button",
-        icon: true,
-        rtl: false
-      });
-    }, 1000);
-  }
+  // if (vencidos > 0) {
+  //   // Pequeño delay para asegurar que la UI cargó
+  //   setTimeout(() => {
+  //     toast.error(`⚠️ Tienes ${vencidos} evento(s) vencido(s). Revisa tu agenda.`, {
+  //       timeout: 5000,
+  //       closeOnClick: true,
+  //       pauseOnFocusLoss: true,
+  //       pauseOnHover: true,
+  //       draggable: true,
+  //       draggablePercent: 0.6,
+  //       showCloseButtonOnHover: false,
+  //       hideProgressBar: false,
+  //       closeButton: "button",
+  //       icon: true,
+  //       rtl: false
+  //     });
+  //   }, 1000);
+  // }
 });
 
 onUnmounted(() => {

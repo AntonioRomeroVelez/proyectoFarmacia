@@ -158,43 +158,29 @@
       cancel-title="Cancelar" size="lg">
       <b-form>
         <!-- Selector de Cliente -->
-        <b-form-group label="Cliente:" label-for="cliente-selector" class="mb-3">
-          <div class="d-flex gap-2 mb-2">
-            <b-button :variant="modoCliente === 'registrado' ? 'primary' : 'outline-primary'" size="sm"
-              @click="cambiarModoCliente('registrado')">
-              📋 Cliente Registrado
-            </b-button>
-            <b-button :variant="modoCliente === 'manual' ? 'primary' : 'outline-primary'" size="sm"
-              @click="cambiarModoCliente('manual')">
-              ✏️ Nombre Manual
-            </b-button>
-          </div>
-
-          <!-- Selector de cliente registrado -->
-          <div v-if="modoCliente === 'registrado'">
-            <select v-model="clienteSeleccionadoId" class="form-select" @change="onClienteSeleccionado">
-              <option value="">Seleccione un cliente...</option>
-              <option v-for="cliente in clientesOrdenados" :key="cliente.id" :value="cliente.id">
-                {{ cliente.nombre }} {{ cliente.empresa ? `- ${cliente.empresa}` : '' }}
+        <!-- Selector Inteligente de Cliente -->
+        <b-form-group label="Cliente:" label-for="cliente-smart" class="mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-white">
+              <i class="bi bi-person-circle text-primary"></i>
+            </span>
+            <b-form-input id="cliente-smart" v-model="clienteNombre" placeholder="Nombre del cliente..."
+              list="client-list" autocomplete="off" required></b-form-input>
+            <datalist id="client-list">
+              <option v-for="c in clientesOrdenados" :key="c.id" :value="c.nombre">
+                {{ c.empresa ? c.empresa : '' }}
               </option>
-            </select>
-            <small class="text-muted">Selecciona un cliente de tu lista registrada</small>
+            </datalist>
           </div>
 
-          <!-- Input manual -->
-          <div v-else>
-            <b-form-input id="cliente-modal" v-model="clienteNombre" placeholder="Ingrese nombre del cliente"
-              required />
-            <small class="text-muted">Escribe el nombre del cliente manualmente</small>
-
-            <div class="mt-3">
-              <b-form-checkbox v-model="registrarCliente" switch>
-                📝 Registrar como cliente nuevo
-              </b-form-checkbox>
-              <small v-if="registrarCliente" class="text-success d-block">
-                Se guardará el cliente con los datos ingresados
-              </small>
-            </div>
+          <!-- Feedback Visual -->
+          <div class="mt-2" v-if="clienteNombre">
+            <span v-if="!isNewClient" class="badge bg-success bg-opacity-10 text-success border border-success">
+              <i class="bi bi-check-circle-fill me-1"></i> Cliente Registrado
+            </span>
+            <span v-else class="badge bg-info bg-opacity-10 text-info border border-info">
+              <i class="bi bi-person-plus-fill me-1"></i> Cliente Nuevo (Se registrará autom.)
+            </span>
           </div>
         </b-form-group>
 
@@ -215,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useCart } from "@/composables/useCart";
 import { useExcelHandler } from "@/utils/excelHandler";
 import { usePDFGenerator } from "@/utils/pdfGenerator";
@@ -248,15 +234,14 @@ const { exportCartToExcel, exportToExcel, exportCustomExcel } =
   useExcelHandler();
 
 // Estado del formulario de cliente
-const modoCliente = ref('registrado'); // 'registrado' o 'manual'
-const clienteSeleccionadoId = ref('');
 const clienteNombre = ref("");
+const clienteId = ref(null); // ID detectado o null
 const ciudad = ref("");
 const vendedorNombre = ref("");
 const fecha = ref("");
 const showClientModal = ref(false);
 const pendingAction = ref(null); // 'proforma', 'pedido', 'pdf'
-const registrarCliente = ref(false);
+const isNewClient = ref(false); // Feedback visual
 
 onMounted(() => {
   // Set default date to today
@@ -286,28 +271,28 @@ const handleClearCart = () => {
     .set("labels", { ok: "Sí, Vaciar", cancel: "Cancelar" });
 };
 
-// Cambiar modo de selección de cliente
-const cambiarModoCliente = (modo) => {
-  modoCliente.value = modo;
-  if (modo === 'manual') {
-    clienteSeleccionadoId.value = '';
-    clienteNombre.value = '';
-    ciudad.value = '';
-  } else {
-    clienteNombre.value = '';
+// Detección inteligente de cliente
+watch(clienteNombre, (newVal) => {
+  if (!newVal) {
+    clienteId.value = null;
+    isNewClient.value = false;
+    ciudad.value = "";
+    return;
   }
-};
 
-// Cuando se selecciona un cliente registrado
-const onClienteSeleccionado = () => {
-  if (clienteSeleccionadoId.value) {
-    const cliente = getClienteById(clienteSeleccionadoId.value);
-    if (cliente) {
-      clienteNombre.value = cliente.nombre;
-      ciudad.value = cliente.ciudad || '';
-    }
+  const normalized = newVal.trim().toLowerCase();
+  const found = clientes.value.find(c => c.nombre.trim().toLowerCase() === normalized);
+
+  if (found) {
+    clienteId.value = found.id;
+    ciudad.value = found.ciudad || ""; // Autocompletar ciudad
+    isNewClient.value = false;
+  } else {
+    clienteId.value = null;
+    isNewClient.value = true;
+    // No borramos ciudad si el usuario ya escribió algo, solo si estaba vacía
   }
-};
+});
 
 // Preparar exportación (abrir modal)
 const prepararExportacion = (tipo) => {
@@ -316,45 +301,45 @@ const prepararExportacion = (tipo) => {
     return;
   }
   pendingAction.value = tipo;
+  // Resetear campos si es necesario
+  clienteNombre.value = "";
+  ciudad.value = "";
   showClientModal.value = true;
 };
 
 // Confirmar exportación desde el modal
 const confirmarExportacion = async (bvModalEvent) => {
-  // Validar según el modo
-  if (modoCliente.value === 'registrado' && !clienteSeleccionadoId.value) {
-    bvModalEvent.preventDefault();
-    toast.warning("⚠️ Por favor seleccione un cliente");
-    return;
-  }
-
-  if (modoCliente.value === 'manual' && !clienteNombre.value.trim()) {
+  if (!clienteNombre.value.trim()) {
     bvModalEvent.preventDefault();
     toast.warning("⚠️ Por favor ingrese el nombre del cliente");
     return;
   }
 
-  // Registrar cliente si está marcada la opción (solo en modo manual)
-  if (modoCliente.value === 'manual' && registrarCliente.value) {
-    const clienteExistente = clientes.value.find(
-      c => c.nombre.toLowerCase() === clienteNombre.value.toLowerCase()
-    );
+  // Lógica de Registro Automático
+  let finalClienteId = clienteId.value;
 
-    if (!clienteExistente) {
-      await addCliente({
+  if (isNewClient.value) {
+    // Es un cliente nuevo, registramos automáticamente
+    try {
+      const nuevo = await addCliente({
         nombre: clienteNombre.value,
         ciudad: ciudad.value,
         clasificacion: 'C'
       });
-    } else {
-      toast.info(`ℹ️ El cliente "${clienteNombre.value}" ya existe en el sistema`);
+      if (nuevo) {
+        finalClienteId = nuevo.id;
+        toast.success(`✨ Cliente "${nuevo.nombre}" registrado automáticamente`);
+      }
+    } catch (e) {
+      console.error("Error auto-registering client:", e);
+    // No bloqueamos la venta, permitimos que siga sin ID pero con nombre (fallback)
     }
   }
 
   // Ejecutar la acción pendiente
   const documentData = {
     clientName: clienteNombre.value,
-    clienteId: modoCliente.value === 'registrado' ? clienteSeleccionadoId.value : null,
+    clienteId: finalClienteId,
     date: fecha.value,
     items: [...cartItemsWithPromotions.value],
     totals: {
@@ -369,19 +354,19 @@ const confirmarExportacion = async (bvModalEvent) => {
     saveDocument({
       type: 'Proforma',
       ...documentData
-    });
+    }, true);
   } else if (pendingAction.value === "pedido") {
     generarPedidoExcel();
     saveDocument({
       type: 'Pedido',
       ...documentData
-    });
+    }, true);
   } else if (pendingAction.value === "pdf") {
     exportarListaPrecioPDF();
     saveDocument({
       type: 'Lista de Precios',
       ...documentData
-    });
+    }, true);
   }
 
   // El modal se cerrará automáticamente si no prevenimos el evento

@@ -43,7 +43,7 @@ export const useCart = () => {
     const index = cart.value.findIndex((item) => item.ID === productId);
     if (index !== -1) {
       cart.value.splice(index, 1);
-      toast.warning("Producto eliminado del carrito");
+      // Removed toast: Visual feedback from the UI is sufficient
     }
   };
 
@@ -60,7 +60,7 @@ export const useCart = () => {
 
   const clearCart = (silent = false) => {
     cart.value = [];
-    if (!silent) toast.info("Carrito vaciado");
+    // Removed toast: Handled by the calling component if needed
   };
 
   const cartCount = computed(() => {

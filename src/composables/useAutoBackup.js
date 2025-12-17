@@ -1,5 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
+import JSZip from 'jszip';
+import { dbService } from '@/services/db';
 
 const BACKUP_STORAGE_KEY = 'farmacia_auto_backups';
 const LAST_BACKUP_KEY = 'farmacia_last_backup_date';
@@ -14,30 +16,47 @@ export function useAutoBackup() {
   const currentUser = ref(null);
   let checkInterval = null;
 
-  // Claves de localStorage a monitorear
-  const STORAGE_KEYS = {
-    productos: 'ListaProductos',
-    usuarios: 'app_users',
-    visitas: 'VisitasDiarias',
-    historial: 'farmacia_historial',
-    agenda: 'farmacia_agenda',
-    cobros: 'farmacia_cobros',
+  // Claves de localStorage que quedan (solo para referencia, el resto va a IDB)
+  const LS_KEYS = {
     currentUser: 'currentUser',
     cart: 'shoppingCart'
   };
 
-  // Calcular hash simple de los datos
-  const calculateDataHash = () => {
-    const allData = {};
-    Object.entries(STORAGE_KEYS).forEach(([key, storageKey]) => {
-      allData[key] = localStorage.getItem(storageKey) || '';
+  // Stores de IDB a respaldar
+  const IDB_STORES = ['productos', 'clientes', 'usuarios', 'visitas', 'historial', 'agenda', 'cobros'];
+
+  // Calcular hash acumulando datos de IDB y LS
+  const calculateDataHash = async () => {
+    let dataString = '';
+
+    // 1. Datos de IndexedDB
+    for (const store of IDB_STORES) {
+      try {
+        const items = await dbService.getAll(store);
+        dataString += JSON.stringify(items);
+      } catch (e) {
+        console.error(`Error hashing store ${store}:`, e);
+      }
+    }
+
+    // 2. Datos de LocalStorage
+    Object.values(LS_KEYS).forEach(key => {
+      dataString += localStorage.getItem(key) || '';
     });
-    return JSON.stringify(allData).length + Object.keys(allData).join('');
+
+    // Simple hash numérico
+    let hash = 0;
+    for (let i = 0; i < dataString.length; i++) {
+      const char = dataString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // 32bit integer
+    }
+    return hash.toString();
   };
 
   // Verificar si hay cambios en los datos
-  const checkForChanges = () => {
-    const currentHash = calculateDataHash();
+  const checkForChanges = async () => {
+    const currentHash = await calculateDataHash();
     const savedHash = localStorage.getItem(DATA_HASH_KEY);
     
     if (savedHash && currentHash !== savedHash) {
@@ -71,26 +90,32 @@ export function useAutoBackup() {
       usuarios: Array.isArray(data.usuarios) ? data.usuarios.length : 0,
       visitas: Array.isArray(data.visitas) ? data.visitas.length : 0,
       historial: Array.isArray(data.historial) ? data.historial.length : 0,
-      eventos: Array.isArray(data.agenda) ? data.agenda.length : 0,
+      agenda: Array.isArray(data.agenda) ? data.agenda.length : 0, // Corregido key
       cobros: Array.isArray(data.cobros) ? data.cobros.length : 0
     };
   };
 
   // Crear backup automático
-  const createAutoBackup = () => {
+  const createAutoBackup = async (isManual = false) => {
     const now = new Date();
     const userName = getCurrentUser();
     
-    const data = {
-      productos: JSON.parse(localStorage.getItem(STORAGE_KEYS.productos) || '[]'),
-      usuarios: JSON.parse(localStorage.getItem(STORAGE_KEYS.usuarios) || '[]'),
-      visitas: JSON.parse(localStorage.getItem(STORAGE_KEYS.visitas) || '[]'),
-      historial: JSON.parse(localStorage.getItem(STORAGE_KEYS.historial) || '[]'),
-      agenda: JSON.parse(localStorage.getItem(STORAGE_KEYS.agenda) || '[]'),
-      cobros: JSON.parse(localStorage.getItem(STORAGE_KEYS.cobros) || '[]'),
-      currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
-      cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
-    };
+    // Recolectar datos
+    const data = {};
+
+    // 1. Desde IndexedDB
+    for (const store of IDB_STORES) {
+      try {
+        data[store] = await dbService.getAll(store);
+      } catch (e) {
+        console.error(`Error backup store ${store}:`, e);
+        data[store] = [];
+      }
+    }
+
+    // 2. Desde LocalStorage
+    data.currentUser = JSON.parse(localStorage.getItem(LS_KEYS.currentUser) || 'null');
+    data.cart = JSON.parse(localStorage.getItem(LS_KEYS.cart) || '[]');
 
     const stats = calculateBackupStats(data);
 
@@ -107,55 +132,64 @@ export function useAutoBackup() {
         second: '2-digit'
       }),
       userName: userName,
-      version: '1.0',
-      auto: true,
+      version: '3.0',
+      auto: !isManual,
       stats: stats,
       data: data
     };
 
-    // Guardar backup en localStorage
-    const existingBackups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
-    existingBackups.push(backupData);
-    
-    // Mantener backups de los últimos 7 días (en lugar de solo los últimos 7 backups)
-    const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000); // 7 días en milisegundos
-    const recentBackups = existingBackups.filter(backup => backup.timestamp >= sevenDaysAgo);
-    localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(recentBackups));
-    
-    // Actualizar hash de datos
-    const newHash = calculateDataHash();
-    localStorage.setItem(DATA_HASH_KEY, newHash);
-    
-    // Actualizar última fecha de backup
-    localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
-    lastBackupDate.value = now.toISOString();
-    hasChanges.value = false;
-    
-    // Recargar lista de backups
-    loadAutoBackups();
-    
-    toast.success('✅ Backup automático creado exitosamente');
-    
-    return backupData;
+    try {
+      const existingBackups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
+      existingBackups.push(backupData);
+
+      // Mantener backups de los últimos 7 días
+      const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+      const recentBackups = existingBackups.filter(backup => backup.timestamp >= sevenDaysAgo);
+
+      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(recentBackups));
+
+      // Actualizar hash de datos
+      const newHash = await calculateDataHash();
+      localStorage.setItem(DATA_HASH_KEY, newHash);
+
+      // Actualizar última fecha de backup
+      localStorage.setItem(LAST_BACKUP_KEY, now.toISOString());
+      lastBackupDate.value = now.toISOString();
+      hasChanges.value = false;
+
+      // Recargar lista de backups
+      loadAutoBackups();
+
+      toast.success(isManual ? '✅ Backup manual creado exitosamente' : '✅ Backup automático creado exitosamente');
+      return backupData;
+
+    } catch (e) {
+      console.error('Error saving backup to localStorage:', e);
+      if (e.name === 'QuotaExceededError') {
+        toast.error('❌ Espacio insuficiente para guardar el backup automático.');
+      } else {
+        toast.error('❌ Error al guardar el backup (Quota/Size).');
+      }
+      return null;
+    }
   };
 
   // Verificar si es hora de hacer backup (después de las 7 PM)
-  const checkBackupTime = () => {
+  const checkBackupTime = async () => {
     const now = new Date();
     const currentHour = now.getHours();
     
     // Verificar si es después de las 7 PM (19:00)
     if (currentHour >= BACKUP_HOUR) {
       const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
-
-      // Permitir múltiples backups por día, pero con un intervalo mínimo de 1 hora
-      const oneHourAgo = now.getTime() - (60 * 60 * 1000); // 1 hora en milisegundos
+      const oneHourAgo = now.getTime() - (60 * 60 * 1000); 
       
       if (!lastBackup || new Date(lastBackup).getTime() < oneHourAgo) {
         // Verificar si hay cambios
-        if (checkForChanges()) {
+        const changed = await checkForChanges();
+        if (changed) {
           console.log('🔄 Ejecutando backup automático después de las 7 PM...');
-          createAutoBackup();
+          await createAutoBackup();
         }
       }
     }
@@ -163,37 +197,57 @@ export function useAutoBackup() {
 
   // Cargar backups automáticos guardados
   const loadAutoBackups = () => {
-    const backups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
-    autoBackups.value = backups.sort((a, b) => b.timestamp - a.timestamp);
-    
-    const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
-    lastBackupDate.value = lastBackup;
+    try {
+      const backups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
+      autoBackups.value = backups.sort((a, b) => b.timestamp - a.timestamp);
+
+      const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
+      lastBackupDate.value = lastBackup;
+    } catch (e) {
+      console.error('Error loading backups:', e);
+      autoBackups.value = [];
+    }
   };
 
   // Descargar un backup específico
-  const downloadBackup = (backupId) => {
+  const downloadBackup = async (backupId) => {
     const backup = autoBackups.value.find(b => b.id === backupId);
     if (!backup) {
       toast.error('❌ Backup no encontrado');
       return;
     }
 
-    // Formato: farmacia-backup-fecha-usuario.json
-    const datePart = backup.dateFormatted.split(',')[0].replace(/\//g, '-');
-    const userName = backup.userName || 'Usuario';
-    const filename = `farmacia-backup-${datePart}-${userName}.json`;
-    
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    toast.success('✅ Backup descargado');
+    try {
+      const zip = new JSZip();
+
+      const datePart = backup.dateFormatted.split(',')[0].replace(/\//g, '-').trim();
+      const userName = backup.userName || 'Usuario';
+      const jsonFilename = `farmacia-backup-${datePart}-${userName}.json`;
+
+      const jsonString = JSON.stringify(backup, null, 2);
+
+      zip.file(jsonFilename, jsonString);
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipFilename = jsonFilename.replace('.json', '.zip');
+
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = zipFilename;
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      toast.success('✅ Backup comprimido descargado (.zip)');
+    } catch (error) {
+      console.error('Error generando ZIP:', error);
+      toast.error('❌ Error al generar el archivo ZIP');
+    }
   };
 
   // Eliminar un backup
@@ -212,23 +266,21 @@ export function useAutoBackup() {
   };
 
   // Forzar backup manual
-  const forceBackup = () => {
-    createAutoBackup();
+  const forceBackup = async () => {
+    await createAutoBackup(true); // true = isManual
   };
 
   // Iniciar monitoreo
   const startMonitoring = () => {
     getCurrentUser();
     loadAutoBackups();
-    checkForChanges();
-    
-    // Verificar cada 1 minuto si es hora de hacer backup
+    checkForChanges(); 
+
     checkInterval = setInterval(() => {
       checkBackupTime();
       checkForChanges();
-    }, 60000); // 60 segundos
-    
-    // Verificar inmediatamente al iniciar
+    }, 60000); 
+
     checkBackupTime();
   };
 
@@ -240,7 +292,6 @@ export function useAutoBackup() {
     }
   };
 
-  // Lifecycle hooks
   onMounted(() => {
     startMonitoring();
   });

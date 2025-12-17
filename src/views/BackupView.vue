@@ -73,10 +73,7 @@
           Descargar Backup Completo
         </button>
 
-        <button @click="exportSelectedData" class="btn btn-secondary">
-          <span class="icon">📋</span>
-          Exportar Selección
-        </button>
+
       </div>
 
       <!-- Opciones de exportación selectiva -->
@@ -265,10 +262,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, toRaw } from 'vue';
 import { useAutoBackup } from '@/composables/useAutoBackup';
 import { dbService } from '@/services/db';
 import JSZip from 'jszip';
+import alertify from 'alertifyjs';
 
 // Composable de backup automático
 const {
@@ -391,97 +389,106 @@ const exportAllData = async () => {
   }
 };
 
-// Exportar datos seleccionados
-const exportSelectedData = async () => {
-  showExportOptions.value = !showExportOptions.value;
 
-  if (!showExportOptions.value) {
-    try {
-      const data = {};
-      if (exportOptions.value.productos) data.productos = await dbService.getAll('productos');
-      if (exportOptions.value.clientes) data.clientes = await dbService.getAll('clientes');
-      if (exportOptions.value.usuarios) data.usuarios = await dbService.getAll('usuarios');
-      if (exportOptions.value.visitas) data.visitas = await dbService.getAll('visitas');
-      if (exportOptions.value.historial) data.historial = await dbService.getAll('historial');
-      if (exportOptions.value.agenda) data.agenda = await dbService.getAll('agenda');
-      if (exportOptions.value.cobros) data.cobros = await dbService.getAll('cobros');
 
-      const backupData = {
-        exportDate: new Date().toISOString(),
-        version: '3.0',
-        data: data
-      };
+// // Descargar JSON comprimido en ZIP
+// const downloadJSON = async (data, filename) => {
+//   try {
+//     const zip = new JSZip();
+//     const jsonString = JSON.stringify(data, null, 2);
 
-      downloadJSON(backupData, `farmacia-backup-partial-${formatDate(new Date())}.json`);
-      lastExport.value = new Date().toLocaleString();
-      showToast('✅ Backup parcial exportado', 'success');
-    } catch (e) {
-      console.error('Partial export error:', e);
-      showToast('❌ Error al exportar selección', 'error');
-    }
-  }
-};
+//     zip.file(filename, jsonString);
 
-// Descargar JSON comprimido en ZIP
-const downloadJSON = async (data, filename) => {
+//     const zipBlob = await zip.generateAsync({ type: 'blob' });
+//     const zipFilename = filename.replace('.json', '.zip');
+
+//     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+//     if (isMobile) {
+//       if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([zipBlob], zipFilename, { type: 'application/zip' })] })) {
+//         try {
+//           const file = new File([zipBlob], zipFilename, { type: 'application/zip' });
+//           await navigator.share({
+//             files: [file],
+//             title: 'Backup de Farmacia (ZIP)',
+//             text: 'Archivo de respaldo comprimido'
+//           });
+//           showToast('✅ Archivo ZIP compartido exitosamente', 'success');
+//           return;
+//         } catch (error) {
+//           console.log('Share API failed, trying download');
+//         }
+//       }
+//     }
+
+//     const url = URL.createObjectURL(zipBlob);
+//     const link = document.createElement('a');
+//     link.href = url;
+//     link.download = zipFilename;
+//     link.style.display = 'none';
+//     document.body.appendChild(link);
+//     link.click();
+
+//     setTimeout(() => {
+//       document.body.removeChild(link);
+//       URL.revokeObjectURL(url);
+//     }, 100);
+
+//     showToast('✅ Backup comprimido descargado (.zip)', 'success');
+
+//   } catch (error) {
+//     console.error('Error generando ZIP:', error);
+//     showToast('❌ Error al comprimir el archivo', 'error');
+
+//     // Fallback: descargar JSON normal
+//     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+//     const url = URL.createObjectURL(blob);
+//     const link = document.createElement('a');
+//     link.href = url;
+//     link.download = filename;
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//   }
+// };
+
+async function downloadJSON(data, filename = "backup.json") {
   try {
+    // Crear instancia de JSZip
     const zip = new JSZip();
+
+    // Convertir objeto a string JSON
     const jsonString = JSON.stringify(data, null, 2);
 
+    // Agregar archivo JSON dentro del ZIP
     zip.file(filename, jsonString);
 
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const zipFilename = filename.replace('.json', '.zip');
+    // Generar el ZIP como Blob
+    const zipBlob = await zip.generateAsync({ type: "blob" });
 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Nombre final del archivo .zip
+    const zipFilename = filename.replace(".json", ".zip");
 
-    if (isMobile) {
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([zipBlob], zipFilename, { type: 'application/zip' })] })) {
-        try {
-          const file = new File([zipBlob], zipFilename, { type: 'application/zip' });
-          await navigator.share({
-            files: [file],
-            title: 'Backup de Farmacia (ZIP)',
-            text: 'Archivo de respaldo comprimido'
-          });
-          showToast('✅ Archivo ZIP compartido exitosamente', 'success');
-          return;
-        } catch (error) {
-          console.log('Share API failed, trying download');
-        }
-      }
-    }
-
+    // Crear enlace invisible para descargar
     const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = zipFilename;
-    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
 
+    // Limpieza
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     }, 100);
 
-    showToast('✅ Backup comprimido descargado (.zip)', 'success');
-
+    console.log("✅ Archivo ZIP descargado correctamente");
   } catch (error) {
-    console.error('Error generando ZIP:', error);
-    showToast('❌ Error al comprimir el archivo', 'error');
-
-    // Fallback: descargar JSON normal
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    console.error("❌ Error al generar ZIP:", error);
   }
-};
+}
+
 
 const triggerFileInput = () => {
   fileInput.value.click();
@@ -545,11 +552,16 @@ const confirmImport = async () => {
     await exportAllData();
   }
 
-  const importData = pendingImportData.value.data;
+  // Desempaquetar el proxy de Vue para obtener el objeto puramente JS 
+  // Esto evita el error "DataCloneError" al guardar en IndexedDB
+  const rawImportData = toRaw(pendingImportData.value);
+  const importData = rawImportData.data;
+
   const idbStores = ['productos', 'clientes', 'usuarios', 'visitas', 'historial', 'agenda', 'cobros'];
 
   for (const store of idbStores) {
     if (importData[store] && Array.isArray(importData[store])) {
+      // Pasamos los datos "crudos" (raw) a la base de datos
       await dbService.bulkPut(store, importData[store]);
     }
   }
@@ -560,7 +572,15 @@ const confirmImport = async () => {
 
   await loadStats();
   cancelImport();
-  showToast('✅ Datos importados exitosamente. Recarga la página para ver los cambios.', 'success');
+
+  // Notificación robusta con Alertify
+  alertify.alert(
+    'Importación Exitosa',
+    '✅ Los datos se han restaurado correctamente.<br><br>La página se recargará automáticamente para aplicar los cambios.',
+    function () {
+      window.location.reload();
+    }
+  );
 };
 
 const cancelImport = () => {
@@ -994,6 +1014,7 @@ onMounted(() => {
   font-weight: 500;
   margin-top: 0.25rem;
 }
+
 .backup-item-actions {
   display: flex;
   gap: 0.5rem;

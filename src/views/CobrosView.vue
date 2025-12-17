@@ -25,8 +25,28 @@
         <b-row>
           <b-col md="6">
             <b-form-group label="Cliente:" label-for="cliente">
-              <b-form-input id="cliente" v-model="formulario.cliente" placeholder="Nombre del cliente"
-                required></b-form-input>
+              <b-form-input id="cliente" v-model="formulario.cliente" placeholder="Seleccione o escriba un cliente..."
+                list="lista-clientes" autocomplete="off" required></b-form-input>
+              <datalist id="lista-clientes">
+                <option v-for="c in clientes" :key="c.id" :value="c.nombre">
+                  {{ c.empresa ? c.empresa + ' - ' : '' }} {{ c.telefono ? '📞 ' + c.telefono : '' }}
+                </option>
+              </datalist>
+            </b-form-group>
+          </b-col>
+
+          <b-col md="12" v-if="pedidosPendientes.length > 0">
+            <b-form-group label="Asignar a Pedido (Opcional):" label-for="pedidoId" class="border rounded p-2 bg-light">
+              <b-form-select id="pedidoId" v-model="formulario.pedidoId">
+                <option :value="null">-- Abono General (Sin asignar) --</option>
+                <option v-for="pedido in pedidosPendientes" :key="pedido.id" :value="pedido.id">
+                  📅 {{ formatearFecha(pedido.date) }} - Saldo: ${{ Number(pedido.saldo).toFixed(2) }}
+                  (Total: ${{ Number(pedido.total).toFixed(2) }})
+                </option>
+              </b-form-select>
+              <small class="text-info mt-1 d-block">
+                <BIconInfoCircle /> Selecciona un pedido para autocompletar el monto.
+              </small>
             </b-form-group>
           </b-col>
 
@@ -342,22 +362,28 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { useCobros } from '@/composables/useCobros';
+import { useHistorial } from '@/composables/useHistorial';
+import { useClientes } from '@/composables/useClientes'; // Importar clientes
 import { useToast } from 'vue-toastification';
 import { usePDFGenerator } from '@/utils/pdfGenerator';
+import { BIconInfoCircle } from 'bootstrap-icons-vue';
 import alertify from 'alertifyjs';
 import ImageSelectionModal from '@/components/ImageSelectionModal.vue';
 
 const toast = useToast();
 const { cobros, addCobro, updateCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
+const { documents } = useHistorial();
+const { clientes, buscarClientes } = useClientes(); // Usar composable de clientes
 const { exportCobros } = usePDFGenerator();
 
 const showRegistroModal = ref(false);
-const editingId = ref(null); // Estado para saber si estamos editando
+const editingId = ref(null); 
 
 const formulario = ref({
   cliente: '',
+  clienteId: null, // Nuevo campo para robustez
   fecha: new Date().toISOString().split('T')[0],
   cantidad: null,
   tipo: 'Abono',
@@ -365,8 +391,83 @@ const formulario = ref({
   numeroFactura: '',
   numeroRecibo: '',
   observaciones: '',
-  imagenes: [] // Array de imágenes en base64
+  imagenes: [],
+  pedidoId: null
 });
+
+const pedidosPendientes = ref([]);
+
+// Watcher: cuando cambia el cliente, buscar sus pedidos pendientes
+watch(() => formulario.value.cliente, (newCliente) => {
+  if (newCliente && newCliente.length > 0) {
+    // Intentar encontrar el cliente en la lista oficial para obtener su ID
+    const clienteEncontrado = clientes.value.find(c => c.nombre.trim().toLowerCase() === newCliente.trim().toLowerCase());
+
+    if (clienteEncontrado) {
+      formulario.value.clienteId = clienteEncontrado.id;
+    } else {
+      formulario.value.clienteId = null; // Es un cliente manual o no coincide exacto
+    }
+
+    buscarPedidosPendientes(newCliente, formulario.value.clienteId);
+  } else {
+    pedidosPendientes.value = [];
+    formulario.value.clienteId = null;
+  }
+});
+
+// Watcher: cuando selecciona un pedido, autocompletar el monto
+watch(() => formulario.value.pedidoId, (newId) => {
+  if (newId) {
+    const pedido = pedidosPendientes.value.find(p => p.id === newId);
+    if (pedido) {
+      formulario.value.cantidad = Number(pedido.saldo).toFixed(2);
+      formulario.value.observaciones = `Pago a pedido del ${formatearFecha(pedido.date)}`;
+    }
+  }
+});
+
+const buscarPedidosPendientes = (clienteNombre, clienteId = null) => {
+  const nombreNormalizado = clienteNombre.toLowerCase().trim();
+
+  // 1. Filtrar ventas de este cliente (por ID si existe, o por Nombre)
+  const ventasCliente = documents.value.filter(d => {
+    if (d.type !== 'Pedido') return false;
+
+    // Si tenemos ID y el documento tiene ID de cliente, priorizar esa coincidencia
+    if (clienteId && d.clienteId) {
+      return d.clienteId === clienteId;
+    }
+
+    // Fallback: coincidencia por nombre
+    return (d.clientName || '').toLowerCase().trim() === nombreNormalizado;
+  });
+
+  // 2. Calcular saldo de cada venta
+  const pendientes = [];
+
+  ventasCliente.forEach(venta => {
+    const totalVenta = Number(venta.totals?.total || 0);
+
+    // ESTRATEGIA: Calcular saldo "vivo" restando todos los pagos vinculados a este ID.
+    const pagosVinculados = cobros.value.filter(c => c.pedidoId === venta.id);
+    const totalPagado = pagosVinculados.reduce((sum, c) => sum + Number(c.cantidad || 0), 0);
+
+    const saldo = totalVenta - totalPagado;
+
+    if (saldo > 0.01) {
+      pendientes.push({
+        id: venta.id,
+        date: venta.date,
+        total: totalVenta,
+        saldo: saldo
+      });
+    }
+  });
+
+  // Ordenar por fecha (más antiguos primero)
+  pedidosPendientes.value = pendientes.sort((a, b) => new Date(a.date) - new Date(b.date));
+};
 
 const imagenesPreview = ref([]);
 const fileInput = ref(null);
@@ -416,6 +517,21 @@ const registrarCobro = async () => {
     return;
   }
 
+  // Validar que no pague más del saldo si hay pedido seleccionado
+  if (formulario.value.pedidoId) {
+    const pedido = pedidosPendientes.value.find(p => p.id === formulario.value.pedidoId);
+    if (pedido && Number(formulario.value.cantidad) > (pedido.saldo + 0.1)) { // +0.1 tolerancia
+      const confirmar = await new Promise(resolve => {
+        alertify.confirm('Exceso de Pago',
+          `Estás registrando un pago mayor al saldo del pedido ($${Number(pedido.saldo).toFixed(2)}). ¿Continuar?`,
+          () => resolve(true),
+          () => resolve(false)
+        );
+      });
+      if (!confirmar) return;
+    }
+  }
+
   try {
     if (editingId.value) {
       // Modo Edición
@@ -441,6 +557,7 @@ const prepararEdicion = (cobro) => {
   editingId.value = cobro.id;
   formulario.value = {
     cliente: cobro.cliente,
+    clienteId: cobro.clienteId || null,
     fecha: cobro.fecha,
     cantidad: cobro.cantidad,
     tipo: cobro.tipo,
@@ -448,16 +565,24 @@ const prepararEdicion = (cobro) => {
     numeroFactura: cobro.numeroFactura || '',
     numeroRecibo: cobro.numeroRecibo || '',
     observaciones: cobro.observaciones || '',
-    imagenes: cobro.imagenes ? [...cobro.imagenes] : (cobro.imagen ? [cobro.imagen] : [])
+    imagenes: cobro.imagenes ? [...cobro.imagenes] : (cobro.imagen ? [cobro.imagen] : []),
+    pedidoId: cobro.pedidoId || null
   };
+
+  // Cargar pedidos pendientes para este cliente
+  if (cobro.cliente) {
+    buscarPedidosPendientes(cobro.cliente, cobro.clienteId);
+  }
+
   imagenesPreview.value = [...formulario.value.imagenes];
   showRegistroModal.value = true;
 };
 
 const limpiarFormulario = () => {
-  editingId.value = null; // Reiniciar estado de edición
+  editingId.value = null; 
   formulario.value = {
     cliente: '',
+    clienteId: null,
     fecha: new Date().toISOString().split('T')[0],
     cantidad: null,
     tipo: 'Abono',
@@ -465,8 +590,10 @@ const limpiarFormulario = () => {
     numeroFactura: '',
     numeroRecibo: '',
     observaciones: '',
-    imagenes: []
+    imagenes: [],
+    pedidoId: null
   };
+  pedidosPendientes.value = [];
   imagenesPreview.value = [];
   if (fileInput.value) {
     fileInput.value.value = '';
@@ -551,7 +678,6 @@ const handleImagenChange = async (event) => {
 
   toast.success(`✅ ${files.length} imagen(es) cargada(s)`);
 
-  // Limpiar input para permitir seleccionar las mismas imágenes de nuevo si se desea
   if (fileInput.value) {
     fileInput.value.value = '';
   }

@@ -24,7 +24,7 @@ export function useHistorial() {
   };
 
   // Guardar un nuevo documento
-  const saveDocument = async (docData) => {
+  const saveDocument = async (docData, silent = false) => {
     const newDoc = {
       id: Date.now().toString(), // ID único basado en timestamp
       createdAt: new Date().toISOString(),
@@ -37,11 +37,11 @@ export function useHistorial() {
     try {
       await dbService.put('historial', docToSave);
       documents.value.unshift(docToSave); // Agregar al principio
-      toast.success('Documento guardado en historial');
+      if (!silent) toast.success('Documento guardado en historial');
       return docToSave;
     } catch (e) {
       console.error('Error saving document:', e);
-      toast.error('Error al guardar documento');
+      if (!silent) toast.error('Error al guardar documento');
       throw e;
     }
   };

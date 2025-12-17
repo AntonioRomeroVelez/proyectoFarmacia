@@ -260,15 +260,21 @@ export function useEstadisticas() {
       getCobros()
     ]);
 
-    // Calcular ventas totales por cliente
-    const ventasPorCliente = {};
-    rawHistorial.forEach(pedido => {
-      const cliente = pedido.clientName || pedido.cliente || 'Sin nombre';
-      let total = 0;
+    const clientsMap = {};
 
-      if (pedido.totals?.total) {
-        total = Number(pedido.totals.total) || 0;
-      } else if (pedido.items && Array.isArray(pedido.items)) {
+    // Helper para normalizar claves
+    const normalizeKey = (name) => (name || 'Cliente General').trim().toLowerCase();
+
+    // 1. Procesar Ventas (Solo Pedidos)
+    rawHistorial.forEach(pedido => {
+      const tipo = (pedido.type || pedido.tipo || '').trim().toLowerCase();
+      // FILTRO ESTRICTO: Solo 'pedido'
+      if (tipo !== 'pedido') return;
+
+      const docTotal = Number(pedido.totals?.total || 0);
+      let total = docTotal;
+
+      if (total === 0 && pedido.items && Array.isArray(pedido.items)) {
         total = pedido.items.reduce((sum, p) => {
           const precio = Number(p.PrecioFarmacia || p.precio || 0);
           const cantidad = Number(p.quantity || p.cantidad || 0);
@@ -276,46 +282,51 @@ export function useEstadisticas() {
         }, 0);
       }
 
-      if (!ventasPorCliente[cliente]) {
-        ventasPorCliente[cliente] = 0;
+      if (total === 0) return;
+
+      const originalName = pedido.clientName || pedido.cliente || 'Cliente General';
+      const clientKey = normalizeKey(originalName);
+
+      if (!clientsMap[clientKey]) {
+        clientsMap[clientKey] = {
+          name: originalName, // Display Name
+          ventas: 0,
+          cobros: 0
+        };
       }
-      ventasPorCliente[cliente] += total;
+      clientsMap[clientKey].ventas += total;
     });
 
-    // Calcular cobros totales por cliente
-    const cobrosPorCliente = {};
+    // 2. Procesar Cobros
     rawCobros.forEach(cobro => {
-      const cliente = cobro.cliente || 'Sin nombre';
+      // Solo Abonos y Cancelaciones cuentan
+      const tipo = (cobro.tipo || '').toLowerCase();
+      if (!['abono', 'cancelación total', 'cancelacion total'].includes(tipo) && !tipo.includes('cancelac')) return;
+
+      const originalName = cobro.cliente || 'Cliente General';
+      const clientKey = normalizeKey(originalName);
       const cantidad = Number(cobro.cantidad) || 0;
 
-      if (!cobrosPorCliente[cliente]) {
-        cobrosPorCliente[cliente] = 0;
+      if (!clientsMap[clientKey]) {
+        clientsMap[clientKey] = {
+          name: originalName,
+          ventas: 0,
+          cobros: 0
+        };
       }
-      cobrosPorCliente[cliente] += cantidad;
+      clientsMap[clientKey].cobros += cantidad;
     });
 
-    // Calcular saldo pendiente (ventas - cobros)
-    const saldos = [];
-    const todosClientes = new Set([...Object.keys(ventasPorCliente), ...Object.keys(cobrosPorCliente)]);
-
-    todosClientes.forEach(cliente => {
-      const ventas = ventasPorCliente[cliente] || 0;
-      const cobros = cobrosPorCliente[cliente] || 0;
-      const saldo = ventas - cobros;
-
-      // Solo mostrar clientes con saldo pendiente positivo
-      if (saldo > 0.01) { // Tolerancia para decimales
-        saldos.push({
-          cliente,
-          ventas,
-          cobros,
-          saldo
-        });
-      }
-    });
-
-    // Ordenar por saldo descendente (mayor deuda primero)
-    return saldos.sort((a, b) => b.saldo - a.saldo);
+    // 3. Convertir a array y filtrar solo saldos pendientes reales
+    return Object.values(clientsMap)
+      .map(c => ({
+        cliente: c.name,
+        ventas: c.ventas,
+        cobros: c.cobros,
+        saldo: c.ventas - c.cobros
+      }))
+      .filter(c => c.saldo > 0.01) // Solo mostrar clientes con deuda positiva
+      .sort((a, b) => b.saldo - a.saldo);
   };
 
   return {
