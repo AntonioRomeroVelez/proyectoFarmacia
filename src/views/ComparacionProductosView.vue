@@ -236,8 +236,10 @@ import { useToast } from 'vue-toastification';
 import alertify from 'alertifyjs';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import { useProductos } from '@/composables/useProductos';
 
 const toast = useToast();
+const { productos: allProductos } = useProductos();
 const fileInput = ref(null);
 const cargando = ref(false);
 const erroresValidacion = ref([]);
@@ -306,8 +308,8 @@ const handleFileUpload = async (event) => {
       return;
     }
 
-    // 2. Cargar productos existentes de localStorage
-    const productosBD = JSON.parse(localStorage.getItem('ListaProductos')) || [];
+    // 2. Cargar productos existentes de la base de datos reactiva
+    const productosBD = allProductos.value;
 
     // Mapa de productos existentes para búsqueda rápida
     const mapaExistentes = new Map();
@@ -519,8 +521,8 @@ const descargarExcel = async () => {
       fgColor: { argb: 'FF4472C4' } // Azul
     };
 
-    // Obtener productos de la BD
-    const productosBD = JSON.parse(localStorage.getItem('ListaProductos')) || [];
+    // Obtener productos de la BD reactiva
+    const productosBD = allProductos.value;
 
     // Identificar marcas comparadas en el Excel
     const marcasComparadas = new Set();

@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'farmaciaDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export const dbRequest = openDB(DB_NAME, DB_VERSION, {
   upgrade(db) {
@@ -44,6 +44,11 @@ export const dbRequest = openDB(DB_NAME, DB_VERSION, {
     if (!db.objectStoreNames.contains('config')) {
       db.createObjectStore('config', { keyPath: 'key' });
     }
+
+    // Create backups store (V4)
+    if (!db.objectStoreNames.contains('backups')) {
+      db.createObjectStore('backups', { keyPath: 'id' });
+    }
   },
 });
 
@@ -82,6 +87,12 @@ export const dbService = {
   async delete(storeName, key) {
     const db = await dbRequest;
     return db.delete(storeName, key);
+  },
+
+  // Clear all items from a store
+  async clear(storeName) {
+    const db = await dbRequest;
+    return db.clear(storeName);
   },
 
   // Bulk add (for migration)
@@ -162,7 +173,48 @@ export const dbService = {
     await db.put('config', { key: 'migration_done', value: true });
     await db.put('config', { key: 'migration_v2_done', value: true });
     await db.put('config', { key: 'migration_v3_done', value: true });
-    console.log('Migration V3 completed.');
+    // Migrate Backups to IndexedDB (V4)
+    const migrationV4Flag = await db.get('config', 'migration_v4_done');
+    if (!migrationV4Flag?.value) {
+      console.log('Starting migration V4 (Backups) from LocalStorage...');
+      const backups = safeParse('farmacia_auto_backups');
+      if (backups.length) {
+        await this.bulkPut('backups', backups);
+        // After successful migration, we could clear LS, 
+        // but it's safer to let the user see it works first or do it in useAutoBackup.
+      }
+      await db.put('config', { key: 'migration_v4_done', value: true });
+      console.log('Migration V4 completed.');
+    }
+
+    console.log('All migrations completed.');
+
+    // Explicitly cleanup legacy localStorage after all migrations are done
+    this.cleanupLegacyLocalStorage();
+  },
+
+  // Cleanup legacy localStorage keys after migration
+  cleanupLegacyLocalStorage() {
+    const legacyKeys = [
+      'ListaProductos',
+      'farmacia_cobros',
+      'farmacia_historial_documentos',
+      'farmacia_historial',
+      'farmacia_clientes',
+      'app_users',
+      'VisitasDiarias',
+      'farmacia_agenda',
+      'farmacia_auto_backups'
+    ];
+
+    console.log('Cleaning up legacy LocalStorage keys...');
+    legacyKeys.forEach(key => {
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key);
+        console.log(`- Removed ${key}`);
+      }
+    });
+    console.log('Cleanup completed.');
   }
 
 

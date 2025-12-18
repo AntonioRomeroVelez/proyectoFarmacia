@@ -237,18 +237,25 @@ import { ref, onMounted, computed } from "vue";
 import { useCart } from "@/composables/useCart";
 import { useAgenda } from "@/composables/useAgenda";
 import { useCobros } from "@/composables/useCobros";
+import { useVisitas } from "@/composables/useVisitas";
+import { useProductos } from "@/composables/useProductos";
 
 const { cartCount, cartTotal } = useCart();
 const { getEventosPorFecha, eventos } = useAgenda();
 const { cobros, getTotalCobros } = useCobros();
+const { visitas: allVisitas } = useVisitas();
+const { productos: allProductos } = useProductos();
 
-const recentVisits = ref([]);
 
-const stats = ref({
-  totalProductos: 0,
-  totalVisitas: 0,
-  itemsCarrito: 0,
-  valorCarrito: 0,
+const stats = computed(() => ({
+  totalProductos: allProductos.value.length,
+  totalVisitas: allVisitas.value.length,
+  itemsCarrito: cartCount.value,
+  valorCarrito: cartTotal.value,
+}));
+
+const recentVisits = computed(() => {
+  return [...allVisitas.value].slice(0, 5);
 });
 
 const fechaActual = computed(() => {
@@ -297,20 +304,7 @@ const formatearFecha = (fechaISO) => {
 };
 
 onMounted(() => {
-  // Cargar datos de localStorage
-  const productos = JSON.parse(localStorage.getItem("ListaProductos")) || [];
-  const visitas = JSON.parse(localStorage.getItem("VisitasDiarias")) || [];
-
-  // Calcular Stats
-  stats.value.totalProductos = productos.length;
-  stats.value.totalVisitas = visitas.length;
-  stats.value.itemsCarrito = cartCount.value;
-  stats.value.valorCarrito = cartTotal.value;
-
-  if (visitas.length > 0) {
-    // Get last 5 visits reversed
-    recentVisits.value = [...visitas].reverse().slice(0, 5);
-  }
+  // Las estadísticas ahora son computadas y reactivas a través de los composables
 });
 </script>
 

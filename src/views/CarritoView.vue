@@ -185,7 +185,8 @@
         </b-form-group>
 
         <b-form-group label="Ciudad:" label-for="ciudad-modal" class="mb-3">
-          <b-form-input id="ciudad-modal" v-model="ciudad" placeholder="Ingrese ciudad" />
+          <b-form-input id="ciudad-modal" v-model="ciudad" placeholder="Ingrese ciudad" :readonly="isCityReadOnly" />
+          <small v-if="isCityReadOnly" class="text-muted">La ciudad está registrada y no se puede editar aquí.</small>
         </b-form-group>
 
         <b-form-group label="Vendedor:" label-for="vendedor-modal" class="mb-3">
@@ -216,7 +217,7 @@ const toast = useToast();
 const { userName } = useAuth();
 const { users } = useUsuarios();
 const { saveDocument } = useHistorial();
-const { clientes, clientesOrdenados, getClienteById, addCliente } = useClientes();
+const { clientes, clientesOrdenados, getClienteById, addCliente, updateCliente } = useClientes();
 
 const {
   cart,
@@ -242,6 +243,7 @@ const fecha = ref("");
 const showClientModal = ref(false);
 const pendingAction = ref(null); // 'proforma', 'pedido', 'pdf'
 const isNewClient = ref(false); // Feedback visual
+const isCityReadOnly = ref(false); // Controlar si la ciudad ya existe
 
 onMounted(() => {
   // Set default date to today
@@ -287,9 +289,11 @@ watch(clienteNombre, (newVal) => {
     clienteId.value = found.id;
     ciudad.value = found.ciudad || ""; // Autocompletar ciudad
     isNewClient.value = false;
+    isCityReadOnly.value = !!found.ciudad; // Bloquear si ya tiene ciudad
   } else {
     clienteId.value = null;
     isNewClient.value = true;
+    isCityReadOnly.value = false;
     // No borramos ciudad si el usuario ya escribió algo, solo si estaba vacía
   }
 });
@@ -317,6 +321,16 @@ const confirmarExportacion = async (bvModalEvent) => {
 
   // Lógica de Registro Automático
   let finalClienteId = clienteId.value;
+
+  // Si el cliente existe pero no tiene ciudad y se ingresó una, actualizarlo
+  if (finalClienteId && !isCityReadOnly.value && ciudad.value.trim()) {
+    try {
+      await updateCliente(finalClienteId, { ciudad: ciudad.value.trim() });
+      toast.info(`📍 Ciudad registrada para el cliente: ${ciudad.value}`);
+    } catch (e) {
+      console.error("Error updating client city:", e);
+    }
+  }
 
   if (isNewClient.value) {
     // Es un cliente nuevo, registramos automáticamente

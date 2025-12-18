@@ -1,44 +1,18 @@
 import { ref, computed } from 'vue';
 import { dbService } from '@/services/db';
+import { useHistorial } from '@/composables/useHistorial';
+import { useCobros } from '@/composables/useCobros';
+import { useVisitas } from '@/composables/useVisitas';
 
 export function useEstadisticas() {
+  const { documents } = useHistorial();
+  const { cobros: rawCobroList } = useCobros();
+  const { visitas: rawVisitaList } = useVisitas();
 
-  // Helpers internos para cargar datos
-  const getProductos = async () => {
-    try {
-      return await dbService.getAll('productos');
-    } catch (error) {
-      console.error('Error loading productos stats:', error);
-      return [];
-    }
-  };
-
-  const getVisitas = async () => {
-    try {
-      return await dbService.getAll('visitas');
-    } catch (error) {
-      console.error('Error loading visitas stats:', error);
-      return [];
-    }
-  };
-
-  const getCobros = async () => {
-    try {
-      return await dbService.getAll('cobros');
-    } catch (error) {
-      console.error('Error loading cobros stats:', error);
-      return [];
-    }
-  };
-
-  const getHistorial = async () => {
-    try {
-      return await dbService.getAll('historial');
-    } catch (error) {
-      console.error('Error loading historial stats:', error);
-      return [];
-    }
-  };
+  // Helpers internos para obtener datos reactivos
+  const getHistorial = () => documents.value;
+  const getCobros = () => rawCobroList.value;
+  const getVisitas = () => rawVisitaList.value;
 
   // Filtrar por período
   const filtrarPorPeriodo = (items, periodo, campoFecha = 'fecha') => {
@@ -63,10 +37,6 @@ export function useEstadisticas() {
     }
 
     return items.filter(item => {
-      // Handle createdAt vs fecha vs date
-      // Historial uses 'createdAt' or 'date'? Earlier analysis said 'createdAt'.
-      // Visitas uses 'fecha'. Cobros uses 'fecha' (from useCobros filter).
-      // Let's be robust
       const dateStr = item[campoFecha] || item.createdAt || item.date;
       if (!dateStr) return false;
       const fechaItem = new Date(dateStr);
@@ -74,39 +44,38 @@ export function useEstadisticas() {
     });
   };
 
-  // Estadísticas de ventas
-  const getEstadisticasVentas = async (periodo = 'mes') => {
-    const rawHistorial = await getHistorial();
-    const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt'); // Historial uses createdAt mostly
+  // Helper para calcular total de un documento de forma robusta
+  const calcularTotalDoc = (doc) => {
+    let total = Number(doc.totals?.total || 0);
+    if (total === 0 && doc.items && Array.isArray(doc.items)) {
+      total = doc.items.reduce((sum, p) => {
+        const precio = Number(p.PrecioFarmacia || p.precio || 0);
+        const cantidad = Number(p.quantity || p.cantidad || 0);
+        return sum + (precio * cantidad);
+      }, 0);
+    }
+    return total;
+  };
 
-    // Agrupar por día
+  // Estadísticas de ventas
+  const getEstadisticasVentas = (periodo = 'mes') => {
+    const rawHistorial = getHistorial();
+    const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
+
     const ventasPorDia = {};
     historial.forEach(pedido => {
-      // Robust date parsing
+      const tipo = (pedido.type || pedido.tipo || '').trim().toLowerCase();
+      if (tipo !== 'pedido') return;
+
       const dateStr = pedido.createdAt || pedido.date;
       if (!dateStr) return;
       const fecha = dateStr.split('T')[0];
+      const total = calcularTotalDoc(pedido);
 
-      // El historial guarda items (no productos) con PrecioFarmacia y quantity
-      // También puede tener totals.total precalculado
-      let total = 0;
-      if (pedido.totals?.total) {
-        total = Number(pedido.totals.total) || 0;
-      } else if (pedido.items && Array.isArray(pedido.items)) {
-        total = pedido.items.reduce((sum, p) => {
-          const precio = Number(p.PrecioFarmacia || p.precio || 0);
-          const cantidad = Number(p.quantity || p.cantidad || 0);
-          return sum + (precio * cantidad);
-        }, 0);
-      }
-
-      if (!ventasPorDia[fecha]) {
-        ventasPorDia[fecha] = 0;
-      }
+      if (!ventasPorDia[fecha]) ventasPorDia[fecha] = 0;
       ventasPorDia[fecha] += total;
     });
 
-    // Convertir a arrays para gráficos
     const fechas = Object.keys(ventasPorDia).sort();
     const valores = fechas.map(f => ventasPorDia[f]);
 
@@ -118,20 +87,20 @@ export function useEstadisticas() {
   };
 
   // Top productos más vendidos
-  const getTopProductos = async (periodo = 'mes', limit = 10) => {
-    const rawHistorial = await getHistorial();
+  const getTopProductos = (periodo = 'mes', limit = 10) => {
+    const rawHistorial = getHistorial();
     const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
 
     const productosCantidad = {};
     historial.forEach(pedido => {
-      // El historial guarda items (no productos) con NombreProducto y quantity
+      const tipo = (pedido.type || pedido.tipo || '').trim().toLowerCase();
+      if (tipo !== 'pedido') return;
+
       const items = pedido.items || pedido.productos || [];
       items.forEach(p => {
         const nombre = p.NombreProducto || p.nombre || 'Sin nombre';
         const cantidad = Number(p.quantity || p.cantidad || 1);
-        if (!productosCantidad[nombre]) {
-          productosCantidad[nombre] = 0;
-        }
+        if (!productosCantidad[nombre]) productosCantidad[nombre] = 0;
         productosCantidad[nombre] += cantidad;
       });
     });
@@ -141,7 +110,6 @@ export function useEstadisticas() {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, limit);
 
-    // Truncar nombres largos para mejor visualización en el gráfico
     const truncarNombre = (nombre, maxLen = 12) => {
       if (nombre.length <= maxLen) return nombre;
       return nombre.substring(0, maxLen) + '...';
@@ -154,9 +122,8 @@ export function useEstadisticas() {
   };
 
   // Estadísticas de cobros
-  const getEstadisticasCobros = async (periodo = 'mes') => {
-    const rawCobros = await getCobros();
-    // Cobros usually have 'fecha'
+  const getEstadisticasCobros = (periodo = 'mes') => {
+    const rawCobros = getCobros();
     const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
 
     let totalAbonos = 0;
@@ -171,8 +138,7 @@ export function useEstadisticas() {
       if (tipo === 'abono') {
         totalAbonos += cantidad;
         countAbonos++;
-      } else if (tipo.includes('cancelación') || tipo.includes('cancelacion')) {
-        // Incluye "Cancelación", "Cancelación Total", "Cancelación Parcial", etc.
+      } else if (tipo.includes('cancelac')) {
         totalCancelaciones += cantidad;
         countCancelaciones++;
       }
@@ -187,17 +153,15 @@ export function useEstadisticas() {
   };
 
   // Estadísticas de visitas
-  const getEstadisticasVisitas = async (periodo = 'mes') => {
-    const rawVisitas = await getVisitas();
+  const getEstadisticasVisitas = (periodo = 'mes') => {
+    const rawVisitas = getVisitas();
     const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
 
-    // Agrupar por día
     const visitasPorDia = {};
     visitas.forEach(visita => {
-      const fecha = visita.fecha.split('T')[0];
-      if (!visitasPorDia[fecha]) {
-        visitasPorDia[fecha] = 0;
-      }
+      const fecha = (visita.fecha || '').split('T')[0];
+      if (!fecha) return;
+      if (!visitasPorDia[fecha]) visitasPorDia[fecha] = 0;
       visitasPorDia[fecha]++;
     });
 
@@ -212,121 +176,175 @@ export function useEstadisticas() {
   };
 
   // KPIs generales
-  const getKPIs = async (periodo = 'mes') => {
-    // Parallel fetch
-    const [rawHistorial, rawCobros, rawVisitas] = await Promise.all([
-      getHistorial(),
-      getCobros(),
-      getVisitas()
-    ]);
+  const getKPIs = (periodo = 'mes') => {
+    const rawHistorial = getHistorial();
+    const rawCobros = getCobros();
+    const rawVisitas = getVisitas();
 
     const historial = filtrarPorPeriodo(rawHistorial, periodo, 'createdAt');
     const cobros = filtrarPorPeriodo(rawCobros, periodo, 'fecha');
     const visitas = filtrarPorPeriodo(rawVisitas, periodo, 'fecha');
 
-    // Calcular total ventas usando la estructura correcta del historial
-    const totalVentas = historial.reduce((sum, pedido) => {
-      let total = 0;
-      if (pedido.totals?.total) {
-        total = Number(pedido.totals.total) || 0;
-      } else if (pedido.items && Array.isArray(pedido.items)) {
-        total = pedido.items.reduce((s, p) => {
-          const precio = Number(p.PrecioFarmacia || p.precio || 0);
-          const cantidad = Number(p.quantity || p.cantidad || 0);
-          return s + (precio * cantidad);
-        }, 0);
-      }
-      return sum + total;
-    }, 0);
-
+    const ventasRecientes = historial.filter(doc => (doc.type || doc.tipo || '').toLowerCase() === 'pedido');
+    const totalVentas = ventasRecientes.reduce((sum, pedido) => sum + calcularTotalDoc(pedido), 0);
     const totalCobrado = cobros.reduce((sum, cobro) => sum + (Number(cobro.cantidad) || 0), 0);
-
-    const promedioVenta = historial.length > 0 ? totalVentas / historial.length : 0;
+    const promedioVenta = ventasRecientes.length > 0 ? totalVentas / ventasRecientes.length : 0;
 
     return {
       totalVentas,
       totalCobrado,
-      totalPedidos: historial.length,
+      totalPedidos: ventasRecientes.length,
       totalVisitas: visitas.length,
       promedioVenta,
-      tasaConversion: visitas.length > 0 ? (historial.length / visitas.length * 100) : 0
+      tasaConversion: visitas.length > 0 ? (ventasRecientes.length / visitas.length * 100) : 0
     };
   };
 
-  // Clientes con saldo pendiente (deudores)
-  const getSaldosPendientes = async () => {
-    const [rawHistorial, rawCobros] = await Promise.all([
-      getHistorial(),
-      getCobros()
-    ]);
+  // NUEVO: Obtener todos los pedidos individuales con saldo pendiente
+  const getPedidosPendientes = () => {
+    const rawHistorial = getHistorial();
+    const rawCobros = getCobros();
 
+    const pedidosPendientes = [];
+
+    // 1. Filtrar solo pedidos
+    const pedidos = rawHistorial.filter(doc => (doc.type || doc.tipo || '').toLowerCase() === 'pedido');
+
+    pedidos.forEach(pedido => {
+      const total = calcularTotalDoc(pedido);
+
+      // Encontrar cobros vinculados a este pedido
+      const cobrosPedido = rawCobros.filter(c => c.pedidoId === pedido.id &&
+        (['abono', 'cancelación total', 'cancelacion total'].includes(c.tipo?.toLowerCase()) || c.tipo?.toLowerCase().includes('cancelac'))
+      );
+
+      const totalPagado = cobrosPedido.reduce((sum, c) => sum + (Number(c.cantidad) || 0), 0);
+      const saldo = total - totalPagado;
+
+      if (saldo > 0.01) {
+        pedidosPendientes.push({
+          id: pedido.id,
+          fecha: pedido.createdAt || pedido.date,
+          cliente: pedido.clientName || pedido.cliente || 'Cliente General',
+          total,
+          abonado: totalPagado,
+          saldo: saldo
+        });
+      }
+    });
+
+    return pedidosPendientes.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  };
+
+  // Clientes con saldo pendiente (deudores)
+  const getSaldosPendientes = (soloDeudores = true) => {
+    const pedidosPendientes = getPedidosPendientes();
     const clientsMap = {};
 
-    // Helper para normalizar claves
-    const normalizeKey = (name) => (name || 'Cliente General').trim().toLowerCase();
-
-    // 1. Procesar Ventas (Solo Pedidos)
-    rawHistorial.forEach(pedido => {
-      const tipo = (pedido.type || pedido.tipo || '').trim().toLowerCase();
-      // FILTRO ESTRICTO: Solo 'pedido'
-      if (tipo !== 'pedido') return;
-
-      const docTotal = Number(pedido.totals?.total || 0);
-      let total = docTotal;
-
-      if (total === 0 && pedido.items && Array.isArray(pedido.items)) {
-        total = pedido.items.reduce((sum, p) => {
-          const precio = Number(p.PrecioFarmacia || p.precio || 0);
-          const cantidad = Number(p.quantity || p.cantidad || 0);
-          return sum + (precio * cantidad);
-        }, 0);
-      }
-
-      if (total === 0) return;
-
-      const originalName = pedido.clientName || pedido.cliente || 'Cliente General';
-      const clientKey = normalizeKey(originalName);
-
-      if (!clientsMap[clientKey]) {
-        clientsMap[clientKey] = {
-          name: originalName, // Display Name
+    pedidosPendientes.forEach(p => {
+      const key = (p.cliente || 'Cliente General').trim().toLowerCase();
+      if (!clientsMap[key]) {
+        clientsMap[key] = {
+          cliente: p.cliente,
           ventas: 0,
-          cobros: 0
+          abonos: 0,
+          saldo: 0
         };
       }
-      clientsMap[clientKey].ventas += total;
+      clientsMap[key].ventas += p.total;
+      clientsMap[key].abonos += p.abonado;
+      clientsMap[key].saldo += p.saldo;
     });
 
-    // 2. Procesar Cobros
+    const result = Object.values(clientsMap).sort((a, b) => b.saldo - a.saldo);
+    return soloDeudores ? result.filter(c => c.saldo > 0.01) : result;
+  };
+
+  const getResumenGeneral = () => {
+    const clients = getSaldosPendientes(false);
+    const totals = clients.reduce((acc, c) => {
+      acc.ventas += c.ventas;
+      acc.abonos += c.abonos;
+      acc.saldos += c.saldo;
+      return acc;
+    }, { ventas: 0, abonos: 0, saldos: 0 });
+
+    return {
+      totalVentas: totals.ventas,
+      totalAbonos: totals.abonos,
+      totalSaldos: totals.saldos,
+      totalGeneral: totals.ventas
+    };
+  };
+
+  const getEstadoCuenta = (clienteNombre) => {
+    const rawHistorial = getHistorial();
+    const rawCobros = getCobros();
+    const target = (clienteNombre || '').trim().toLowerCase();
+    const movimientos = [];
+
+    rawHistorial.forEach(doc => {
+      if ((doc.clientName || doc.cliente || '').trim().toLowerCase() === target &&
+        ['pedido', 'proforma'].includes((doc.type || doc.tipo || '').toLowerCase())) {
+        movimientos.push({
+          id: doc.id,
+          fecha: doc.createdAt || doc.date,
+          tipo: doc.type || doc.tipo || 'Pedido',
+          referencia: doc.id.substring(0, 8),
+          debe: calcularTotalDoc(doc),
+          haber: 0,
+          saldo: 0
+        });
+      }
+    });
+
     rawCobros.forEach(cobro => {
-      // Solo Abonos y Cancelaciones cuentan
-      const tipo = (cobro.tipo || '').toLowerCase();
-      if (!['abono', 'cancelación total', 'cancelacion total'].includes(tipo) && !tipo.includes('cancelac')) return;
-
-      const originalName = cobro.cliente || 'Cliente General';
-      const clientKey = normalizeKey(originalName);
-      const cantidad = Number(cobro.cantidad) || 0;
-
-      if (!clientsMap[clientKey]) {
-        clientsMap[clientKey] = {
-          name: originalName,
-          ventas: 0,
-          cobros: 0
-        };
+      if ((cobro.cliente || '').trim().toLowerCase() === target) {
+        movimientos.push({
+          id: cobro.id,
+          fecha: cobro.fecha,
+          tipo: 'Cobro (' + cobro.metodoPago + ')',
+          referencia: cobro.numeroRecibo || cobro.id.substring(0, 8),
+          debe: 0,
+          haber: Number(cobro.cantidad || 0),
+          saldo: 0
+        });
       }
-      clientsMap[clientKey].cobros += cantidad;
     });
 
-    // 3. Convertir a array y filtrar solo saldos pendientes reales
-    return Object.values(clientsMap)
-      .map(c => ({
-        cliente: c.name,
-        ventas: c.ventas,
-        cobros: c.cobros,
-        saldo: c.ventas - c.cobros
-      }))
-      .filter(c => c.saldo > 0.01) // Solo mostrar clientes con deuda positiva
-      .sort((a, b) => b.saldo - a.saldo);
+    movimientos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    let saldoAcumulado = 0;
+    movimientos.forEach(m => {
+      saldoAcumulado += (m.debe - m.haber);
+      m.saldo = saldoAcumulado;
+    });
+
+    return movimientos;
+  };
+
+  const getComparativaAnual = () => {
+    const rawHistorial = getHistorial();
+    const hoy = new Date();
+    const añoActual = hoy.getFullYear();
+    const añoAnterior = añoActual - 1;
+    const ventasActual = new Array(12).fill(0);
+    const ventasAnterior = new Array(12).fill(0);
+
+    rawHistorial.forEach(doc => {
+      if ((doc.type || doc.tipo || '').toLowerCase() !== 'pedido') return;
+      const fecha = new Date(doc.createdAt || doc.date);
+      const año = fecha.getFullYear();
+      const mes = fecha.getMonth();
+      const total = calcularTotalDoc(doc);
+      if (año === añoActual) ventasActual[mes] += total;
+      else if (año === añoAnterior) ventasAnterior[mes] += total;
+    });
+
+    return {
+      labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+      actual: ventasActual,
+      anterior: ventasAnterior
+    };
   };
 
   return {
@@ -335,6 +353,10 @@ export function useEstadisticas() {
     getEstadisticasCobros,
     getEstadisticasVisitas,
     getKPIs,
-    getSaldosPendientes
+    getSaldosPendientes,
+    getPedidosPendientes,
+    getEstadoCuenta,
+    getComparativaAnual,
+    getResumenGeneral
   };
 }

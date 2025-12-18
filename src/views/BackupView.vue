@@ -353,14 +353,15 @@ const loadStats = async () => {
 // Exportar todos los datos
 const exportAllData = async () => {
   try {
-    const [productos, clientes, usuarios, visitas, historial, agenda, cobros] = await Promise.all([
+    const [productos, clientes, usuarios, visitas, historial, agenda, cobros, internalBackups] = await Promise.all([
       dbService.getAll('productos'),
       dbService.getAll('clientes'),
       dbService.getAll('usuarios'),
       dbService.getAll('visitas'),
       dbService.getAll('historial'),
       dbService.getAll('agenda'),
-      dbService.getAll('cobros')
+      dbService.getAll('cobros'),
+      dbService.getAll('backups')
     ]);
 
     const backupData = {
@@ -374,6 +375,7 @@ const exportAllData = async () => {
         historial,
         agenda,
         cobros,
+        backups: internalBackups,
         // LocalStorage leftovers
         currentUser: JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || 'null'),
         cart: JSON.parse(localStorage.getItem(STORAGE_KEYS.cart) || '[]')
@@ -557,7 +559,7 @@ const confirmImport = async () => {
   const rawImportData = toRaw(pendingImportData.value);
   const importData = rawImportData.data;
 
-  const idbStores = ['productos', 'clientes', 'usuarios', 'visitas', 'historial', 'agenda', 'cobros'];
+  const idbStores = ['productos', 'clientes', 'usuarios', 'visitas', 'historial', 'agenda', 'cobros', 'backups'];
 
   for (const store of idbStores) {
     if (importData[store] && Array.isArray(importData[store])) {
@@ -598,6 +600,7 @@ const formatKey = (key) => {
     historial: 'Historial',
     agenda: 'Agenda',
     cobros: 'Cobros',
+    backups: 'Historial de Backups',
     currentUser: 'Usuario Actual',
     cart: 'Carrito'
   };

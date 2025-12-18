@@ -77,21 +77,9 @@ export function useCobros() {
   };
 
   // Eliminar todos los cobros
-  const clearAllCobros = async () => { // Note: This might be dangerous if user has huge amount
+  const clearAllCobros = async () => {
     try {
-      // In IDB, clearing a store is one transaction
-      // But we don't have a clear() method exposed in dbService yet
-      // For now, let's delete strictly what is in list or use a bulk delete if simple
-      // Actually, IDB 'clear' is standard. Let's assume we might need to add it to dbService or iterate.
-      // Iterating delete is slow.
-      // Ideally dbService should have .clear('cobros').
-      // Check dbService... it doesn't have clear.
-      // Let's rely on iterating purely UI side or add clear to dbService.
-      // Added instruction: I will update dbService to have clear() next, but for now:
-      const db = await import('@/services/db').then(m => m.dbRequest);
-      const tx = db.transaction('cobros', 'readwrite');
-      await tx.objectStore('cobros').clear();
-
+      await dbService.clear('cobros');
       cobros.value = [];
       toast.info('Todos los cobros han sido eliminados');
     } catch (e) {

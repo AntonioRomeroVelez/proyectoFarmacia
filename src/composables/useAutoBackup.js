@@ -139,14 +139,23 @@ export function useAutoBackup() {
     };
 
     try {
-      const existingBackups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
-      existingBackups.push(backupData);
+      // Guardar en IndexedDB
+      await dbService.put('backups', backupData);
 
-      // Mantener backups de los últimos 7 días
+      // Mantener backups de los últimos 7 días en IndexedDB
+      const allBackups = await dbService.getAll('backups');
       const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
-      const recentBackups = existingBackups.filter(backup => backup.timestamp >= sevenDaysAgo);
 
-      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(recentBackups));
+      for (const backup of allBackups) {
+        if (backup.timestamp < sevenDaysAgo) {
+          await dbService.delete('backups', backup.id);
+        }
+      }
+
+      // Limpiar localStorage si existía (migración completada)
+      if (localStorage.getItem(BACKUP_STORAGE_KEY)) {
+        localStorage.removeItem(BACKUP_STORAGE_KEY);
+      }
 
       // Actualizar hash de datos
       const newHash = await calculateDataHash();
@@ -164,12 +173,8 @@ export function useAutoBackup() {
       return backupData;
 
     } catch (e) {
-      console.error('Error saving backup to localStorage:', e);
-      if (e.name === 'QuotaExceededError') {
-        toast.error('❌ Espacio insuficiente para guardar el backup automático.');
-      } else {
-        toast.error('❌ Error al guardar el backup (Quota/Size).');
-      }
+      console.error('Error saving backup to IndexedDB:', e);
+      toast.error('❌ Error al guardar el backup en la base de datos.');
       return null;
     }
   };
@@ -196,15 +201,15 @@ export function useAutoBackup() {
   };
 
   // Cargar backups automáticos guardados
-  const loadAutoBackups = () => {
+  const loadAutoBackups = async () => {
     try {
-      const backups = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || '[]');
+      const backups = await dbService.getAll('backups');
       autoBackups.value = backups.sort((a, b) => b.timestamp - a.timestamp);
 
       const lastBackup = localStorage.getItem(LAST_BACKUP_KEY);
       lastBackupDate.value = lastBackup;
     } catch (e) {
-      console.error('Error loading backups:', e);
+      console.error('Error loading backups from IndexedDB:', e);
       autoBackups.value = [];
     }
   };
@@ -251,18 +256,30 @@ export function useAutoBackup() {
   };
 
   // Eliminar un backup
-  const deleteBackup = (backupId) => {
-    const backups = autoBackups.value.filter(b => b.id !== backupId);
-    localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(backups));
-    autoBackups.value = backups;
-    toast.success('🗑️ Backup eliminado');
+  const deleteBackup = async (backupId) => {
+    try {
+      await dbService.delete('backups', backupId);
+      autoBackups.value = autoBackups.value.filter(b => b.id !== backupId);
+      toast.success('🗑️ Backup eliminado');
+    } catch (e) {
+      console.error('Error deleting backup:', e);
+      toast.error('❌ Error al eliminar el backup');
+    }
   };
 
   // Eliminar todos los backups
-  const deleteAllBackups = () => {
-    localStorage.removeItem(BACKUP_STORAGE_KEY);
-    autoBackups.value = [];
-    toast.success('🗑️ Todos los backups eliminados');
+  const deleteAllBackups = async () => {
+    try {
+      const allBackups = await dbService.getAll('backups');
+      for (const backup of allBackups) {
+        await dbService.delete('backups', backup.id);
+      }
+      autoBackups.value = [];
+      toast.success('🗑️ Todos los backups eliminados');
+    } catch (e) {
+      console.error('Error deleting all backups:', e);
+      toast.error('❌ Error al vaciar el historial');
+    }
   };
 
   // Forzar backup manual
