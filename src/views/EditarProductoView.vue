@@ -63,6 +63,13 @@
               <small class="text-muted">Formato: cantidad+bonificación (separar con espacios)</small>
             </b-form-group>
           </b-col>
+
+          <b-col cols="12">
+            <b-form-group label="Observación:" label-for="observacion">
+              <b-form-textarea id="observacion" v-model="form.Observacion" placeholder="Observaciones adicionales..."
+                rows="3" />
+            </b-form-group>
+          </b-col>
         </b-row>
 
         <!-- Botones -->
@@ -101,7 +108,10 @@ const form = ref({
   PVP: 0,
   Descuento: 0,
   IVA: 0,
-  Promocion: ''
+  IVA: 0,
+  Promocion: '',
+
+  Observacion: ''
 })
 
 const findAndLoadProduct = () => {

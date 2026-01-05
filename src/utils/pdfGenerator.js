@@ -57,7 +57,7 @@ export const usePDFGenerator = () => {
 
       // Determinar orientación y tamaño de fuente basado en número de columnas
       const isLandscape = headers.length > 8;
-      const orientation = isLandscape ? "l" : "p";
+      const orientation = "p"; // Forzar vertical como solicitó el usuario
       const pdf = new jsPDF(orientation, "mm", "a4");
 
       // Ajustar estilos según orientación
@@ -131,6 +131,7 @@ export const usePDFGenerator = () => {
         Descuento: "Desc. %",
         "Descuento %": "Descuento %",
         Promocion: "Promoción",
+        Observacion: "Observación",
         quantity: "Cantidad",
         Subtotal: "Subtotal",
         "Cantidad a recibir": "Cant. Recibir",

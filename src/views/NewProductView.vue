@@ -79,6 +79,11 @@
               <label class="form-label">Promoción</label>
               <input v-model="form.Promocion" type="text" class="form-control" placeholder="Ej: 2+1" />
             </div>
+            <div class="col-12">
+              <label class="form-label">Observación</label>
+              <textarea v-model="form.Observacion" class="form-control" rows="2"
+                placeholder="Detalles adicionales..."></textarea>
+            </div>
           </div>
 
           <div class="d-flex justify-content-end gap-2 mt-4">
@@ -116,7 +121,10 @@ const form = reactive({
   PVP: 0,
   IVA: 0,
   Descuento: 0,
-  Promocion: ''
+  Descuento: 0,
+  Promocion: '',
+
+  Observacion: ''
 });
 
 const guardarProducto = async () => {

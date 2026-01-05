@@ -36,6 +36,7 @@
             </strong>
           </div>
 
+
           <span v-if="producto.PVP" class="badge badge-subtle-pvp">
             PVP: ${{ producto.PVP }}
           </span>
@@ -59,6 +60,11 @@
           <span v-if="producto.Promocion" class="badge badge-subtle-promo">
             Promoción: {{ producto.Promocion }}
           </span>
+         <div class="badge badge-subtle-observation" v-if="producto.Observacion"><strong>Observación:</strong>
+            {{
+              producto.Observacion
+            }}
+          </div>
         </div>
       </div>
     </b-card-body>
@@ -328,5 +334,18 @@ const verDetalle = () => {
   font-size: 0.8em;
   /* 75% del tamaño de la fuente padre */
   opacity: 0.85;
+}
+.badge-subtle-observation {
+  background-color: #fff8e1;
+  /* Amber 50 - Amarillo Muy Claro */
+  color: #5d4037;
+  /* Brown 700 - Marrón para contraste */
+  border: 1px solid #ffecb3;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
+  text-align: left;
 }
 </style>

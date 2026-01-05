@@ -27,9 +27,9 @@
             class="file-input-hidden" />
         </div>
         <small class="text-muted mt-2 d-block">
-          <strong>Columnas requeridas:</strong> CODIGO, Marca, Nombre,
+         <strong>Columnas:</strong> CODIGO, Marca, Nombre,
           Presentacion, Principio_Activo, P_Farmacia, PVP, Promocion, Descuento,
-          IVA
+         IVA, Observacion (Opcional)
         </small>
       </b-form-group>
 
@@ -51,6 +51,7 @@
             <li>Promocion</li>
             <li>Descuento</li>
             <li>IVA</li>
+            <li>Observacion (Opcional)</li>
           </ul>
           <p class="mt-2 mb-0 small text-muted">
             Columnas faltantes detectadas: <strong>{{ missingColumns.join(', ') }}</strong>
@@ -264,6 +265,7 @@ const fields = [
   { key: "P_Farmacia", label: "P. Farmacia", sortable: true },
   { key: "PVP", label: "PVP", sortable: true },
   { key: "Promocion", label: "Promoción" },
+  { key: "Observacion", label: "Observación" },
   { key: "Descuento", label: "Desc.", sortable: true },
   { key: "IVA", label: "IVA", sortable: true },
   { key: "Estado", label: "Estado" },
@@ -428,7 +430,7 @@ const handleFileUpload = async (event) => {
       "PVP",
       "Promocion",
       "Descuento",
-      "IVA",
+      "IVA"
     ];
 
     const missing = requiredColumns.filter(
@@ -483,6 +485,7 @@ const handleFileUpload = async (event) => {
         P_Farmacia: parseFloat(parseFloat(row[colIndices["P_Farmacia"]] || 0).toFixed(3)),
         PVP: parseFloat(parseFloat(row[colIndices["PVP"]] || 0).toFixed(3)),
         Promocion: row[colIndices["Promocion"]] || "",
+        Observacion: row[colIndices["Observacion"]] || "",
         Descuento: parseFloat(row[colIndices["Descuento"]]) || 0,
         IVA: parseFloat(row[colIndices["IVA"]]) || 0,
         isDuplicate: false,
@@ -622,6 +625,7 @@ const guardarProductos = async () => {
       PrecioFarmacia: p.P_Farmacia,
       PVP: p.PVP,
       Promocion: p.Promocion,
+      Observacion: p.Observacion,
       Descuento: p.Descuento,
       IVA: p.IVA,
       isDuplicate: p.isDuplicate,
@@ -719,14 +723,16 @@ const descargarProductosExcel = async () => {
     const productosParaExcel = productosGuardados.map(p => ({
       CODIGO: p.Codigo || '',
       Marca: p.Marca || '',
-      Nombre: p.NombreProducto || '',
+      Nombre: `${p.NombreProducto} - ${p.Presentacion}` || '',
       Presentacion: p.Presentacion || '',
       Principio_Activo: p.PrincipioActivo || '',
       P_Farmacia: parseFloat(p.PrecioFarmacia || 0).toFixed(3),
       PVP: parseFloat(p.PVP || 0).toFixed(3),
       Promocion: p.Promocion || '',
+      Observacion: p.Observacion || '',
       Descuento: p.Descuento || 0,
-      IVA: p.IVA || 0
+      IVA: p.IVA || 0,
+      Observacion: p.Observacion || ''
     }));
 
     // Usar ExcelJS para generar el archivo
@@ -745,7 +751,8 @@ const descargarProductosExcel = async () => {
       { header: 'PVP', key: 'PVP', width: 12 },
       { header: 'Promocion', key: 'Promocion', width: 15 },
       { header: 'Descuento', key: 'Descuento', width: 12 },
-      { header: 'IVA', key: 'IVA', width: 10 }
+      { header: 'IVA', key: 'IVA', width: 10 },
+      { header: 'Observacion', key: 'Observacion', width: 30 }
     ];
 
     // Estilo del encabezado

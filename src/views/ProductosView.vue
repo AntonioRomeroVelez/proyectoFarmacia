@@ -91,8 +91,8 @@
       <h5 class="text-muted mt-3">No se encontraron productos</h5>
       <p class="text-muted mb-3">
         {{ productos.length === 0
-        ? 'Carga productos desde la página de Excel para comenzar'
-        : 'Intenta ajustar los filtros de búsqueda'
+  ? 'Carga productos desde la página de Excel para comenzar'
+  : 'Intenta ajustar los filtros de búsqueda'
         }}
       </p>
       <router-link to="/excel" v-if="productos.length === 0">
@@ -114,10 +114,17 @@
           </b-col>
           <b-col md="6">
             <p><strong>Precio Farmacia:</strong> <span class="text-success">${{
-                Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
+  Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
                 }}</span></p>
             <p><strong>PVP:</strong> <del class="text-danger">${{ Number(productoSeleccionado.PVP || 0).toFixed(3)
-                }}</del></p>
+               }}</del></p>
+           <div class="text-muted small bg-warning rounded p-2" v-if="productoSeleccionado.Observacion">
+              <strong>Observación:</strong> {{
+                productoSeleccionado.Observacion
+              }}
+            </div>
+
+
             <p v-if="productoSeleccionado.Descuento"><strong>Descuento:</strong> {{ productoSeleccionado.Descuento }}%
             </p>
             <p><strong>IVA:</strong> {{ productoSeleccionado.IVA }}%</p>

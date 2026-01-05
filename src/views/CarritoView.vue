@@ -129,6 +129,16 @@
                     </small>
                   </div>
                 </div>
+               <div class="m-1 d-flex gap-2 flex-column">
+                  <div class="badge badge-subtle-observation" v-if="item.Observacion">
+                    <strong>Observación:</strong>
+                    {{
+                      item.Observacion
+                    }}
+                  </div>
+
+
+                </div>
 
                 <!-- Desglose de precios -->
                 <div class="price-breakdown">
@@ -346,7 +356,7 @@ const confirmarExportacion = async (bvModalEvent) => {
       }
     } catch (e) {
       console.error("Error auto-registering client:", e);
-    // No bloqueamos la venta, permitimos que siga sin ID pero con nombre (fallback)
+      // No bloqueamos la venta, permitimos que siga sin ID pero con nombre (fallback)
     }
   }
 
@@ -402,10 +412,11 @@ const generarProformaPDF = () => {
       Bonificacion: bonus > 0 ? bonus : "",
       Presentacion: item.Presentacion,
       NombreProducto:
-        item.IVA > 0 ? `* ${item.NombreProducto}` : item.NombreProducto,
+        item.IVA > 0 ? `* ${item.NombreProducto} - ${item.Presentacion}` : `${item.NombreProducto} - ${item.Presentacion}`,
       Marca: item.Marca,
       P_Unitario: "$" + precio.toFixed(2),
       P_Total: "$" + subtotal.toFixed(2),
+      "Observación": item.Observacion || ""
     };
   });
 
@@ -455,7 +466,8 @@ const generarPedidoExcel = () => {
   const exportData = cartItemsWithPromotions.value.map((item) => ({
     "Cantidad": item.quantity,
     "Bonificación": item.promotionDetails?.bonus > 0 ? item.promotionDetails.bonus : "",
-    "Producto": item.NombreProducto,
+    "Producto": `${item.NombreProducto} - ${item.Presentacion}`,
+    "Observación": item.Observacion || "",
     "Lote": "", // Campo vacío para que el usuario lo complete
     "Fecha de Vencimiento": "", // Campo vacío para que el usuario lo complete
   }));
@@ -477,12 +489,13 @@ const generarPedidoExcel = () => {
 const exportarListaPrecioPDF = () => {
   // Preparar datos para PDF con la estructura específica
   const pdfData = cartItemsWithPromotions.value.map((item) => ({
-    Producto: item.NombreProducto,
+    Producto: `${item.NombreProducto} - ${item.Presentacion}`,
     Marca: item.Marca,
     "Presentación": item.Presentacion,
     Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
     "Promoción": item.Promocion ? `${item.Promocion}` : "",
     "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
+    "Observación": item.Observacion || ""
   }));
 
   // Generar PDF con información del cliente
@@ -675,5 +688,18 @@ const cartItemsWithPromotions = computed(() => {
 .btn-minimal:active::before {
   width: 300px;
   height: 300px;
+}
+.badge-subtle-observation {
+  background-color: #fff8e1;
+  /* Amber 50 - Amarillo Muy Claro */
+  color: #5d4037;
+  /* Brown 700 - Marrón para contraste */
+  border: 1px solid #ffecb3;
+  border-radius: 5px;
+  padding: 5px;
+  white-space: normal;
+  word-wrap: break-word;
+  max-width: 100%;
+  text-align: left;
 }
 </style>

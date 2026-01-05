@@ -235,7 +235,9 @@ const availableColumns = ref([
   { key: "IVA", label: "IVA (%)" },
   { key: "quantity", label: "Cantidad" },
   { key: "TotalConIVA", label: "Total con IVA" },
-  { key: "Promocion", label: "Promocion" },
+
+  { key: "Promocion", label: "Promoción" },
+  { key: "Observacion", label: "Observación" },
   { key: "Cantidad a recibir", label: "Cantidad a recibir" },
 ]);
 

@@ -1,19 +1,19 @@
 <template>
   <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div>
+   <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+      <div class="text-center text-md-start">
         <h2 class="fw-bold text-primary mb-1">📊 Estadísticas y Reportes</h2>
         <p class="text-muted mb-0 small">Análisis de ventas, cobros y actividad comercial</p>
       </div>
-      <div class="d-flex align-items-center">
-        <select v-model="periodoSeleccionado" class="form-select me-2" style="width: auto;">
+     <div class="d-flex align-items-center justify-content-center w-100 w-md-auto">
+        <select v-model="periodoSeleccionado" class="form-select me-2" style="width: auto; min-width: 140px;">
           <option value="semana">Última Semana</option>
           <option value="mes">Último Mes</option>
           <option value="trimestre">Último Trimestre</option>
           <option value="año">Último Año</option>
         </select>
-        <b-button variant="outline-success" size="sm" @click="exportarReporteExcel">
+       <b-button variant="outline-success" size="sm" @click="exportarReporteExcel" class="text-nowrap">
           Excel Pro 📊
         </b-button>
       </div>
@@ -124,8 +124,9 @@
           <div v-else-if="pedidosPendientes.length === 0" class="text-center py-4 bg-light rounded">
             <p class="text-muted mb-0">No hay pedidos con saldo pendiente</p>
           </div>
-          <div v-else class="table-responsive">
-            <table class="table table-hover align-middle">
+         <!-- Vista Desktop: Tabla -->
+          <div class="d-none d-md-block table-responsive">
+            <table class="table table-hover align-middle text-nowrap">
               <thead>
                 <tr>
                   <th>Fecha</th>
@@ -168,6 +169,60 @@
                 </tr>
               </tfoot>
             </table>
+          </div>
+          <!-- Vista Móvil: Cards -->
+          <div class="d-md-none">
+            <div v-for="ped in pedidosPendientes" :key="'mobile-' + ped.id" class="mb-3">
+              <b-card no-body class="border shadow-sm">
+                <b-card-body class="p-3">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="fw-bold mb-1 text-primary">{{ ped.cliente }}</h6>
+                      <small class="text-muted d-block">
+                        📅 {{ formatearFecha(ped.fecha) }}
+                        <span class="font-monospace ms-1">#{{ ped.id.substring(0, 8) }}</span>
+                      </small>
+                    </div>
+                    <b-button variant="outline-primary" size="sm" class="py-1 px-2"
+                      @click="verEstadoCuenta(ped.cliente)">
+                      <BIconCardList />
+                    </b-button>
+                  </div>
+
+                  <hr class="my-2" />
+
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Total Pedido:</span>
+                    <span class="fw-bold">${{ Number(ped.total).toFixed(2) }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="text-muted small">Abonado:</span>
+                    <span class="text-success">${{ Number(ped.abonado).toFixed(2) }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                    <strong class="text-danger small text-uppercase">Saldo Pendiente</strong>
+                    <strong class="text-danger fs-5">${{ Number(ped.saldo).toFixed(2) }}</strong>
+                  </div>
+                </b-card-body>
+              </b-card>
+            </div>
+
+            <!-- Resumen Total Móvil -->
+            <b-card v-if="pedidosPendientes.length > 0" bg-variant="light" class="border-0 shadow-sm mt-3">
+              <h6 class="fw-bold mb-3 text-center border-bottom pb-2">RESUMEN GENERAL</h6>
+              <div class="d-flex justify-content-between mb-1">
+                <span>Total:</span>
+                <strong>${{ totalPendienteCalc.total.toFixed(2) }}</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span>Abonado:</span>
+                <strong class="text-success">${{ totalPendienteCalc.abonado.toFixed(2) }}</strong>
+              </div>
+              <div class="d-flex justify-content-between mt-2 pt-2 border-top border-dark">
+                <strong class="text-danger">TOTAL PENDIENTE</strong>
+                <strong class="text-danger">${{ totalPendienteCalc.saldo.toFixed(2) }}</strong>
+              </div>
+            </b-card>
           </div>
         </b-card>
       </div>
@@ -215,7 +270,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
@@ -354,23 +409,34 @@ watch([periodoSeleccionado, documents, cobros, visitas], () => {
 }, { deep: true });
 
 onMounted(() => {
+  window.addEventListener('resize', handleResize);
   loadData();
 });
 
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+
+// Windows Size Reactivity
+const windowWidth = ref(window.innerWidth);
+const handleResize = () => {
+  windowWidth.value = window.innerWidth;
+};
+
 // Configuración de gráficos responsivos
-const responsiveOptions = {
+const responsiveOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: true,
-  aspectRatio: window.innerWidth < 768 ? 1.2 : 2,
+  aspectRatio: windowWidth.value < 768 ? 1.2 : 2,
   plugins: {
     legend: {
       display: true,
-      position: window.innerWidth < 768 ? 'bottom' : 'top',
+      position: windowWidth.value < 768 ? 'bottom' : 'top',
       labels: {
         boxWidth: 12,
         padding: 10,
         font: {
-          size: window.innerWidth < 768 ? 10 : 12
+          size: windowWidth.value < 768 ? 10 : 12
         }
       }
     },
@@ -384,7 +450,7 @@ const responsiveOptions = {
     x: {
       ticks: {
         font: {
-          size: window.innerWidth < 768 ? 9 : 11
+          size: windowWidth.value < 768 ? 9 : 11
         },
         maxRotation: 45,
         minRotation: 45
@@ -393,12 +459,12 @@ const responsiveOptions = {
     y: {
       ticks: {
         font: {
-          size: window.innerWidth < 768 ? 9 : 11
+          size: windowWidth.value < 768 ? 9 : 11
         }
       }
     }
   }
-};
+}));
 
 // Datos para gráfico de ventas (línea)
 const ventasChartData = computed(() => ({
@@ -484,22 +550,22 @@ const visitasChartData = computed(() => ({
 
 // Opciones específicas por tipo de gráfico
 const lineChartOptions = computed(() => ({
-  ...responsiveOptions,
+  ...responsiveOptions.value,
   plugins: {
-    ...responsiveOptions.plugins,
+    ...responsiveOptions.value.plugins,
     legend: {
-      ...responsiveOptions.plugins.legend,
+      ...responsiveOptions.value.plugins.legend,
       display: false
     }
   }
 }));
 
 const barChartOptions = computed(() => ({
-  ...responsiveOptions,
+  ...responsiveOptions.value,
   plugins: {
-    ...responsiveOptions.plugins,
+    ...responsiveOptions.value.plugins,
     legend: {
-      ...responsiveOptions.plugins.legend,
+      ...responsiveOptions.value.plugins.legend,
       display: false
     }
   }
@@ -508,16 +574,16 @@ const barChartOptions = computed(() => ({
 const doughnutChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: true,
-  aspectRatio: window.innerWidth < 768 ? 1.5 : 2,
+  aspectRatio: windowWidth.value < 768 ? 1.5 : 2,
   plugins: {
     legend: {
       display: true,
-      position: window.innerWidth < 768 ? 'bottom' : 'right',
+      position: windowWidth.value < 768 ? 'bottom' : 'right',
       labels: {
         boxWidth: 12,
         padding: 10,
         font: {
-          size: window.innerWidth < 768 ? 10 : 12
+          size: windowWidth.value < 768 ? 10 : 12
         }
       }
     },
