@@ -28,7 +28,7 @@
         </div>
         <small class="text-muted mt-2 d-block">
          <strong>Columnas:</strong> CODIGO, Marca, Nombre,
-          Presentacion, Principio_Activo, P_Farmacia, PVP, Promocion, Descuento,
+         Presentacion, Principio_Activo, Tipo, P_Farmacia, PVP, Promocion, Descuento,
          IVA, Observacion (Opcional)
         </small>
       </b-form-group>
@@ -46,6 +46,7 @@
             <li>Nombre</li>
             <li>Presentacion</li>
             <li>Principio_Activo</li>
+           <li>Tipo</li>
             <li>P_Farmacia</li>
             <li>PVP</li>
             <li>Promocion</li>
@@ -262,6 +263,7 @@ const fields = [
   { key: "Nombre", label: "Nombre", sortable: true },
   { key: "Presentacion", label: "Presentación" },
   { key: "Principio_Activo", label: "Principio Activo" },
+  { key: "Tipo", label: "Tipo" },
   { key: "P_Farmacia", label: "P. Farmacia", sortable: true },
   { key: "PVP", label: "PVP", sortable: true },
   { key: "Promocion", label: "Promoción" },
@@ -482,6 +484,7 @@ const handleFileUpload = async (event) => {
         Nombre: row[colIndices["Nombre"]] || "",
         Presentacion: row[colIndices["Presentacion"]] || "",
         Principio_Activo: row[colIndices["Principio_Activo"]] || "",
+        Tipo: row[colIndices["Tipo"]] || "",
         P_Farmacia: parseFloat(parseFloat(row[colIndices["P_Farmacia"]] || 0).toFixed(3)),
         PVP: parseFloat(parseFloat(row[colIndices["PVP"]] || 0).toFixed(3)),
         Promocion: row[colIndices["Promocion"]] || "",
@@ -622,6 +625,7 @@ const guardarProductos = async () => {
       NombreProducto: p.Nombre,
       Presentacion: p.Presentacion,
       PrincipioActivo: p.Principio_Activo,
+      Tipo: p.Tipo,
       PrecioFarmacia: p.P_Farmacia,
       PVP: p.PVP,
       Promocion: p.Promocion,
@@ -726,6 +730,7 @@ const descargarProductosExcel = async () => {
       Nombre: `${p.NombreProducto} - ${p.Presentacion}` || '',
       Presentacion: p.Presentacion || '',
       Principio_Activo: p.PrincipioActivo || '',
+      Tipo: p.Tipo || '',
       P_Farmacia: parseFloat(p.PrecioFarmacia || 0).toFixed(3),
       PVP: parseFloat(p.PVP || 0).toFixed(3),
       Promocion: p.Promocion || '',
@@ -747,6 +752,7 @@ const descargarProductosExcel = async () => {
       { header: 'Nombre', key: 'Nombre', width: 40 },
       { header: 'Presentacion', key: 'Presentacion', width: 25 },
       { header: 'Principio_Activo', key: 'Principio_Activo', width: 30 },
+      { header: 'Tipo', key: 'Tipo', width: 15 },
       { header: 'P_Farmacia', key: 'P_Farmacia', width: 12 },
       { header: 'PVP', key: 'PVP', width: 12 },
       { header: 'Promocion', key: 'Promocion', width: 15 },

@@ -14,12 +14,8 @@
 
 
 
-
         <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-          <!-- Marca -->
-          <div class="badge badge-subtle-brand small d-text flex-wrap">
-            <b>Marca:</b> {{ producto.Marca }}
-          </div>
+
 
           <!-- Presentacion -->
           <span class="badge badge-subtle-presentation">
@@ -65,7 +61,19 @@
               producto.Observacion
             }}
           </div>
+
         </div>
+       <hr style="margin: 10px  0;">
+
+        <!-- Marca -->
+        <div class="badge badge-subtle-brand small d-text flex-wrap">
+          <b>Marca:</b> {{ producto.Marca }}
+        </div>
+
+        <p v-if="producto.Tipo" :class="['producto-tipo badge mb-2 text-capitalize', getTipoBadgeClass(producto.Tipo)]"
+          style="margin-top: 10px;"> <b>Tipo:</b>
+          {{ producto.Tipo }}
+        </p>
       </div>
     </b-card-body>
 
@@ -151,6 +159,14 @@ const quitarDelCarrito = () => {
 
 const verDetalle = () => {
   emit("ver-detalle", props.producto);
+};
+
+const getTipoBadgeClass = (tipo) => {
+  if (!tipo) return 'badge-subtle-tipo';
+  const t = tipo.toLowerCase().trim();
+  if (t === 'medicamento') return 'badge-subtle-medicamento';
+  if (t === 'insumo') return 'badge-subtle-insumo';
+  return 'badge-subtle-tipo';
 };
 </script>
 
@@ -335,6 +351,7 @@ const verDetalle = () => {
   /* 75% del tamaño de la fuente padre */
   opacity: 0.85;
 }
+
 .badge-subtle-observation {
   background-color: #fff8e1;
   /* Amber 50 - Amarillo Muy Claro */
@@ -347,5 +364,40 @@ const verDetalle = () => {
   word-wrap: break-word;
   max-width: 100%;
   text-align: left;
+}
+.badge-subtle-tipo {
+  background-color: #f3e5f5;
+  /* Light Purple */
+  color: #7b1fa2;
+  /* Dark Purple */
+  border: 1px solid #e1bee7;
+  border-radius: 5px;
+  padding: 5px;
+  display: inline-block;
+  font-size: 0.8rem;
+}
+
+.badge-subtle-medicamento {
+  background-color: #fdfae3;
+  /* Light Blue */
+  color: #1565c0;
+  /* Dark Blue */
+  border: 1px solid #bbdefb;
+  border-radius: 5px;
+  padding: 5px;
+  display: inline-block;
+  font-size: 0.8rem;
+}
+
+.badge-subtle-insumo {
+  background-color: #edffe6;
+  /* Light Blue */
+  color: #1565c0;
+  /* Dark Blue */
+  border: 1px solid #bbdefb;
+  border-radius: 5px;
+  padding: 5px;
+  display: inline-block;
+  font-size: 0.8rem;
 }
 </style>

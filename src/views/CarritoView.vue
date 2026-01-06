@@ -689,6 +689,7 @@ const cartItemsWithPromotions = computed(() => {
   width: 300px;
   height: 300px;
 }
+
 .badge-subtle-observation {
   background-color: #fff8e1;
   /* Amber 50 - Amarillo Muy Claro */
