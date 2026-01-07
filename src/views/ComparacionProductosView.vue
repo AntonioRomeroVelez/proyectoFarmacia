@@ -28,6 +28,7 @@
       <small class="text-muted mt-2 d-block">
         La comparación se realiza por: <strong>Marca</strong>, luego Nombre, Presentación y Principio Activo (ignorando
         espacios).
+       Se lee también la columna <strong>Tipo</strong>.
         Los precios se comparan con 3 decimales.
       </small>
     </b-card>
@@ -163,6 +164,7 @@
                 <td>
                   <div class="small">{{ producto.Presentacion }}</div>
                   <div class="small text-muted fst-italic">{{ producto.Principio_Activo }}</div>
+                 <div v-if="producto.Tipo" class="small text-info fw-bold">{{ producto.Tipo }}</div>
                 </td>
 
                 <!-- P. Farmacia -->
@@ -377,6 +379,22 @@ const handleFileUpload = async (event) => {
           tieneCambios = true;
         }
 
+        // Comparar Tipo
+        const tipoExcel = normalize(productoExcel.Tipo);
+        const tipoBD = normalize(productoExistente.Tipo);
+        if (tipoExcel !== tipoBD) {
+          cambios.Tipo = { anterior: productoExistente.Tipo || '', nuevo: productoExcel.Tipo || '' };
+          tieneCambios = true;
+        }
+
+        // Comparar Observacion
+        const obsExcel = normalize(productoExcel.Observacion);
+        const obsBD = normalize(productoExistente.Observacion);
+        if (obsExcel !== obsBD) {
+          cambios.Observacion = { anterior: productoExistente.Observacion || '', nuevo: productoExcel.Observacion || '' };
+          tieneCambios = true;
+        }
+
         resultados.push({
           ...productoExcel,
           P_Farmacia: pFarmaciaExcel,
@@ -496,8 +514,27 @@ const descargarExcel = async () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Reporte Comparacion');
 
-    // Definir columnas
-    worksheet.columns = [
+    // Identificar columnas dinámicas (extras) que vienen del Excel
+    const standardKeys = new Set(['Estado', 'Modificado', 'CODIGO', 'Marca', 'Nombre', 'Presentacion', 'Principio_Activo', 'P_Farmacia', 'PVP', 'Promocion', 'Descuento', 'IVA', 'Detalle_Cambios', 'Tipo', 'Observacion']);
+    const internalKeys = new Set(['estado', 'tieneCambios', 'cambios', 'fila', 'id', '_id', '__v']); // Claves internas a ignorar
+
+    // Recopilar todas las claves posibles de los productos
+    const extraKeys = new Set();
+    todosProductos.value.forEach(p => {
+      Object.keys(p).forEach(k => {
+        // Mapear nombres de columnas si es necesario o usar la clave directa
+        // Ignorar si es una columna estándar o interna
+        if (!internalKeys.has(k) &&
+          !['CODIGO', 'Marca', 'Nombre', 'Presentacion', 'Principio_Activo', 'P_Farmacia', 'PVP', 'Promocion', 'Descuento', 'IVA', 'Tipo', 'Observacion'].includes(k)) {
+          extraKeys.add(k);
+        }
+      });
+    });
+
+    const sortedExtraKeys = Array.from(extraKeys).sort();
+
+    // Definir columnas base
+    const columns = [
       { header: 'Estado', key: 'Estado', width: 15 },
       { header: 'Modificado', key: 'Modificado', width: 12 },
       { header: 'CODIGO', key: 'CODIGO', width: 15 },
@@ -505,13 +542,22 @@ const descargarExcel = async () => {
       { header: 'Nombre', key: 'Nombre', width: 30 },
       { header: 'Presentacion', key: 'Presentacion', width: 25 },
       { header: 'Principio_Activo', key: 'Principio_Activo', width: 25 },
+      { header: 'Tipo', key: 'Tipo', width: 20 },
       { header: 'P_Farmacia', key: 'P_Farmacia', width: 15 },
       { header: 'PVP', key: 'PVP', width: 15 },
       { header: 'Promocion', key: 'Promocion', width: 20 },
       { header: 'Descuento', key: 'Descuento', width: 15 },
       { header: 'IVA', key: 'IVA', width: 10 },
+      { header: 'Observacion', key: 'Observacion', width: 25 },
       { header: 'Detalle Cambios', key: 'Detalle_Cambios', width: 40 },
     ];
+
+    // Agregar columnas extras al final
+    sortedExtraKeys.forEach(key => {
+      columns.push({ header: key, key: key, width: 20 });
+    });
+
+    worksheet.columns = columns;
 
     // Estilo Header
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -588,7 +634,7 @@ const descargarExcel = async () => {
 
     // Agregar filas
     productosParaExportar.forEach(p => {
-      const row = worksheet.addRow({
+      const rowData = {
         Estado: p.estado === 'sin_comparar' ? 'SIN COMPARAR' : p.estado.toUpperCase(),
         Modificado: p.tieneCambios ? 'SI' : 'NO',
         CODIGO: p.CODIGO,
@@ -605,9 +651,21 @@ const descargarExcel = async () => {
           p.cambios?.P_Farmacia ? `Precio: ${p.cambios.P_Farmacia.anterior} -> ${p.cambios.P_Farmacia.nuevo}` : '',
           p.cambios?.PVP ? `PVP: ${p.cambios.PVP.anterior} -> ${p.cambios.PVP.nuevo}` : '',
           p.cambios?.Promocion ? `Promo: ${p.cambios.Promocion.anterior} -> ${p.cambios.Promocion.nuevo}` : '',
-          p.cambios?.Descuento ? `Desc: ${p.cambios.Descuento.anterior} -> ${p.cambios.Descuento.nuevo}` : ''
-        ].filter(Boolean).join(' | ')
+          p.cambios?.Descuento ? `Desc: ${p.cambios.Descuento.anterior} -> ${p.cambios.Descuento.nuevo}` : '',
+          p.cambios?.Tipo ? `Tipo: ${p.cambios.Tipo.anterior} -> ${p.cambios.Tipo.nuevo}` : '',
+          p.cambios?.Observacion ? `Obs: ${p.cambios.Observacion.anterior} -> ${p.cambios.Observacion.nuevo}` : ''
+        ].filter(Boolean).join(' | '),
+        Tipo: p.Tipo || '',
+        Observacion: p.Observacion || ''
+      };
+
+      // Agregar datos de columnas extras
+      sortedExtraKeys.forEach(key => {
+        // Asegurarse de que el valor exista y no sea undefined/null para evitar errores, aunque ExcelJS maneja nulls
+        rowData[key] = p[key] !== undefined && p[key] !== null ? p[key] : '';
       });
+
+      const row = worksheet.addRow(rowData);
 
       // Colorear filas según estado
       let fillColor = null;
