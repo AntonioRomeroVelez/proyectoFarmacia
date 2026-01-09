@@ -406,6 +406,7 @@ const generarProformaPDF = () => {
     const bonus = item.promotionDetails?.bonus || 0;
     const precio = Number(item.PrecioFarmacia || 0);
     const subtotal = Number(item.subtotalItem || 0);
+    const tienePromocionAplicada = bonus > 0;
 
     return {
       "Cant.": item.quantity,
@@ -416,7 +417,8 @@ const generarProformaPDF = () => {
       Marca: item.Marca,
       P_Unitario: "$" + precio.toFixed(2),
       P_Total: "$" + subtotal.toFixed(2),
-      "Observación": item.Observacion || ""
+      // Mostrar Observacion solo si NO tiene promoción aplicada
+      "Observación": tienePromocionAplicada ? "" : (item.Observacion || "")
     };
   });
 
@@ -463,14 +465,20 @@ const generarProformaPDF = () => {
 // Generar Pedido completo en Excel
 const generarPedidoExcel = () => {
   // Formato de pedido: Cantidad, Promoción, Nombre Producto, Lote, Fecha de Vencimiento
-  const exportData = cartItemsWithPromotions.value.map((item) => ({
-    "Cantidad": item.quantity,
-    "Bonificación": item.promotionDetails?.bonus > 0 ? item.promotionDetails.bonus : "",
-    "Producto": `${item.NombreProducto} - ${item.Presentacion}`,
-    "Observación": item.Observacion || "",
-    "Lote": "", // Campo vacío para que el usuario lo complete
-    "Fecha de Vencimiento": "", // Campo vacío para que el usuario lo complete
-  }));
+  const exportData = cartItemsWithPromotions.value.map((item) => {
+    const bonus = item.promotionDetails?.bonus || 0;
+    const tienePromocionAplicada = bonus > 0;
+
+    return {
+      "Cantidad": item.quantity,
+      "Bonificación": bonus > 0 ? bonus : "",
+      "Producto": `${item.NombreProducto} - ${item.Presentacion}`,
+      // Mostrar Observacion solo si NO tiene promoción aplicada
+      "Observación": tienePromocionAplicada ? "" : (item.Observacion || ""),
+      "Lote": "", // Campo vacío para que el usuario lo complete
+      "Fecha de Vencimiento": "", // Campo vacío para que el usuario lo complete
+    };
+  });
 
   const filename = `${clienteNombre.value.replace(/\s+/g, "_")}_Pedido_${fecha.value
     }.xlsx`;
@@ -488,15 +496,21 @@ const generarPedidoExcel = () => {
 // Exportar Lista de Precios en PDF
 const exportarListaPrecioPDF = () => {
   // Preparar datos para PDF con la estructura específica
-  const pdfData = cartItemsWithPromotions.value.map((item) => ({
-    Producto: `${item.NombreProducto} - ${item.Presentacion}`,
-    Marca: item.Marca,
-    "Presentación": item.Presentacion,
-    Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
-    "Promoción": item.Promocion ? `${item.Promocion}` : "",
-    "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
-    "Observación": item.Observacion || ""
-  }));
+  const pdfData = cartItemsWithPromotions.value.map((item) => {
+    // Para listas de precios, verificar si tiene promoción
+    const tienePromocion = item.Promocion && item.Promocion.trim() !== "";
+
+    return {
+      Producto: `${item.NombreProducto} - ${item.Presentacion}`,
+      Marca: item.Marca,
+      "Presentación": item.Presentacion,
+      Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
+      "Promoción": item.Promocion ? `${item.Promocion}` : "",
+      "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
+      // Mostrar Observacion solo si NO tiene promoción
+      "Observación": tienePromocion ? "" : (item.Observacion || "")
+    };
+  });
 
   // Generar PDF con información del cliente
   const { generatePDFFromData } = usePDFGenerator();

@@ -115,18 +115,20 @@
           @click="filtroActual = 'cambios'">Con Cambios</b-button>
         <b-button size="sm" :variant="filtroActual === 'eliminados' ? 'danger' : 'outline-danger'"
           @click="filtroActual = 'eliminados'">Eliminados</b-button>
+       <b-button variant="success" size="sm" class="download-btn" @click="descargarExcel">
+          💾 Descargar Reporte
+        </b-button>
       </div>
 
       <!-- Tabla de Resultados -->
       <b-card class="shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">📊 Resultados de la Comparación</h5>
-          <b-button variant="success" size="sm" class="download-btn" @click="descargarExcel">
-            💾 Descargar Reporte
-          </b-button>
+
         </div>
 
-        <div class="table-responsive">
+      <!-- Tabla Desktop -->
+        <div class="table-responsive d-none d-md-block">
           <table class="table table-sm table-hover align-middle">
             <thead class="table-light">
               <tr>
@@ -211,6 +213,108 @@
           </table>
         </div>
 
+      <!-- Vista Móvil (Cards) -->
+        <div class="d-md-none">
+          <div v-for="(producto, index) in productosFiltrados" :key="index" class="mb-3">
+            <b-card :class="getCardClass(producto)" class="shadow-sm">
+              <!-- Header con Estado -->
+              <template #header>
+                <div class="d-flex justify-content-between align-items-center">
+                  <b-badge :variant="getEstadoBadgeVariant(producto.estado)">
+                    {{ producto.estado.toUpperCase() }}
+                  </b-badge>
+                  <b-badge v-if="producto.tieneCambios" variant="warning" class="text-dark">
+                    Modificado
+                  </b-badge>
+                </div>
+              </template>
+
+              <!-- Contenido -->
+              <h6 class="fw-bold text-primary mb-2">{{ producto.Nombre }}</h6>
+
+              <div class="mb-2">
+                <small class="text-muted d-block">Marca:</small>
+                <strong>{{ producto.Marca }}</strong>
+              </div>
+
+              <div class="mb-2">
+                <small class="text-muted d-block">Código:</small>
+                <span class="font-monospace">{{ producto.CODIGO }}</span>
+              </div>
+
+              <div class="mb-2">
+                <small class="text-muted d-block">Presentación:</small>
+                {{ producto.Presentacion }}
+              </div>
+
+              <div class="mb-2">
+                <small class="text-muted d-block">Principio Activo:</small>
+                <span class="fst-italic">{{ producto.Principio_Activo }}</span>
+              </div>
+
+              <div v-if="producto.Tipo" class="mb-2">
+                <small class="text-muted d-block">Tipo:</small>
+                <span class="text-info fw-bold">{{ producto.Tipo }}</span>
+              </div>
+
+              <hr>
+
+              <!-- Precios -->
+              <div class="row g-2 mb-2">
+                <div class="col-6">
+                  <small class="text-muted d-block">P. Farmacia:</small>
+                  <strong :class="{ 'text-primary': producto.cambios?.P_Farmacia }">
+                    ${{ formatPrice(producto.P_Farmacia) }}
+                  </strong>
+                  <div v-if="producto.cambios?.P_Farmacia">
+                    <small class="text-muted text-decoration-line-through">
+                      ${{ formatPrice(producto.cambios.P_Farmacia.anterior) }}
+                    </small>
+                  </div>
+                </div>
+
+                <div class="col-6">
+                  <small class="text-muted d-block">PVP:</small>
+                  <strong :class="{ 'text-primary': producto.cambios?.PVP }">
+                    ${{ formatPrice(producto.PVP) }}
+                  </strong>
+                  <div v-if="producto.cambios?.PVP">
+                    <small class="text-muted text-decoration-line-through">
+                      ${{ formatPrice(producto.cambios.PVP.anterior) }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Promoción y Descuento -->
+              <div class="row g-2">
+                <div class="col-6">
+                  <small class="text-muted d-block">Promoción:</small>
+                  <span :class="{ 'text-primary fw-bold': producto.cambios?.Promocion }">
+                    {{ producto.Promocion || '-' }}
+                  </span>
+                  <div v-if="producto.cambios?.Promocion">
+                    <small class="text-muted text-decoration-line-through">
+                      {{ producto.cambios.Promocion.anterior || '-' }}
+                    </small>
+                  </div>
+                </div>
+
+                <div class="col-6">
+                  <small class="text-muted d-block">Descuento:</small>
+                  <span :class="{ 'text-primary fw-bold': producto.cambios?.Descuento }">
+                    {{ producto.Descuento ? producto.Descuento + '%' : '-' }}
+                  </span>
+                  <div v-if="producto.cambios?.Descuento">
+                    <small class="text-muted text-decoration-line-through">
+                      {{ producto.cambios.Descuento.anterior ? producto.cambios.Descuento.anterior + '%' : '-' }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </b-card>
+          </div>
+        </div>
         <div class="text-muted mt-3 text-center small">
           Mostrando {{ productosFiltrados.length }} de {{ todosProductos.length }} registros
         </div>
@@ -506,6 +610,13 @@ const getEstadoBadgeVariant = (estado) => {
   if (estado === 'eliminado') return 'danger';
   if (estado === 'existe') return 'secondary';
   return 'light';
+};
+
+const getCardClass = (producto) => {
+  if (producto.estado === 'nuevo') return 'border-success';
+  if (producto.estado === 'eliminado') return 'border-danger';
+  if (producto.tieneCambios) return 'border-warning';
+  return 'border-secondary';
 };
 
 // Descargar Excel de Reporte con ExcelJS

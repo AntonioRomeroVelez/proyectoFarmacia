@@ -368,11 +368,14 @@ const confirmGeneratePDF = async (bvModalEvent) => {
 
     // Calcular cantidad a recibir con promoción
     let cantidadARecibir = cantidad;
+    let tienePromocionAplicada = false;
     if (item.Promocion) {
       const rules = parsePromotionRules(item.Promocion);
       if (rules.length > 0) {
         const bonus = calculateBonus(cantidad, rules);
         cantidadARecibir += bonus;
+        // Si hay bonus, significa que la promoción se aplicó
+        tienePromocionAplicada = bonus > 0;
       }
     }
 
@@ -382,7 +385,9 @@ const confirmGeneratePDF = async (bvModalEvent) => {
       Subtotal: subtotal.toFixed(2),
       TotalConIVA: totalConIVA.toFixed(2),
       TotalSinIVA: totalSinIVA.toFixed(2),
-      "Cantidad a recibir": cantidadARecibir
+      "Cantidad a recibir": cantidadARecibir,
+      // Mostrar Observacion solo si NO tiene promoción aplicada
+      Observacion: tienePromocionAplicada ? "" : (item.Observacion || "")
     };
 
     const filteredItem = {};

@@ -27,9 +27,10 @@
             class="file-input-hidden" />
         </div>
         <small class="text-muted mt-2 d-block">
-         <strong>Columnas:</strong> CODIGO, Marca, Nombre,
+         <strong>Columnas:</strong> Marca, Nombre,
          Presentacion, Principio_Activo, Tipo, P_Farmacia, PVP, Promocion, Descuento,
          IVA, Observacion (Opcional)
+         <br><small class="text-info">ℹ️ El CODIGO se genera automáticamente. Si tu Excel ya tiene una columna CODIGO, se leerá y actualizará con el nuevo código generado.</small>
         </small>
       </b-form-group>
 
@@ -41,12 +42,11 @@
         <div v-if="missingColumns.length > 0" class="mt-2">
           <p class="mb-1 font-weight-bold">El archivo debe tener las siguientes columnas exactas:</p>
           <ul class="mb-0 small">
-            <li>CODIGO</li>
             <li>Marca</li>
             <li>Nombre</li>
             <li>Presentacion</li>
             <li>Principio_Activo</li>
-           <li>Tipo</li>
+            <li>Tipo</li>
             <li>P_Farmacia</li>
             <li>PVP</li>
             <li>Promocion</li>
@@ -54,6 +54,9 @@
             <li>IVA</li>
             <li>Observacion (Opcional)</li>
           </ul>
+          <p class="mt-2 mb-0 small text-info">
+            <strong>ℹ️ Nota:</strong> El CODIGO se genera automáticamente a partir de los campos del producto.
+          </p>
           <p class="mt-2 mb-0 small text-muted">
             Columnas faltantes detectadas: <strong>{{ missingColumns.join(', ') }}</strong>
           </p>
@@ -423,17 +426,19 @@ const handleFileUpload = async (event) => {
 
     const headers = data[0];
     const requiredColumns = [
-      "CODIGO",
       "Marca",
       "Nombre",
       "Presentacion",
       "Principio_Activo",
+      "Tipo",
       "P_Farmacia",
       "PVP",
       "Promocion",
       "Descuento",
       "IVA"
     ];
+    
+    // CODIGO es opcional - si existe se leerá pero siempre se actualizará con el código generado
 
     const missing = requiredColumns.filter(
       (col) => !headers.includes(col)
@@ -461,12 +466,34 @@ const handleFileUpload = async (event) => {
     // Objeto para rastrear productos por su clave única normalizada
     const productoKeys = {};
 
-    // Función para normalizar strings
+    // Función para limpiar strings: elimina todo excepto letras y números, convierte a mayúsculas
+    const cleanString = (str) => {
+      return String(str || "")
+        .normalize('NFD') // Descomponer caracteres acentuados
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar diacríticos (acentos)
+        .replace(/[^a-zA-Z0-9]/g, '') // Mantener solo letras y números
+        .toUpperCase(); // Convertir a mayúsculas
+    };
+
+    // Función para generar código único basado en campos del producto
+    const generateUniqueCode = (nombre, marca, presentacion, principioActivo, tipo) => {
+      const parts = [
+        cleanString(nombre),
+        cleanString(marca),
+        cleanString(presentacion),
+        cleanString(principioActivo),
+        cleanString(tipo)
+      ].filter(part => part.length > 0); // Eliminar partes vacías
+      
+      return parts.join('-');
+    };
+
+    // Función para normalizar strings (para detección de duplicados)
     const normalizeString = (str) => String(str || "").replace(/\s+/g, "").toLowerCase();
 
     // Cargar productos existentes de IndexedDB y agregarlos al mapa de claves
     productosDB.value.forEach(p => {
-      const productKey = `${normalizeString(p.Marca)}-${normalizeString(p.NombreProducto)}-${normalizeString(p.Presentacion)}-${normalizeString(p.PrincipioActivo)}`;
+      const productKey = `${normalizeString(p.Marca)}-${normalizeString(p.NombreProducto)}-${normalizeString(p.Presentacion)}-${normalizeString(p.PrincipioActivo)}-${normalizeString(p.Tipo)}`;
       productoKeys[productKey] = { existing: true }; // Marcar como existente en sistema
     });
 
@@ -476,15 +503,26 @@ const handleFileUpload = async (event) => {
       const row = data[i];
       if (!row || row.length === 0) continue;
 
-      const codigo = row[colIndices["CODIGO"]];
+      const marca = row[colIndices["Marca"]] || "";
+      const nombre = row[colIndices["Nombre"]] || "";
+      const presentacion = row[colIndices["Presentacion"]] || "";
+      const principioActivo = row[colIndices["Principio_Activo"]] || "";
+      const tipo = row[colIndices["Tipo"]] || "";
+
+      // Leer CODIGO del Excel si existe (opcional)
+      const codigoExcel = colIndices["CODIGO"] !== undefined ? row[colIndices["CODIGO"]] : null;
+
+      // Generar código único (siempre se genera automáticamente)
+      const codigoUnico = generateUniqueCode(nombre, marca, presentacion, principioActivo, tipo);
 
       const producto = {
-        CODIGO: codigo || "",
-        Marca: row[colIndices["Marca"]] || "",
-        Nombre: row[colIndices["Nombre"]] || "",
-        Presentacion: row[colIndices["Presentacion"]] || "",
-        Principio_Activo: row[colIndices["Principio_Activo"]] || "",
-        Tipo: row[colIndices["Tipo"]] || "",
+        CODIGO: codigoUnico, // Siempre usar el código generado
+        CODIGO_ANTERIOR: codigoExcel || null, // Guardar el código anterior si existía
+        Marca: marca,
+        Nombre: nombre,
+        Presentacion: presentacion,
+        Principio_Activo: principioActivo,
+        Tipo: tipo,
         P_Farmacia: parseFloat(parseFloat(row[colIndices["P_Farmacia"]] || 0).toFixed(3)),
         PVP: parseFloat(parseFloat(row[colIndices["PVP"]] || 0).toFixed(3)),
         Promocion: row[colIndices["Promocion"]] || "",
@@ -499,8 +537,8 @@ const handleFileUpload = async (event) => {
       producto.errors = validateProduct(producto);
       producto.hasErrors = producto.errors.length > 0;
 
-      // Generar clave única normalizada (sin espacios, en minúsculas)
-      const productKey = `${normalizeString(producto.Marca)}-${normalizeString(producto.Nombre)}-${normalizeString(producto.Presentacion)}-${normalizeString(producto.Principio_Activo)}`;
+      // Generar clave única normalizada (sin espacios, en minúsculas) para detección de duplicados
+      const productKey = `${normalizeString(producto.Marca)}-${normalizeString(producto.Nombre)}-${normalizeString(producto.Presentacion)}-${normalizeString(producto.Principio_Activo)}-${normalizeString(producto.Tipo)}`;
 
       // Verificar si ya existe un producto con esta combinación
       if (productoKeys[productKey]) {
@@ -605,22 +643,10 @@ const guardarProductos = async () => {
       return;
     }
 
-    // Encontrar el máximo ID actual para generar IDs incrementales únicos
-    let maxId = 0;
-    if (existingProducts.length > 0) {
-      existingProducts.forEach(p => {
-        // Intentar extraer el número del ID (puede ser número o string)
-        const idNum = typeof p.ID === 'number' ? p.ID : parseInt(p.ID);
-        if (!isNaN(idNum) && idNum > maxId) {
-          maxId = idNum;
-        }
-      });
-    }
-
-    // Generar IDs únicos incrementales
-    const productosConId = productosValidos.map((p, index) => ({
-      ID: maxId + index + 1, // ID numérico incremental único
-      Codigo: p.CODIGO,
+    // Generar productos con ID y Codigo idénticos (basados en el código único generado)
+    const productosConId = productosValidos.map((p) => ({
+      ID: p.CODIGO, // ID es el mismo que el código único generado
+      Codigo: p.CODIGO, // Codigo también es el código único generado
       Marca: p.Marca,
       NombreProducto: p.Nombre,
       Presentacion: p.Presentacion,
@@ -727,7 +753,7 @@ const descargarProductosExcel = async () => {
     const productosParaExcel = productosGuardados.map(p => ({
       CODIGO: p.Codigo || '',
       Marca: p.Marca || '',
-      Nombre: `${p.NombreProducto} - ${p.Presentacion}` || '',
+      Nombre: p.NombreProducto || '', // Solo el nombre del producto
       Presentacion: p.Presentacion || '',
       Principio_Activo: p.PrincipioActivo || '',
       Tipo: p.Tipo || '',

@@ -147,6 +147,7 @@
 <script setup>
 import { useHistorial } from '@/composables/useHistorial';
 import { useCart } from '@/composables/useCart';
+import { useProductos } from '@/composables/useProductos';
 import { useExcelHandler } from '@/utils/excelHandler';
 import { usePDFGenerator } from '@/utils/pdfGenerator';
 import { useToast } from 'vue-toastification';
@@ -156,6 +157,7 @@ import { BIconClockHistory, BIconTrash, BIconDownload, BIconCartPlus } from 'boo
 
 const { documents, deleteDocument, clearAllDocuments } = useHistorial();
 const { clearCart, addToCart, updateQuantity } = useCart();
+const { productos: productosDB, loadProductos } = useProductos();
 const { exportCustomExcel } = useExcelHandler();
 const { generatePDFFromData } = usePDFGenerator();
 const toast = useToast();
@@ -197,17 +199,84 @@ const handleDelete = (id) => {
   ).set('labels', { ok: 'Sí, Eliminar', cancel: 'Cancelar' });
 };
 
-const handleLoadToCart = (doc) => {
+const handleLoadToCart = async (doc) => {
+  // Asegurar que los productos estén cargados
+  await loadProductos();
+  
+  // Buscar productos actuales por código
+  const productosNoEncontrados = [];
+  const productosActualizados = [];
+  const productosParaCarrito = [];
+  
+  doc.items.forEach(item => {
+    // Buscar producto actual por Codigo o ID
+    const productoActual = productosDB.value.find(p => 
+      p.Codigo === item.Codigo || p.Codigo === item.ID || p.ID === item.Codigo || p.ID === item.ID
+    );
+    
+    if (productoActual) {
+      // Verificar si el precio cambió
+      const precioAnterior = Number(item.PrecioFarmacia || 0);
+      const precioActual = Number(productoActual.PrecioFarmacia || 0);
+      
+      if (Math.abs(precioAnterior - precioActual) > 0.01) {
+        productosActualizados.push({
+          nombre: productoActual.NombreProducto,
+          precioAnterior: precioAnterior.toFixed(3),
+          precioActual: precioActual.toFixed(3)
+        });
+      }
+      
+      productosParaCarrito.push({
+        producto: productoActual,
+        cantidad: item.quantity
+      });
+    } else {
+      productosNoEncontrados.push(item.NombreProducto || item.Nombre || 'Producto desconocido');
+    }
+  });
+  
+  // Construir mensaje de advertencia si hay cambios
+  let mensaje = '⚠️ Esto reemplazará los productos actuales en tu carrito.';
+  
+  if (productosNoEncontrados.length > 0) {
+    mensaje += `<br><br><strong style="color: #dc3545;">⚠️ ADVERTENCIA:</strong> ${productosNoEncontrados.length} producto(s) del pedido ya no existen en el sistema:<br>`;
+    mensaje += '<ul style="text-align: left; max-height: 150px; overflow-y: auto;">';
+    productosNoEncontrados.forEach(nombre => {
+      mensaje += `<li>${nombre}</li>`;
+    });
+    mensaje += '</ul>';
+  }
+  
+  if (productosActualizados.length > 0) {
+    mensaje += `<br><strong style="color: #ff9800;">ℹ️ INFORMACIÓN:</strong> ${productosActualizados.length} producto(s) tienen precios actualizados:<br>`;
+    mensaje += '<ul style="text-align: left; max-height: 150px; overflow-y: auto;">';
+    productosActualizados.forEach(p => {
+      mensaje += `<li>${p.nombre}: $${p.precioAnterior} → $${p.precioActual}</li>`;
+    });
+    mensaje += '</ul>';
+  }
+  
+  mensaje += '<br>¿Deseas continuar?';
+  
   alertify.confirm(
     'Cargar al Carrito',
-    '⚠️ Esto reemplazará los productos actuales en tu carrito. ¿Deseas continuar?',
+    mensaje,
     () => {
       clearCart(true);
-      // Reconstruir el carrito item por item
-      doc.items.forEach(item => {
-        addToCart(item, item.quantity, true);
+      // Reconstruir el carrito con productos actuales
+      productosParaCarrito.forEach(({ producto, cantidad }) => {
+        addToCart(producto, cantidad, true);
       });
-      toast.success('Productos cargados al carrito');
+      
+      if (productosNoEncontrados.length > 0) {
+        toast.warning(`${productosParaCarrito.length} productos cargados. ${productosNoEncontrados.length} no encontrados.`);
+      } else if (productosActualizados.length > 0) {
+        toast.info(`Productos cargados con precios actualizados`);
+      } else {
+        toast.success('Productos cargados al carrito');
+      }
+      
       router.push('/carrito');
     },
     () => {}
@@ -222,6 +291,7 @@ const handleDownload = (doc) => {
       const bonus = item.promotionDetails?.bonus || 0;
       const precio = Number(item.PrecioFarmacia || 0);
       const subtotal = Number(item.subtotalItem || 0);
+      const tienePromocionAplicada = bonus > 0;
 
       return {
         "Cant.": item.quantity,
@@ -231,6 +301,8 @@ const handleDownload = (doc) => {
         Marca: item.Marca,
         P_Unitario: "$" + precio.toFixed(2),
         P_Total: "$" + subtotal.toFixed(2),
+        // Mostrar Observacion solo si NO tiene promoción aplicada
+        Observacion: tienePromocionAplicada ? "" : (item.Observacion || "")
       };
     });
 
@@ -262,14 +334,21 @@ const handleDownload = (doc) => {
     exportCustomExcel(metadata, exportData, `${filename}.xlsx`);
 
   } else if (doc.type === 'Lista de Precios') {
-    const pdfData = doc.items.map((item) => ({
-      Producto: item.NombreProducto,
-      Marca: item.Marca,
-      "Presentación": item.Presentacion,
-      Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
-      "Promoción": item.Promocion ? `${item.Promocion}` : "",
-      "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
-    }));
+    const pdfData = doc.items.map((item) => {
+      // Para listas de precios, verificar si tiene promoción
+      const tienePromocion = item.Promocion && item.Promocion.trim() !== "";
+      
+      return {
+        Producto: item.NombreProducto,
+        Marca: item.Marca,
+        "Presentación": item.Presentacion,
+        Precio: "$ " + Number(item.PrecioFarmacia).toFixed(2),
+        "Promoción": item.Promocion ? `${item.Promocion}` : "",
+        "Desc. en + 2 uni": item.Descuento ? `${item.Descuento} %` : "",
+        // Mostrar Observacion solo si NO tiene promoción
+        Observacion: tienePromocion ? "" : (item.Observacion || "")
+      };
+    });
 
     generatePDFFromData(pdfData, `${filename}.pdf`, {
       title: "Lista productos MH",
