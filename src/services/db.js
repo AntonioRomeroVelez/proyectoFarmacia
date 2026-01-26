@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'farmaciaDB';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 export const dbRequest = openDB(DB_NAME, DB_VERSION, {
   upgrade(db) {
@@ -48,6 +48,11 @@ export const dbRequest = openDB(DB_NAME, DB_VERSION, {
     // Create backups store (V4)
     if (!db.objectStoreNames.contains('backups')) {
       db.createObjectStore('backups', { keyPath: 'id' });
+    }
+
+    // Create notifications store (V5)
+    if (!db.objectStoreNames.contains('notifications')) {
+      db.createObjectStore('notifications', { keyPath: 'id' });
     }
   },
 });

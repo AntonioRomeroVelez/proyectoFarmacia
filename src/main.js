@@ -65,8 +65,28 @@ app.component("BIconGift", BIconGift);
 // DB Service
 import { dbService } from './services/db';
 
+// Notification System
+import { useNotifications } from './composables/useNotifications';
+
 // Trigger migration
 dbService.migrateFromLocalStorage();
 
+// Initialize notification system
+const initNotifications = async () => {
+  const { initialize, checkSupport, isSupported } = useNotifications();
+
+  if (checkSupport()) {
+    console.log('📬 Inicializando sistema de notificaciones PWA...');
+    await initialize();
+    console.log('✅ Sistema de notificaciones listo');
+  } else {
+    console.warn('⚠️ Notificaciones PWA no soportadas en este navegador');
+  }
+};
+
+// Inicializar notificaciones después de montar la app
+initNotifications();
+
 // Montar app
 app.mount("#app");
+

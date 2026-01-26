@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import { dbService } from '@/services/db';
+import { useNotifications } from './useNotifications';
 
 // Estado compartido
 const eventos = ref([]);
@@ -43,6 +44,19 @@ export function useAgenda() {
       eventos.value.push(newEvento);
       await dbService.add('agenda', newEvento);
       toast.success('Evento agendado correctamente');
+
+      // Programar notificación PWA (no bloquea si falla)
+      try {
+        const { notifyAgendaEvent, permissionGranted } = useNotifications();
+        if (permissionGranted.value) {
+          await notifyAgendaEvent(newEvento);
+          console.log('✅ Notificaciones programadas para evento:', newEvento.id);
+        }
+      } catch (notifError) {
+        // Si falla la notificación, NO afecta la creación del evento
+        console.warn('⚠️ No se pudo programar notificación:', notifError);
+      }
+
       return newEvento;
     } catch (e) {
       console.error('Error adding evento:', e);

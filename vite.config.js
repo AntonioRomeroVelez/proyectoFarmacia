@@ -11,16 +11,21 @@ export default defineConfig({
     vue(),
     vueDevTools(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'public',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
-      includeAssets: ['logo.png', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['logo.png', 'icon-192x192.png', 'icon-512x512.png', 'favicon.png', 'favicon.ico'],
       manifest: {
-        name: 'Sistema de Gestión',
-        short_name: 'Sistema de Gestión',
-        description: 'Sistema de gestión de productos farmacéuticos con comparación de precios y generación de reportes',
+        name: 'Sistema de Gestión Farmacéutica',
+        short_name: 'SistemaGestión',
+        description: 'Sistema de gestión de productos farmacéuticos con comparación de precios, generación de reportes y notificaciones',
         theme_color: '#6cbdffff',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
+        scope: '/',
+        orientation: 'any',
         icons: [
           {
             src: '/icon-192x192.png',
@@ -40,27 +45,33 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'maskable'
           }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-        runtimeCaching: [
+        ],
+        // Capacidades PWA avanzadas
+        categories: ['business', 'productivity'],
+        shortcuts: [
           {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
+            name: 'Agenda',
+            short_name: 'Agenda',
+            description: 'Ver eventos programados',
+            url: '/agenda',
+            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Productos',
+            short_name: 'Productos',
+            description: 'Gestionar productos',
+            url: '/productos',
+            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
           }
         ]
+      },
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
+      },
+      devOptions: {
+        enabled: false, // Deshabilitado en dev, solo funciona en build
+        type: 'module'
       }
     })
   ],
@@ -70,3 +81,4 @@ export default defineConfig({
     },
   },
 })
+
