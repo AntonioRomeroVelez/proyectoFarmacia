@@ -96,6 +96,18 @@ export function useAgenda() {
       try {
         eventos.value = eventos.value.filter(e => e.id !== id);
         await dbService.delete('agenda', id);
+
+        // Cancelar notificaciones programadas asociadas
+        try {
+          const { cancelScheduledNotification } = useNotifications();
+          // Cancelar notificación de 15 minutos antes
+          await cancelScheduledNotification(`agenda-${id}`);
+          // Cancelar notificación del momento del evento
+          await cancelScheduledNotification(`agenda-now-${id}`);
+        } catch (notifError) {
+          console.warn('⚠️ No se pudo cancelar notificaciones:', notifError);
+        }
+
         toast.info('Evento eliminado');
         return true;
       } catch (e) {

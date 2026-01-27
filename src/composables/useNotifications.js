@@ -92,7 +92,10 @@ export function useNotifications() {
       title,
       body,
       timestamp,
+      icon: '/icon-192x192.png',
+      badge: '/icon-192x192.png',
       data,
+      shown: false, // NUEVO: Flag para controlar si ya se mostró
       createdAt: Date.now()
     };
 
@@ -101,11 +104,30 @@ export function useNotifications() {
       await dbService.put('notifications', notification);
       scheduledNotifications.value.push(notification);
 
-      // Calcular delay
+      // NUEVO: Notificar al Service Worker para que inicie/actualice verificación
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration.active) {
+            // Enviar mensaje al SW usando MessageChannel para recibir respuesta
+            const messageChannel = new MessageChannel();
+
+            registration.active.postMessage({
+              type: 'SCHEDULE_NOTIFICATION',
+              notificationId: id
+            }, [messageChannel.port2]);
+
+            console.log('✅ Notification scheduled in SW:', id);
+          }
+        } catch (swError) {
+          console.warn('⚠️ Could not notify SW, but notification is saved:', swError);
+        }
+      }
+
+      // Si la notificación es para dentro de menos de 2 minutos Y la app está abierta,
+      // también usar setTimeout como fallback inmediato
       const delay = timestamp - Date.now();
-      
-      if (delay > 0) {
-        // Si es en el futuro, programar timeout
+      if (delay > 0 && delay < 120000) { // Menos de 2 minutos
         setTimeout(() => {
           sendNotification(title, {
             body,
@@ -113,13 +135,6 @@ export function useNotifications() {
             data: { ...data, notificationId: id }
           });
         }, delay);
-      } else {
-        // Si es inmediata o pasada, enviar ahora
-        await sendNotification(title, {
-          body,
-          tag: id,
-          data: { ...data, notificationId: id }
-        });
       }
 
       return true;
@@ -135,20 +150,20 @@ export function useNotifications() {
       const stored = await dbService.getAll('notifications');
       scheduledNotifications.value = stored || [];
       
-      // Reprogramar notificaciones futuras
-      const now = Date.now();
-      scheduledNotifications.value.forEach(notif => {
-        const delay = notif.timestamp - now;
-        if (delay > 0) {
-          setTimeout(() => {
-            sendNotification(notif.title, {
-              body: notif.body,
-              tag: notif.id,
-              data: notif.data
-            });
-          }, delay);
+      console.log(`📬 Loaded ${scheduledNotifications.value.length} scheduled notifications`);
+
+      // NUEVO: No usar setTimeout aquí, el Service Worker se encarga
+      // Solo notificar al SW que hay notificaciones pendientes
+      if ('serviceWorker' in navigator && scheduledNotifications.value.length > 0) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration.active) {
+            registration.active.postMessage({ type: 'CHECK_NOTIFICATIONS' });
+          }
+        } catch (swError) {
+          console.warn('⚠️ Could not notify SW to check notifications:', swError);
         }
-      });
+      }
     } catch (error) {
       console.error('Error al cargar notificaciones programadas:', error);
     }
@@ -298,6 +313,20 @@ export function useNotifications() {
       const savedPermission = localStorage.getItem('notificationsPermission');
       if (savedPermission === 'granted') {
         permissionGranted.value = true;
+      }
+
+      // NUEVO: Iniciar verificación periódica en el Service Worker
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration.active) {
+            const messageChannel = new MessageChannel();
+            registration.active.postMessage({ type: 'START_PERIODIC_CHECK' }, [messageChannel.port2]);
+            console.log('✅ Periodic notification check started in SW');
+          }
+        } catch (swError) {
+          console.warn('⚠️ Could not start periodic check in SW:', swError);
+        }
       }
     }
   };

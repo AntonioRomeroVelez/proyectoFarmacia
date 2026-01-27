@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { dbService, dbRequest } from '@/services/db';
+import { useNotifications } from './useNotifications';
 
 const visitas = ref([]);
 const isLoaded = ref(false);
@@ -31,6 +32,25 @@ export function useVisitas() {
       await dbService.put('visitas', nuevaVisita);
       visitas.value.unshift(nuevaVisita);
       toast.success('Visita registrada');
+
+      // Programar notificación PWA solo si la visita tiene una fecha futura (no bloquea si falla)
+      try {
+        const { notifyVisita, permissionGranted } = useNotifications();
+
+        // Verificar si la fecha de la visita es futura (más de 1 hora desde ahora)
+        const visitaDate = new Date(nuevaVisita.fecha);
+        const unaHoraDelante = new Date(Date.now() + 60 * 60 * 1000);
+
+        if (permissionGranted.value && visitaDate > unaHoraDelante) {
+          // Solo programar si la fecha es futura
+          await notifyVisita(nuevaVisita);
+          console.log('✅ Notificación programada para visita:', nuevaVisita.id);
+        }
+      } catch (notifError) {
+        // Si falla la notificación, NO afecta la creación de la visita
+        console.warn('⚠️ No se pudo programar notificación para visita:', notifError);
+      }
+
       return nuevaVisita;
     } catch (e) {
       console.error('Error adding visita:', e);
@@ -60,6 +80,15 @@ export function useVisitas() {
     try {
       await dbService.delete('visitas', id);
       visitas.value = visitas.value.filter(v => v.id !== id);
+
+      // Cancelar notificación programada si existe
+      try {
+        const { cancelScheduledNotification } = useNotifications();
+        await cancelScheduledNotification(`visita-${id}`);
+      } catch (notifError) {
+        console.warn('⚠️ No se pudo cancelar notificación:', notifError);
+      }
+
       toast.info('Visita eliminada');
     } catch (e) {
       console.error('Error deleting visita:', e);

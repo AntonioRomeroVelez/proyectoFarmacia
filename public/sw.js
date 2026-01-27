@@ -7,6 +7,8 @@ import { precacheAndRoute } from 'workbox-precaching';
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 const CACHE_NAME = 'farmacia-dynamic-v1';
+const CHECK_INTERVAL = 60000; // Verificar cada 60 segundos
+let intervalId = null;
 
 // Instalación del Service Worker
 self.addEventListener('install', (event) => {
@@ -29,6 +31,12 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Iniciar verificación periódica de notificaciones al activarse
+      console.log('[SW] Starting periodic notification check...');
+      startPeriodicCheck();
+      // Verificar inmediatamente
+      return checkScheduledNotifications();
     })
   );
   
@@ -67,6 +75,125 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// NUEVO: Iniciar verificación periódica
+function startPeriodicCheck() {
+  // Limpiar intervalo anterior si existe
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+
+  // Verificar cada minuto
+  intervalId = setInterval(() => {
+    console.log('[SW] Periodic check triggered...');
+    checkScheduledNotifications();
+  }, CHECK_INTERVAL);
+}
+
+// NUEVO: Verificar notificaciones programadas en IndexedDB
+async function checkScheduledNotifications() {
+  try {
+    const db = await openDatabase();
+    const notifications = await getFromDB(db, 'notifications');
+    const now = Date.now();
+    // NUEVO: Margen de tolerancia - mostrar notificaciones hasta 30 segundos antes
+    const tolerance = 30000;
+
+    console.log(`[SW] Checking ${notifications.length} scheduled notifications...`);
+
+    // Filtrar notificaciones que deben mostrarse
+    const toShow = notifications.filter(notif => {
+      // Mostrar si la hora programada ya pasó O si falta menos del margen de tolerancia
+      return (notif.timestamp <= now + tolerance) && !notif.shown;
+    });
+
+    console.log(`[SW] Found ${toShow.length} notifications to show`);
+
+    // Mostrar cada notificación
+    for (const notif of toShow) {
+      try {
+        await self.registration.showNotification(notif.title, {
+          body: notif.body,
+          icon: notif.icon || '/icon-192x192.png',
+          badge: notif.badge || '/icon-192x192.png',
+          vibrate: [200, 100, 200],
+          tag: notif.id,
+          requireInteraction: false,
+          data: notif.data || {}
+        });
+
+        console.log('[SW] Notification shown:', notif.id);
+
+        // Marcar como mostrada
+        await updateNotificationStatus(db, notif.id);
+      } catch (error) {
+        console.error('[SW] Error showing notification:', notif.id, error);
+      }
+    }
+
+    // Limpiar notificaciones antiguas (más de 7 días)
+    await cleanOldNotifications(db);
+
+  } catch (error) {
+    console.error('[SW] Error checking scheduled notifications:', error);
+  }
+}
+
+// NUEVO: Actualizar estado de notificación en IndexedDB
+async function updateNotificationStatus(db, notificationId) {
+  return new Promise((resolve, reject) => {
+    try {
+      const transaction = db.transaction('notifications', 'readwrite');
+      const store = transaction.objectStore('notifications');
+      const getRequest = store.get(notificationId);
+
+      getRequest.onsuccess = () => {
+        const notification = getRequest.result;
+        if (notification) {
+          notification.shown = true;
+          const updateRequest = store.put(notification);
+          updateRequest.onsuccess = () => resolve();
+          updateRequest.onerror = () => reject(updateRequest.error);
+        } else {
+          resolve();
+        }
+      };
+
+      getRequest.onerror = () => reject(getRequest.error);
+    } catch (error) {
+      resolve(); // No fallar si hay error
+    }
+  });
+}
+
+// NUEVO: Limpiar notificaciones antiguas
+async function cleanOldNotifications(db) {
+  const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+  return new Promise((resolve) => {
+    try {
+      const transaction = db.transaction('notifications', 'readwrite');
+      const store = transaction.objectStore('notifications');
+      const request = store.openCursor();
+
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          if (cursor.value.timestamp < sevenDaysAgo && cursor.value.shown) {
+            cursor.delete();
+          }
+          cursor.continue();
+        } else {
+          resolve();
+        }
+      };
+
+      request.onerror = () => resolve();
+    } catch (error) {
+      resolve();
+    }
+  });
+}
 
 // Manejar notificaciones push
 self.addEventListener('push', (event) => {
@@ -159,61 +286,10 @@ self.addEventListener('notificationclose', (event) => {
 self.addEventListener('periodicsync', (event) => {
   console.log('[SW] Periodic sync event:', event.tag);
   
-  if (event.tag === 'check-upcoming-events') {
-    event.waitUntil(checkUpcomingEvents());
+  if (event.tag === 'check-notifications') {
+    event.waitUntil(checkScheduledNotifications());
   }
 });
-
-// Función para verificar eventos próximos
-async function checkUpcomingEvents() {
-  try {
-    // Abrir IndexedDB para verificar eventos
-    const db = await openDatabase();
-    const now = Date.now();
-    const fifteenMinutes = 15 * 60 * 1000;
-    const oneHour = 60 * 60 * 1000;
-    
-    // Verificar eventos de agenda
-    const eventos = await getFromDB(db, 'agenda');
-    const upcomingEventos = eventos.filter(evento => {
-      const eventTime = new Date(evento.fecha).getTime();
-      const diff = eventTime - now;
-      return diff > 0 && diff <= fifteenMinutes && !evento.notified;
-    });
-    
-    // Enviar notificaciones para eventos próximos
-    for (const evento of upcomingEventos) {
-      await self.registration.showNotification('📅 Evento Próximo', {
-        body: `${evento.titulo} - En 15 minutos`,
-        icon: '/icon-192x192.png',
-        badge: '/icon-192x192.png',
-        tag: `agenda-${evento.id}`,
-        data: { type: 'agenda', eventoId: evento.id }
-      });
-    }
-    
-    // Verificar visitas próximas
-    const visitas = await getFromDB(db, 'visitas');
-    const upcomingVisitas = visitas.filter(visita => {
-      const visitTime = new Date(visita.fecha).getTime();
-      const diff = visitTime - now;
-      return diff > 0 && diff <= oneHour && !visita.notified;
-    });
-    
-    // Enviar notificaciones para visitas próximas
-    for (const visita of upcomingVisitas) {
-      await self.registration.showNotification('🏥 Visita Próxima', {
-        body: `Visita programada en 1 hora - ${visita.cliente || visita.nombre || 'Cliente'}`,
-        icon: '/icon-192x192.png',
-        badge: '/icon-192x192.png',
-        tag: `visita-${visita.id}`,
-        data: { type: 'visita', visitaId: visita.id }
-      });
-    }
-  } catch (error) {
-    console.error('[SW] Error checking upcoming events:', error);
-  }
-}
 
 // Función auxiliar para abrir IndexedDB
 function openDatabase() {
@@ -251,7 +327,19 @@ self.addEventListener('message', (event) => {
   }
   
   if (event.data && event.data.type === 'CHECK_NOTIFICATIONS') {
-    checkUpcomingEvents();
+    checkScheduledNotifications();
+  }
+
+  if (event.data && event.data.type === 'START_PERIODIC_CHECK') {
+    startPeriodicCheck();
+    event.ports[0]?.postMessage({ success: true });
+  }
+
+  if (event.data && event.data.type === 'SCHEDULE_NOTIFICATION') {
+    // La notificación ya está en IndexedDB, solo confirmar
+    console.log('[SW] Notification scheduled:', event.data.notificationId);
+    checkScheduledNotifications(); // Verificar inmediatamente
+    event.ports[0]?.postMessage({ success: true });
   }
 });
 

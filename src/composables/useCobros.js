@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useToast } from 'vue-toastification';
 import { dbService } from '@/services/db';
+import { useNotifications } from './useNotifications';
 
 const cobros = ref([]);
 const isLoaded = ref(false);
@@ -36,6 +37,29 @@ export function useCobros() {
       await dbService.put('cobros', newCobro);
       cobros.value.unshift(newCobro);
       toast.success('💰 Cobro registrado correctamente');
+
+      // Programar notificación PWA si tiene fecha de vencimiento futura (no bloquea si falla)
+      try {
+        const { notifyCobroPendiente, permissionGranted } = useNotifications();
+
+        // Verificar que existe fechaVencimiento y que es futura
+        if (permissionGranted.value && newCobro.fechaVencimiento) {
+          const fechaVenc = new Date(newCobro.fechaVencimiento);
+          const mañana = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+          // Solo programar si el vencimiento es futuro (más de 1 día adelante)
+          if (fechaVenc > mañana) {
+            const cliente = newCobro.cliente || 'Cliente';
+            const monto = parseFloat(newCobro.cantidad || 0);
+            await notifyCobroPendiente(cliente, monto, newCobro.fechaVencimiento);
+            console.log('✅ Notificación programada para cobro:', newCobro.id);
+          }
+        }
+      } catch (notifError) {
+        // Si falla la notificación, NO afecta la creación del cobro
+        console.warn('⚠️ No se pudo programar notificación para cobro:', notifError);
+      }
+
       return newCobro;
     } catch (e) {
       console.error('Error adding cobro:', e);
@@ -67,8 +91,22 @@ export function useCobros() {
   // Eliminar cobro
   const deleteCobro = async (id) => {
     try {
+      const cobroAEliminar = cobros.value.find(c => c.id === id);
+
       await dbService.delete('cobros', id);
       cobros.value = cobros.value.filter(c => c.id !== id);
+
+      // Cancelar notificación programada si existe
+      if (cobroAEliminar && cobroAEliminar.fechaVencimiento) {
+        try {
+          const { cancelScheduledNotification } = useNotifications();
+          const notificationId = `cobro-${cobroAEliminar.cliente}-${cobroAEliminar.fechaVencimiento}`;
+          await cancelScheduledNotification(notificationId);
+        } catch (notifError) {
+          console.warn('⚠️ No se pudo cancelar notificación:', notifError);
+        }
+      }
+
       toast.info('Cobro eliminado');
     } catch (e) {
       console.error('Error deleting cobro:', e);
