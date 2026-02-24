@@ -2,27 +2,64 @@ import { ref } from 'vue';
 import { dbService } from '@/services/db';
 import { useToast } from 'vue-toastification';
 
+// Estado global para evitar recargas innecesarias y asegurar consistencia
 const productos = ref([]);
 const loaded = ref(false);
+const loadingPromise = ref(null);
+
+// Filtros globales para persistencia
+const filtroBusqueda = ref("");
+const terminoBusqueda = ref("");
+const filtroMarca = ref("");
+const filtroPresentacion = ref("");
+const currentPage = ref(1);
 
 export function useProductos() {
   const toast = useToast();
 
-  const loadProductos = async () => {
-    try {
-      productos.value = await dbService.getAll('productos');
-      loaded.value = true;
-    } catch (e) {
-      console.error('Error loading products:', e);
-      toast.error('Error al cargar productos de la base de datos');
-    }
+  const loadProductos = async (force = false) => {
+    // Si ya se está cargando, devolver la promesa existente
+    if (loadingPromise.value && !force) return loadingPromise.value;
+
+    // Si ya está cargado y no se fuerza, no hacer nada
+    if (loaded.value && !force) return Promise.resolve();
+
+    loadingPromise.value = (async () => {
+      try {
+        console.log('🔄 Cargando productos desde DB...');
+        productos.value = await dbService.getAll('productos');
+        loaded.value = true;
+        console.log(`✅ ${productos.value.length} productos cargados.`);
+      } catch (e) {
+        console.error('Error loading products:', e);
+        toast.error('Error al cargar productos de la base de datos');
+        throw e;
+      } finally {
+        loadingPromise.value = null;
+      }
+    })();
+
+    return loadingPromise.value;
   };
 
   const addProducto = async (producto) => {
     try {
+      // Asegurar que los datos estén cargados antes de añadir (por si el componente llama rápido)
+      if (!loaded.value) {
+        await loadProductos();
+      }
+
       await dbService.put('productos', producto);
-      productos.value.push(producto);
-      // toast handled in view usually, but we can add here if standardizing
+
+      // Actualizar estado local reactivo
+      const exists = productos.value.some(p => p.ID === producto.ID);
+      if (!exists) {
+        productos.value.push(producto);
+      } else {
+        const index = productos.value.findIndex(p => p.ID === producto.ID);
+        productos.value[index] = producto;
+      }
+
       return true;
     } catch (e) {
       console.error('Error adding product:', e);
@@ -36,7 +73,9 @@ export function useProductos() {
       await dbService.put('productos', producto);
       const index = productos.value.findIndex(p => p.ID === producto.ID);
       if (index !== -1) {
-        productos.value[index] = producto;
+        productos.value[index] = { ...producto };
+      } else {
+        productos.value.push(producto);
       }
       return true;
     } catch (e) {
@@ -58,12 +97,10 @@ export function useProductos() {
     }
   };
 
-  // Bulk add for Excel import
   const bulkAddProductos = async (newProductos) => {
     try {
       await dbService.bulkPut('productos', newProductos);
-      // Refresh local state
-      await loadProductos();
+      await loadProductos(true); // Forzar recarga total
       return true;
     } catch (e) {
       console.error('Error bulk adding products:', e);
@@ -72,13 +109,10 @@ export function useProductos() {
     }
   };
 
-  // Clear all products
   const clearAllProductos = async () => {
     try {
-      // Delete each product individually
-      for (const producto of productos.value) {
-        await dbService.delete('productos', producto.ID);
-      }
+      // Usar transacción para limpiar (asumiendo que clear está en dbService)
+      await dbService.clear('productos'); 
       productos.value = [];
       return true;
     } catch (e) {
@@ -88,19 +122,24 @@ export function useProductos() {
     }
   };
 
-  // Initialize if needed
-  if (!loaded.value) {
+  // Inicialización automática al usar el composable por primera vez
+  if (!loaded.value && !loadingPromise.value) {
     loadProductos();
   }
 
   return {
     productos,
+    loaded,
     loadProductos,
     addProducto,
     updateProducto,
     deleteProducto,
     bulkAddProductos,
-    clearAllProductos
-    // TODO: Add search/filter here if we want to move logic from view
+    clearAllProductos,
+    filtroBusqueda,
+    terminoBusqueda,
+    filtroMarca,
+    filtroPresentacion,
+    currentPage
   };
 }

@@ -17,11 +17,14 @@
         <!-- Buscador Principal -->
         <b-col md="12" lg="6">
           <div class="input-group">
-            <span class="input-group-text bg-light border-end-0">
-              🔍
-            </span>
-            <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 ps-0"
-              placeholder="nombre o principio activo" @keyup.enter="aplicarBusqueda" />
+           <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 border-end-0 ps-0 text-center"
+              placeholder="Buscar por nombre o principio activo" @keyup.enter="aplicarBusqueda" />
+            <!-- Botón X para limpiar búsqueda -->
+            <button v-if="filtroBusqueda" type="button"
+              class="btn btn-outline-secondary border-start-0 border-end-0 px-2 limpiar-btn rounded-end"
+              style="margin:0px 10px 0px 0px" @click="limpiarBusqueda" title="Limpiar búsqueda">
+              ✕
+            </button>
             <b-button variant="primary" @click="aplicarBusqueda">
               Buscar
             </b-button>
@@ -68,18 +71,19 @@
       </div>
 
       <!-- Paginación Responsiva -->
-      <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 mb-4">
+     <!-- Paginación Responsiva -->
+      <div class="d-flex justify-content-center align-items-center gap-2 gap-md-3 mb-4">
         <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--"
-          class="w-100 w-md-auto">
+class="px-2 px-md-3">
           ← Anterior
         </b-button>
 
-        <span class="text-muted text-center my-2 my-md-0">
+      <span class="text-muted text-center small mx-1 my-0">
           Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong>
         </span>
 
         <b-button variant="outline-primary" :disabled="currentPage === totalPages" @click="currentPage++"
-          class="w-100 w-md-auto">
+         class="px-2 px-md-3">
           Siguiente →
         </b-button>
       </div>
@@ -172,21 +176,48 @@ const router = useRouter();
 const toast = useToast();
 const { cartCount } = useCart();
 const { isAdmin } = useAuth();
-const { productos, loadProductos, deleteProducto } = useProductos();
+const {
+  productos,
+  loadProductos,
+  deleteProducto,
+  loaded,
+  filtroBusqueda,
+  terminoBusqueda,
+  filtroMarca,
+  filtroPresentacion,
+  currentPage
+} = useProductos();
 
-const productosFiltrados = ref([]);
 const productoSeleccionado = ref(null);
 const showModal = ref(false);
-const cargando = ref(true);
+const cargando = ref(!loaded.value);
 
-const filtroBusqueda = ref("");
-const terminoBusqueda = ref(""); // Actual search term applied
-const filtroMarca = ref("");
-const filtroPresentacion = ref("");
-
-// Paginación
-const currentPage = ref(1);
 const itemsPerPage = ref(50);
+
+// Filtrado Reactivo y Permanente
+const productosFiltrados = computed(() => {
+  const text = terminoBusqueda.value.toLowerCase();
+
+  return productos.value.filter((p) => {
+    // Filtro de búsqueda
+    if (text) {
+      const matchesSearch =
+        p.NombreProducto?.toLowerCase().includes(text) ||
+        p.Marca?.toLowerCase().includes(text) ||
+        p.PrincipioActivo?.toLowerCase().includes(text);
+
+      if (!matchesSearch) return false;
+    }
+
+    // Filtro de marca
+    if (filtroMarca.value && p.Marca !== filtroMarca.value) return false;
+
+    // Filtro de presentación
+    if (filtroPresentacion.value && p.Presentacion !== filtroPresentacion.value) return false;
+
+    return true;
+  });
+});
 
 const totalPages = computed(() => Math.ceil(productosFiltrados.value.length / itemsPerPage.value));
 
@@ -199,30 +230,8 @@ const paginatedProducts = computed(() => {
 const opcionesMarcas = ref([]);
 const opcionesPresentaciones = ref([]);
 
-// Validar marca ingresada
-const onMarcaInput = () => {
-  // Si la marca no está en la lista de opciones, limpiarla después de un delay
-  setTimeout(() => {
-    if (filtroMarca.value && !opcionesMarcas.value.includes(filtroMarca.value)) {
-      // Permitir búsqueda parcial, no limpiar automáticamente
-    }
-  }, 100);
-};
-
-// Replacing logic:
-onMounted(async () => {
-  await cargarProductos();
-});
-
-const cargarProductos = async () => {
-  cargando.value = true;
-  // useProductos auto-loads but we might want to ensure it is fresh
-  // await loadProductos();
-  // No need to setTimeout, db is async.
-
-  // Logic to extract brands/presentations
-  const lista = productos.value;
-
+// Extraer opciones de marcas y presentaciones cada vez que los productos cambien
+watch(productos, (lista) => {
   const marcas = new Set();
   const presentaciones = new Set();
 
@@ -233,42 +242,38 @@ const cargarProductos = async () => {
 
   opcionesMarcas.value = Array.from(marcas).sort();
   opcionesPresentaciones.value = Array.from(presentaciones).sort();
+}, { immediate: true, deep: true });
 
-  productosFiltrados.value = lista;
+// Validar marca ingresada (opcional, solo para feedback visual si se desea)
+const onMarcaInput = () => {
+// No limpiar automáticamente, permitir búsquedas parciales
+};
+
+onMounted(async () => {
+  if (!loaded.value) {
+    await loadProductos();
+  }
+  cargando.value = false;
+});
+
+// Forzar recarga total de productos si se requiere
+const cargarProductos = async () => {
+  cargando.value = true;
+  await loadProductos(true);
   cargando.value = false;
 };
 
-// Filtrar productos
-watch(
-  [productos, terminoBusqueda, filtroMarca, filtroPresentacion],
-  () => {
-    const text = terminoBusqueda.value.toLowerCase();
+// Sincronizar búsqueda cuando la lista base cambie (ediciones, etc)
+watch(productos, () => {
+  // Solo sincronizar si el input no coincide con lo aplicado, 
+  // esto ayuda a que después de editar se vea el cambio inmediatamente en la lista filtrada
+  if (filtroBusqueda.value && terminoBusqueda.value !== filtroBusqueda.value) {
+    terminoBusqueda.value = filtroBusqueda.value;
+  }
+}, { deep: true });
 
-    productosFiltrados.value = productos.value.filter((p) => {
-      // Filtro de búsqueda
-      if (text) {
-        const matchesSearch =
-          p.NombreProducto?.toLowerCase().includes(text) ||
-          p.Marca?.toLowerCase().includes(text) ||
-          p.PrincipioActivo?.toLowerCase().includes(text);
-
-        if (!matchesSearch) return false;
-      }
-
-      // Filtro de marca
-      if (filtroMarca.value && p.Marca !== filtroMarca.value) return false;
-
-      // Filtro de presentación
-      if (filtroPresentacion.value && p.Presentacion !== filtroPresentacion.value) return false;
-
-      return true;
-    });
-  },
-  { deep: true }
-);
-
-// Resetear página al filtrar
-watch(productosFiltrados, () => {
+// Resetear página al cambiar cualquier filtro
+watch([terminoBusqueda, filtroMarca, filtroPresentacion], () => {
   currentPage.value = 1;
 });
 
@@ -277,6 +282,12 @@ const limpiarFiltros = () => {
   terminoBusqueda.value = "";
   filtroMarca.value = "";
   filtroPresentacion.value = "";
+};
+
+// Limpiar solo el buscador principal
+const limpiarBusqueda = () => {
+  filtroBusqueda.value = "";
+  terminoBusqueda.value = "";
 };
 
 const aplicarBusqueda = () => {
@@ -331,5 +342,19 @@ const confirmarEliminacion = () => {
 
 .gap-2 {
   gap: 0.5rem;
+}
+/* Botón X del buscador */
+.limpiar-btn {
+  background: white;
+  color: #999;
+  border-color: #ced4da !important;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.limpiar-btn:hover {
+  color: #dc3545;
+  background: #fff5f5;
 }
 </style>

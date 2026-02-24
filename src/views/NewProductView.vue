@@ -109,7 +109,7 @@ import { useProductos } from '@/composables/useProductos';
 const router = useRouter();
 const toast = useToast();
 const loading = ref(false);
-const { productos, addProducto } = useProductos();
+const { productos, addProducto, loadProductos, loaded } = useProductos();
 
 const form = reactive({
   Codigo: '',
@@ -121,9 +121,7 @@ const form = reactive({
   PVP: 0,
   IVA: 0,
   Descuento: 0,
-  Descuento: 0,
   Promocion: '',
-
   Observacion: ''
 });
 
@@ -131,6 +129,11 @@ const guardarProducto = async () => {
   loading.value = true;
 
   try {
+    // Asegurar que los productos estén cargados para validar correctamente
+    if (!loaded.value) {
+      await loadProductos();
+    }
+
     // Validar código único
     if (productos.value.some(p => p.Codigo === form.Codigo)) {
       toast.error('❌ Ya existe un producto con este código');
@@ -160,7 +163,8 @@ const guardarProducto = async () => {
     toast.success('✅ Producto creado correctamente');
     router.push('/productos');
   } catch (error) {
-    // Error handled in composable/toast
+    console.error('Error al guardar producto:', error);
+    toast.error('❌ Error al guardar el producto. Intenta de nuevo.');
   } finally {
     loading.value = false;
   }

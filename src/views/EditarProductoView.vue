@@ -108,9 +108,7 @@ const form = ref({
   PVP: 0,
   Descuento: 0,
   IVA: 0,
-  IVA: 0,
   Promocion: '',
-
   Observacion: ''
 })
 
