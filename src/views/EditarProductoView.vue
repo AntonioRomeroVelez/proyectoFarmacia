@@ -39,16 +39,16 @@
           <!-- Columna Derecha -->
           <b-col md="6">
             <b-form-group label="Precio Farmacia:" label-for="precio-farmacia">
-              <b-form-input id="precio-farmacia" v-model.number="form.PrecioFarmacia" type="number" step="0.001"
+             <b-form-input id="precio-farmacia" v-model="form.PrecioFarmacia" type="text" inputmode="decimal"
                 placeholder="0.000" required />
             </b-form-group>
 
             <b-form-group label="PVP:" label-for="pvp">
-              <b-form-input id="pvp" v-model.number="form.PVP" type="number" step="0.001" placeholder="0.000" />
+             <b-form-input id="pvp" v-model="form.PVP" type="text" inputmode="decimal" placeholder="0.000" />
             </b-form-group>
 
             <b-form-group label="Descuento (%):" label-for="descuento">
-              <b-form-input id="descuento" v-model.number="form.Descuento" type="number" step="1" placeholder="0" />
+             <b-form-input id="descuento" v-model="form.Descuento" type="text" inputmode="decimal" placeholder="0" />
             </b-form-group>
 
             <b-form-group label="IVA:" label-for="iva">
@@ -59,7 +59,7 @@
             </b-form-group>
 
             <b-form-group label="Promoción:" label-for="promocion">
-              <b-form-input id="promocion" v-model="form.Promocion" placeholder="Ej: 5+1 10+2" />
+             <b-form-input id="promocion" type="number" v-model="form.Promocion" placeholder="Ej: 5+1 10+2" />
               <small class="text-muted">Formato: cantidad+bonificación (separar con espacios)</small>
             </b-form-group>
           </b-col>
@@ -73,7 +73,7 @@
         </b-row>
 
         <!-- Botones -->
-        <div class="d-flex justify-content-end gap-2 mt-4">
+       <div class="d-flex justify-content-start gap-2 mt-4">
           <b-button variant="outline-secondary" @click="$router.push('/productos')">
             Cancelar
           </b-button>
@@ -146,7 +146,13 @@ watch(productos, () => {
 
 const guardarProducto = async () => {
   try {
-    await updateProducto({ ...form.value })
+    const productToSave = {
+      ...form.value,
+      PrecioFarmacia: form.value.PrecioFarmacia === '' ? 0 : Number(form.value.PrecioFarmacia),
+      PVP: form.value.PVP === '' ? 0 : Number(form.value.PVP),
+      Descuento: form.value.Descuento === '' ? 0 : Number(form.value.Descuento)
+    }
+    await updateProducto(productToSave)
     toast.success('✅ Producto actualizado correctamente')
     router.push('/productos')
   } catch (error) {

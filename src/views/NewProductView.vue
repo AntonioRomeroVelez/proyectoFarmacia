@@ -51,7 +51,7 @@
               <label class="form-label">Precio Farmacia <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input v-model.number="form.PrecioFarmacia" type="number" step="0.001" min="0" class="form-control"
+                <input v-model="form.PrecioFarmacia" type="text" inputmode="decimal" class="form-control"
                   required />
               </div>
             </div>
@@ -59,7 +59,7 @@
               <label class="form-label">PVP <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input v-model.number="form.PVP" type="number" step="0.001" min="0" class="form-control" required />
+                <input v-model="form.PVP" type="text" inputmode="decimal" class="form-control" required />
               </div>
             </div>
             <div class="col-md-4">
@@ -73,7 +73,7 @@
             <!-- Descuento y Promoción -->
             <div class="col-md-6">
               <label class="form-label">Descuento (%)</label>
-              <input v-model.number="form.Descuento" type="number" step="0.01" min="0" max="100" class="form-control" />
+              <input v-model="form.Descuento" type="text" inputmode="decimal" class="form-control" />
             </div>
             <div class="col-md-6">
               <label class="form-label">Promoción</label>
@@ -155,6 +155,9 @@ const guardarProducto = async () => {
     const newProduct = {
       ID: maxId + 1,
       ...form,
+      PrecioFarmacia: form.PrecioFarmacia === '' ? 0 : Number(form.PrecioFarmacia),
+      PVP: form.PVP === '' ? 0 : Number(form.PVP),
+      Descuento: form.Descuento === '' ? 0 : Number(form.Descuento),
       isDuplicate: false
     };
 
