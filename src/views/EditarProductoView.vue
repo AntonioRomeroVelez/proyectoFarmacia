@@ -59,7 +59,7 @@
             </b-form-group>
 
             <b-form-group label="Promoción:" label-for="promocion">
-             <b-form-input id="promocion" type="number" v-model="form.Promocion" placeholder="Ej: 5+1 10+2" />
+             <b-form-input id="promocion" v-model="form.Promocion" type="tel" placeholder="Ej: 5+1 10+2" @input="form.Promocion = $event ? $event.replace(/[^0-9+\\s]/g, '') : ''" />
               <small class="text-muted">Formato: cantidad+bonificación (separar con espacios)</small>
             </b-form-group>
           </b-col>

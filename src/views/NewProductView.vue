@@ -77,7 +77,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Promoción</label>
-              <input v-model="form.Promocion" type="text" class="form-control" placeholder="Ej: 2+1" />
+              <input v-model="form.Promocion" type="tel" class="form-control" placeholder="Ej: 2+1" @input="form.Promocion = $event.target.value.replace(/[^0-9+\\s]/g, '')" />
             </div>
             <div class="col-12">
               <label class="form-label">Observación</label>
