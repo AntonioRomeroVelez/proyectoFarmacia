@@ -59,7 +59,7 @@
             </b-form-group>
 
             <b-form-group label="Promoción:" label-for="promocion">
-             <b-form-input id="promocion" v-model="form.Promocion" type="tel" placeholder="Ej: 5+1 10+2" @input="form.Promocion = $event ? $event.replace(/[^0-9+\\s]/g, '') : ''" />
+             <b-form-input id="promocion" v-model="form.Promocion" type="text" placeholder="Ej: 5+1 10+2" @input="form.Promocion = $event ? $event.replace(/[^0-9+\\s]/g, '') : ''" />
               <small class="text-muted">Formato: cantidad+bonificación (separar con espacios)</small>
             </b-form-group>
           </b-col>
@@ -73,7 +73,7 @@
         </b-row>
 
         <!-- Botones -->
-       <div class="d-flex justify-content-start gap-2 mt-4">
+       <div class="d-flex justify-content-start gap-2 mt-4 form-actions">
           <b-button variant="outline-secondary" @click="$router.push('/productos')">
             Cancelar
           </b-button>
@@ -165,5 +165,30 @@ const guardarProducto = async () => {
 <style scoped>
 .gap-2 {
   gap: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .form-actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.25rem 1rem;
+    background-color: white;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    z-index: 1050;
+    flex-direction: column-reverse !important;
+    margin-top: 0 !important;
+    border-radius: 16px 16px 0 0;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  form {
+    padding-bottom: 120px;
+  }
 }
 </style>
