@@ -47,6 +47,9 @@ body {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+* {
+  font-size: 1rem !important;
+}
 }
 
 /* =============================== */

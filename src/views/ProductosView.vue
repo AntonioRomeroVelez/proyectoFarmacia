@@ -1,10 +1,9 @@
 <template>
   <div class="container-fluid py-3">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-      <div>
+   <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-3">
+      <div class="text-center">
         <h2 class="fw-bold text-primary mb-1">Catálogo de Productos</h2>
-        <p class="text-muted mb-0 small">Gestiona y busca en tu inventario</p>
       </div>
       <b-badge variant="success" pill class="fs-6 px-3 py-2 shadow-sm" style="border-radius: 5px !important">
         {{ productosFiltrados.length }} productos registrados
@@ -12,7 +11,7 @@
     </div>
 
     <!-- Filtros Card -->
-    <div class="bg-white p-3 rounded-2 shadow-sm mb-4 border">
+   <div class="bg-white p-3 rounded-2 shadow-sm mb-2 border">
       <b-row class="g-3">
         <!-- Buscador Principal -->
         <b-col md="12" lg="6">
@@ -73,8 +72,7 @@
       <!-- Paginación Responsiva -->
      <!-- Paginación Responsiva -->
       <div class="d-flex justify-content-center align-items-center gap-2 gap-md-3 mb-4">
-        <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--"
-class="px-2 px-md-3">
+       <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--" class="px-2 px-md-3">
           ← Anterior
         </b-button>
 
@@ -246,7 +244,7 @@ watch(productos, (lista) => {
 
 // Validar marca ingresada (opcional, solo para feedback visual si se desea)
 const onMarcaInput = () => {
-// No limpiar automáticamente, permitir búsquedas parciales
+  // No limpiar automáticamente, permitir búsquedas parciales
 };
 
 onMounted(async () => {
@@ -343,6 +341,7 @@ const confirmarEliminacion = () => {
 .gap-2 {
   gap: 0.5rem;
 }
+
 /* Botón X del buscador */
 .limpiar-btn {
   background: white;
