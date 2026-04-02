@@ -111,7 +111,13 @@
                     <b-button variant="outline-secondary" size="sm" @click="updateQuantity(item.ID, item.quantity - 1)">
                       −
                     </b-button>
-                    <span class="quantity-display">{{ item.quantity }}</span>
+                    <input 
+                      type="number" 
+                      class="form-control form-control-sm text-center quantity-input" 
+                      :value="item.quantity" 
+                      @change="updateQuantity(item.ID, Math.max(1, parseInt($event.target.value) || 1))"
+                      min="1"
+                    />
                     <b-button variant="outline-secondary" size="sm" @click="updateQuantity(item.ID, item.quantity + 1)">
                       +
                     </b-button>
@@ -607,12 +613,21 @@ const cartItemsWithPromotions = computed(() => {
   border-radius: 8px;
 }
 
-.quantity-display {
-  font-size: 1.25rem;
+.quantity-input {
+  font-size: 1.1rem;
   font-weight: 600;
-  min-width: 40px;
+  width: 70px;
   text-align: center;
   color: #0d6efd;
+  /* Eliminar flechas de incremento/decremento nativas */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .price-breakdown {
