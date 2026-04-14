@@ -58,8 +58,8 @@
 
           <b-col md="3">
             <b-form-group label="Cantidad:" label-for="cantidad">
-              <b-form-input id="cantidad" v-model.number="formulario.cantidad" type="number" step="0.01"
-                placeholder="0.00" required></b-form-input>
+              <b-form-input id="cantidad" v-model="formulario.cantidad" type="text" inputmode="decimal"
+                @input="validarCantidad" placeholder="0.00" required></b-form-input>
             </b-form-group>
           </b-col>
 
@@ -512,10 +512,17 @@ const hayImagenes = computed(() => {
 
 // Methods
 const registrarCobro = async () => {
-  if (!formulario.value.cantidad || formulario.value.cantidad <= 0) {
+  // Normalizar cantidad (reemplazar coma por punto y convertir a número)
+  let valorStr = formulario.value.cantidad ? formulario.value.cantidad.toString().replace(',', '.') : '0';
+  const cantidadNum = parseFloat(valorStr);
+
+  if (isNaN(cantidadNum) || cantidadNum <= 0) {
     toast.warning('La cantidad debe ser mayor a 0');
     return;
   }
+
+  // Actualizar el formulario con el valor numérico limpio
+  formulario.value.cantidad = cantidadNum;
 
   // Validar que no pague más del saldo si hay pedido seleccionado
   if (formulario.value.pedidoId) {
@@ -559,7 +566,7 @@ const prepararEdicion = (cobro) => {
     cliente: cobro.cliente,
     clienteId: cobro.clienteId || null,
     fecha: cobro.fecha,
-    cantidad: cobro.cantidad,
+    cantidad: Number(cobro.cantidad).toFixed(2),
     tipo: cobro.tipo,
     metodoPago: cobro.metodoPago,
     numeroFactura: cobro.numeroFactura || '',
@@ -775,6 +782,11 @@ const verImagenModal = (imagenSrc) => {
     transition: 'fade'
   });
   dialog.show();
+};
+
+const validarCantidad = (val) => {
+  // Solo permite números, un punto o una coma
+  formulario.value.cantidad = val.replace(/[^0-9.,]/g, '');
 };
 </script>
 
