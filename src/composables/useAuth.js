@@ -70,7 +70,7 @@ export function useAuth() {
 
     // Configurar temporizador de cierre forzado
     inactivityTimer = setTimeout(() => {
-      forceLogout();
+      // forceLogout();
     }, INACTIVITY_TIMEOUT);
   };
 
@@ -126,7 +126,7 @@ export function useAuth() {
 
       // Si pasó el tiempo de inactividad, cerrar sesión
       if (elapsed >= INACTIVITY_TIMEOUT) {
-        forceLogout();
+        // forceLogout();
         return;
       }
 
