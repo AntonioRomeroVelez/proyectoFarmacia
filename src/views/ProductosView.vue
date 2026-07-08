@@ -39,13 +39,6 @@
           </datalist>
         </b-col>
 
-        <!-- <b-col md="12" lg="3">
-          <b-form-select v-model="filtroPresentacion" class="form-select">
-            <option value="">Presentación</option>
-            <option v-for="p in opcionesPresentaciones" :key="p" :value="p">{{ p }}</option>
-          </b-form-select>
-        </b-col> -->
-
         <!-- Botón Limpiar (solo visible si hay filtros activos) -->
         <b-col cols="12" class="d-flex justify-content-end" v-if="filtroBusqueda || filtroMarca || filtroPresentacion">
           <b-button variant="link" class="text-decoration-none text-muted p-0" @click="limpiarFiltros">
@@ -64,13 +57,17 @@
     <!-- Grid de productos -->
     <div v-else-if="productosFiltrados.length > 0">
       <div class="row g-3 mb-4">
-        <div v-for="producto in paginatedProducts" :key="producto.ID" class="col-12 col-sm-6 col-md-6 col-lg-4">
+        <div
+          v-for="producto in paginatedProducts"
+          :key="producto.ID"
+          :data-producto-id="producto.ID"
+          class="col-12 col-sm-6 col-md-6 col-lg-4"
+        >
           <Producto :producto="producto" :es-agregado="producto.isDuplicate" @ver-detalle="mostrarDetalle" />
         </div>
       </div>
 
       <!-- Paginación Responsiva -->
-     <!-- Paginación Responsiva -->
       <div class="d-flex justify-content-center align-items-center gap-2 gap-md-3 mb-4">
        <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--" class="px-2 px-md-3">
           ← Anterior
@@ -109,7 +106,7 @@
       <div v-if="productoSeleccionado">
         <b-row>
           <b-col md="6">
-            <p><strong>Código:</strong> {{ productoSeleccionado.Codigo }}</p>
+           <p><strong>Código:</strong> {{ productoSeleccionado.Codigo }}</p>
             <p><strong>Marca:</strong> {{ productoSeleccionado.Marca }}</p>
             <p><strong>Presentación:</strong> {{ productoSeleccionado.Presentacion }}</p>
             <p><strong>Principio Activo:</strong> {{ productoSeleccionado.PrincipioActivo }}</p>
@@ -161,7 +158,7 @@
 
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import alertify from "alertifyjs";
@@ -183,7 +180,8 @@ const {
   terminoBusqueda,
   filtroMarca,
   filtroPresentacion,
-  currentPage
+  currentPage,
+  ultimoProductoEditadoId
 } = useProductos();
 
 const productoSeleccionado = ref(null);
@@ -192,18 +190,33 @@ const cargando = ref(!loaded.value);
 
 const itemsPerPage = ref(50);
 
+// Función utilitaria para normalizar texto de búsqueda
+const normalizarTexto = (str = '') =>
+  String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // quitar tildes
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ') // quitar signos de puntuación
+    .replace(/\s+/g, ' ')               // colapsar espacios
+    .trim();
+
 // Filtrado Reactivo y Permanente
 const productosFiltrados = computed(() => {
-  const text = terminoBusqueda.value.toLowerCase();
+  // Dividir el término en palabras individuales (tokens)
+  const tokens = terminoBusqueda.value
+    .split(' ')
+    .filter(t => t.length > 0);
 
   return productos.value.filter((p) => {
-    // Filtro de búsqueda
-    if (text) {
-      const matchesSearch =
-        p.NombreProducto?.toLowerCase().includes(text) ||
-        p.Marca?.toLowerCase().includes(text) ||
-        p.PrincipioActivo?.toLowerCase().includes(text);
+    // Filtro de búsqueda: todas las palabras deben aparecer en algún campo
+    if (tokens.length > 0) {
+      const texto =
+        normalizarTexto(p.NombreProducto) + ' ' +
+        normalizarTexto(p.Marca) + ' ' +
+        normalizarTexto(p.PrincipioActivo);
 
+      // Cada token debe estar presente en el texto combinado
+      const matchesSearch = tokens.every(token => texto.includes(token));
       if (!matchesSearch) return false;
     }
 
@@ -252,6 +265,32 @@ onMounted(async () => {
     await loadProductos();
   }
   cargando.value = false;
+
+  // Si venimos de editar un producto, navegar a su página y hacer scroll hasta él
+  if (ultimoProductoEditadoId.value !== null) {
+    const idBuscado = ultimoProductoEditadoId.value;
+    ultimoProductoEditadoId.value = null; // limpiar para que no repita
+
+    await nextTick();
+
+    // Encontrar en qué posición está dentro de productosFiltrados
+    const idx = productosFiltrados.value.findIndex(p => p.ID === idBuscado);
+    if (idx !== -1) {
+      // Calcular la página donde está
+      const paginaDestino = Math.floor(idx / itemsPerPage.value) + 1;
+      currentPage.value = paginaDestino;
+
+      await nextTick();
+
+      // Hacer scroll y resaltar el card
+      const card = document.querySelector(`[data-producto-id="${idBuscado}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('producto-editado-highlight');
+        setTimeout(() => card.classList.remove('producto-editado-highlight'), 2500);
+      }
+    }
+  }
 });
 
 // Forzar recarga total de productos si se requiere
@@ -263,10 +302,10 @@ const cargarProductos = async () => {
 
 // Sincronizar búsqueda cuando la lista base cambie (ediciones, etc)
 watch(productos, () => {
-  // Solo sincronizar si el input no coincide con lo aplicado, 
+  // Solo sincronizar si el input no coincide con lo aplicado,
   // esto ayuda a que después de editar se vea el cambio inmediatamente en la lista filtrada
-  if (filtroBusqueda.value && terminoBusqueda.value !== filtroBusqueda.value) {
-    terminoBusqueda.value = filtroBusqueda.value;
+  if (filtroBusqueda.value && terminoBusqueda.value !== normalizarTexto(filtroBusqueda.value)) {
+    terminoBusqueda.value = normalizarTexto(filtroBusqueda.value);
   }
 }, { deep: true });
 
@@ -289,7 +328,7 @@ const limpiarBusqueda = () => {
 };
 
 const aplicarBusqueda = () => {
-  terminoBusqueda.value = filtroBusqueda.value;
+  terminoBusqueda.value = normalizarTexto(filtroBusqueda.value);
 };
 
 const mostrarDetalle = (producto) => {
@@ -355,5 +394,21 @@ const confirmarEliminacion = () => {
 .limpiar-btn:hover {
   color: #dc3545;
   background: #fff5f5;
+}
+</style>
+
+<style>
+/* Highlight animado al volver de editar un producto */
+@keyframes highlightFade {
+  0%   { box-shadow: 0 0 0 4px #0d6efd99, 0 4px 20px #0d6efd44; background: #e8f0fe; }
+  60%  { box-shadow: 0 0 0 3px #0d6efd66, 0 4px 16px #0d6efd33; background: #f0f5ff; }
+  100% { box-shadow: none; background: transparent; }
+}
+
+.producto-editado-highlight {
+  animation: highlightFade 2.5s ease forwards;
+  border-radius: 12px;
+  z-index: 1;
+  position: relative;
 }
 </style>

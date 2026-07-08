@@ -14,6 +14,9 @@ const filtroMarca = ref("");
 const filtroPresentacion = ref("");
 const currentPage = ref(1);
 
+// ID del último producto editado (para scroll/highlight al volver)
+const ultimoProductoEditadoId = ref(null);
+
 export function useProductos() {
   const toast = useToast();
 
@@ -140,6 +143,7 @@ export function useProductos() {
     terminoBusqueda,
     filtroMarca,
     filtroPresentacion,
-    currentPage
+    currentPage,
+    ultimoProductoEditadoId
   };
 }

@@ -95,7 +95,7 @@ import { useProductos } from '@/composables/useProductos'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { productos, updateProducto } = useProductos()
+const { productos, updateProducto, ultimoProductoEditadoId } = useProductos()
 
 const form = ref({
   ID: null,
@@ -154,6 +154,8 @@ const guardarProducto = async () => {
     }
     await updateProducto(productToSave)
     toast.success('✅ Producto actualizado correctamente')
+    // Marcar el ID para que ProductosView haga scroll hasta él
+    ultimoProductoEditadoId.value = productToSave.ID
     router.push('/productos')
   } catch (error) {
     console.error('Error saving product:', error)

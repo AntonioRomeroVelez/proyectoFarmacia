@@ -225,9 +225,19 @@ const expandirTodo = (expandir) => {
   });
 };
 
+// Función utilitaria para normalizar texto de búsqueda
+const normalizarTexto = (str = '') =>
+  String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // quitar tildes
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ') // quitar signos de puntuación
+    .replace(/\s+/g, ' ')               // colapsar espacios
+    .trim();
+
 // Aplicar búsqueda
 const aplicarBusqueda = () => {
-  terminoBusqueda.value = busqueda.value;
+  terminoBusqueda.value = normalizarTexto(busqueda.value);
 };
 
 // Limpiar búsqueda
@@ -300,23 +310,33 @@ const productosPorMarca = computed(() => {
 // Filtrar por búsqueda
 const productosPorMarcaFiltrados = computed(() => {
   if (!terminoBusqueda.value.trim()) return productosPorMarca.value;
-  
-  const termino = terminoBusqueda.value.toLowerCase();
+
+  // Dividir en palabras individuales (tokens)
+  const tokens = terminoBusqueda.value
+    .split(' ')
+    .filter(t => t.length > 0);
+
   const filtrados = {};
-  
+
   Object.entries(productosPorMarca.value).forEach(([marca, datos]) => {
-    // Filtrar por marca
-    if (marca.toLowerCase().includes(termino)) {
+    // Texto combinado de la marca para comparar
+    const textoMarca = normalizarTexto(marca);
+
+    // Si todos los tokens están en el nombre de la marca → incluir toda la marca
+    if (tokens.every(t => textoMarca.includes(t))) {
       filtrados[marca] = datos;
       return;
     }
-    
-    // Filtrar por productos
-    const productosFiltrados = datos.productos.filter(p => 
-      (p.NombreProducto || '').toLowerCase().includes(termino) ||
-      (p.PrincipioActivo || '').toLowerCase().includes(termino)
-    );
-    
+
+    // Filtrar productos: todos los tokens deben aparecer en el texto combinado del producto
+    const productosFiltrados = datos.productos.filter(p => {
+      const texto =
+        normalizarTexto(p.NombreProducto) + ' ' +
+        normalizarTexto(p.Marca) + ' ' +
+        normalizarTexto(p.PrincipioActivo);
+      return tokens.every(t => texto.includes(t));
+    });
+
     if (productosFiltrados.length > 0) {
       // Recalcular contadores
       const porPresentacion = {};
@@ -324,7 +344,7 @@ const productosPorMarcaFiltrados = computed(() => {
         const pres = p.Presentacion || 'Sin presentación';
         porPresentacion[pres] = (porPresentacion[pres] || 0) + 1;
       });
-      
+
       filtrados[marca] = {
         productos: productosFiltrados,
         total: productosFiltrados.length,
@@ -332,7 +352,7 @@ const productosPorMarcaFiltrados = computed(() => {
       };
     }
   });
-  
+
   return filtrados;
 });
 
