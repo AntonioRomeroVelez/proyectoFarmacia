@@ -105,7 +105,7 @@
         <button class="logout-btn" @click="handleLogout">
           🚪 Cerrar Sesión
         </button>
-        <small class="text-muted d-block mt-2">v1.0.0</small>
+       <small class="text-muted d-block mt-2">{{ versionFecha }}</small>
       </div>
     </aside>
 
@@ -232,7 +232,7 @@
             <button class="mobile-logout-btn" @click="handleLogout">
               🚪 Cerrar Sesión
             </button>
-           <small class="text-muted">08/07/2026 - v1.0.1</small>
+           <small class="text-muted">{{ versionFecha }}</small>
           </div>
         </div>
       </div>
@@ -273,6 +273,7 @@ const { userName, isAdmin, logout } = useAuth();
 const { documents } = useHistorial();
 import { onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
+const versionFecha = "08/07/2026 - v1.0.1";
 
 const toast = useToast();
 const isSidebarOpen = ref(false);
