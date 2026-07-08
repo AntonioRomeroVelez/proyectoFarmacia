@@ -1,14 +1,14 @@
 <template>
   <div class="container-fluid py-3">
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-3">
+    <!-- <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-3">
       <div class="text-center">
         <h2 class="fw-bold text-primary mb-1">Catálogo de Productos</h2>
       </div>
       <b-badge variant="success" pill class="fs-6 px-3 py-2 shadow-sm" style="border-radius: 5px !important">
         {{ productosFiltrados.length }} productos registrados
       </b-badge>
-    </div>
+    </div> -->
 
     <!-- Filtros Card -->
     <div class="bg-white p-3 rounded-2 shadow-sm mb-2 border">
@@ -397,15 +397,15 @@ const confirmarEliminacion = () => {
 /* Highlight animado al volver de editar un producto */
 @keyframes highlightFade {
   0% {
-      box-shadow: 0 0 0 4px #0d6efd99, 0 4px 20px #0d6efd44;
+    box-shadow: 0 0 0 4px #0d6efd99, 0 4px 20px #0d6efd44;
       background: #e8f0fe;
     }
-  
+    
     60% {
       box-shadow: 0 0 0 3px #0d6efd66, 0 4px 16px #0d6efd33;
       background: #f0f5ff;
     }
-  
+    
     100% {
       box-shadow: none;
       background: transparent;
