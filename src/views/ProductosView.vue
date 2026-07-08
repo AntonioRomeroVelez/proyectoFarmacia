@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid py-3">
     <!-- Header Section -->
-   <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-3">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-3">
       <div class="text-center">
         <h2 class="fw-bold text-primary mb-1">Catálogo de Productos</h2>
       </div>
@@ -11,13 +11,13 @@
     </div>
 
     <!-- Filtros Card -->
-   <div class="bg-white p-3 rounded-2 shadow-sm mb-2 border">
+    <div class="bg-white p-3 rounded-2 shadow-sm mb-2 border">
       <b-row class="g-3">
         <!-- Buscador Principal -->
         <b-col md="12" lg="6">
           <div class="input-group">
-           <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 border-end-0 ps-0 text-center"
-              placeholder="Buscar por nombre o principio activo" @keyup.enter="aplicarBusqueda" />
+            <b-form-input v-model="filtroBusqueda" class="form-control border-start-0 border-end-0 ps-0 text-center"
+              placeholder="Buscar" @keyup.enter="aplicarBusqueda" />
             <!-- Botón X para limpiar búsqueda -->
             <button v-if="filtroBusqueda" type="button"
               class="btn btn-outline-secondary border-start-0 border-end-0 px-2 limpiar-btn rounded-end"
@@ -28,22 +28,6 @@
               Buscar
             </b-button>
           </div>
-        </b-col>
-
-        <!-- Filtros Select -->
-        <b-col md="12" lg="3">
-          <input v-model="filtroMarca" list="marcas-list" class="form-control" placeholder="🏷️ Buscar marca..."
-            @input="onMarcaInput" />
-          <datalist id="marcas-list">
-            <option v-for="m in opcionesMarcas" :key="m" :value="m">{{ m }}</option>
-          </datalist>
-        </b-col>
-
-        <!-- Botón Limpiar (solo visible si hay filtros activos) -->
-        <b-col cols="12" class="d-flex justify-content-end" v-if="filtroBusqueda || filtroMarca || filtroPresentacion">
-          <b-button variant="link" class="text-decoration-none text-muted p-0" @click="limpiarFiltros">
-            ✖ Limpiar filtros
-          </b-button>
         </b-col>
       </b-row>
     </div>
@@ -57,28 +41,24 @@
     <!-- Grid de productos -->
     <div v-else-if="productosFiltrados.length > 0">
       <div class="row g-3 mb-4">
-        <div
-          v-for="producto in paginatedProducts"
-          :key="producto.ID"
-          :data-producto-id="producto.ID"
-          class="col-12 col-sm-6 col-md-6 col-lg-4"
-        >
+        <div v-for="producto in paginatedProducts" :key="producto.ID" :data-producto-id="producto.ID"
+          class="col-12 col-sm-6 col-md-6 col-lg-4">
           <Producto :producto="producto" :es-agregado="producto.isDuplicate" @ver-detalle="mostrarDetalle" />
         </div>
       </div>
 
       <!-- Paginación Responsiva -->
       <div class="d-flex justify-content-center align-items-center gap-2 gap-md-3 mb-4">
-       <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--" class="px-2 px-md-3">
+        <b-button variant="outline-primary" :disabled="currentPage === 1" @click="currentPage--" class="px-2 px-md-3">
           ← Anterior
         </b-button>
 
-      <span class="text-muted text-center small mx-1 my-0">
+        <span class="text-muted text-center small mx-1 my-0">
           Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong>
         </span>
 
         <b-button variant="outline-primary" :disabled="currentPage === totalPages" @click="currentPage++"
-         class="px-2 px-md-3">
+          class="px-2 px-md-3">
           Siguiente →
         </b-button>
       </div>
@@ -106,7 +86,7 @@
       <div v-if="productoSeleccionado">
         <b-row>
           <b-col md="6">
-           <p><strong>Código:</strong> {{ productoSeleccionado.Codigo }}</p>
+            <p><strong>Código:</strong> {{ productoSeleccionado.Codigo }}</p>
             <p><strong>Marca:</strong> {{ productoSeleccionado.Marca }}</p>
             <p><strong>Presentación:</strong> {{ productoSeleccionado.Presentacion }}</p>
             <p><strong>Principio Activo:</strong> {{ productoSeleccionado.PrincipioActivo }}</p>
@@ -116,8 +96,8 @@
   Number(productoSeleccionado.PrecioFarmacia || 0).toFixed(3)
                 }}</span></p>
             <p><strong>PVP:</strong> <del class="text-danger">${{ Number(productoSeleccionado.PVP || 0).toFixed(3)
-               }}</del></p>
-           <div class="text-muted small bg-warning rounded p-2" v-if="productoSeleccionado.Observacion">
+                }}</del></p>
+            <div class="text-muted small bg-warning rounded p-2" v-if="productoSeleccionado.Observacion">
               <strong>Observación:</strong> {{
                 productoSeleccionado.Observacion
               }}
@@ -400,9 +380,20 @@ const confirmarEliminacion = () => {
 <style>
 /* Highlight animado al volver de editar un producto */
 @keyframes highlightFade {
-  0%   { box-shadow: 0 0 0 4px #0d6efd99, 0 4px 20px #0d6efd44; background: #e8f0fe; }
-  60%  { box-shadow: 0 0 0 3px #0d6efd66, 0 4px 16px #0d6efd33; background: #f0f5ff; }
-  100% { box-shadow: none; background: transparent; }
+  0% {
+      box-shadow: 0 0 0 4px #0d6efd99, 0 4px 20px #0d6efd44;
+      background: #e8f0fe;
+    }
+  
+    60% {
+      box-shadow: 0 0 0 3px #0d6efd66, 0 4px 16px #0d6efd33;
+      background: #f0f5ff;
+    }
+  
+    100% {
+      box-shadow: none;
+      background: transparent;
+    }
 }
 
 .producto-editado-highlight {
