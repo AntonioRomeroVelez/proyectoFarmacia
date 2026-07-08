@@ -232,7 +232,7 @@
             <button class="mobile-logout-btn" @click="handleLogout">
               🚪 Cerrar Sesión
             </button>
-            <small class="text-muted">v1.0.0</small>
+           <small class="text-muted">08/07/2026 - v1.0.1</small>
           </div>
         </div>
       </div>
