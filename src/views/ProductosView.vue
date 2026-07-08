@@ -29,6 +29,22 @@
             </b-button>
           </div>
         </b-col>
+
+        <!-- Filtro por Marca -->
+        <b-col md="12" lg="3">
+          <input v-model="filtroMarca" list="marcas-list" class="form-control" placeholder="🏷️ Buscar marca..."
+            @input="onMarcaInput" />
+          <datalist id="marcas-list">
+            <option v-for="m in opcionesMarcas" :key="m" :value="m">{{ m }}</option>
+          </datalist>
+        </b-col>
+
+        <!-- Botón Limpiar (solo visible si hay filtros activos) -->
+        <b-col cols="12" class="d-flex justify-content-end" v-if="filtroBusqueda || filtroMarca || filtroPresentacion">
+          <b-button variant="link" class="text-decoration-none text-muted p-0" @click="limpiarFiltros">
+            ✖ Limpiar filtros
+          </b-button>
+        </b-col>
       </b-row>
     </div>
 
