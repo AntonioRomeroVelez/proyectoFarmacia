@@ -12,6 +12,7 @@
 
       <!-- Principio activo -->
       <p class="principio-activo">
+        <i class="bi bi-capsule"></i>
         {{ producto.PrincipioActivo.replaceAll('+', ' + ') }}
       </p>
 
@@ -145,10 +146,10 @@ const getTipoBadgeClass = (tipo) => {
 ═══════════════════════════════════════ */
 .producto-card {
   display: flex;
-    flex-direction: column;
+  flex-direction: column;
   height: 100%;
   border-radius: 12px;
-    border: 1px solid #e2e8f0;
+  border: 1px solid #e2e8f0;
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -157,12 +158,12 @@ const getTipoBadgeClass = (tipo) => {
 
 .producto-card:hover {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    transform: translateY(-2px);
+  transform: translateY(-2px);
 }
 
 .producto-agregado {
   border: 2px solid #22c55e;
-    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
 }
 
 /* ═══════════════════════════════════════
@@ -219,11 +220,17 @@ const getTipoBadgeClass = (tipo) => {
   word-break: break-word;
 }
 
+.principio-activo i {
+  color: #0284c7;
+  /* Azul/Celeste científico */
+  margin-right: 4px;
+  font-size: 0.8rem;
+}
 /* ── Precio ── */
 .price-block {
   display: flex;
   align-items: baseline;
-    gap: 8px;
+  gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -282,7 +289,7 @@ const getTipoBadgeClass = (tipo) => {
   font-weight: 600;
   border-radius: 5px;
   padding: 3px 15px;
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 .chip-presentacion {
@@ -343,18 +350,18 @@ const getTipoBadgeClass = (tipo) => {
 .obs-label {
   font-weight: 700;
   margin-right: 3px;
-    color: #92400e;
+  color: #92400e;
   }
   
   /* ═══════════════════════════════════════
                          FOOTER / ACCIONES
                       ═══════════════════════════════════════ */
-  .card-footer-custom {
-    padding: 8px 12px 10px;
-    border-top: 1px solid #f1f5f9;
+.card-footer-custom {
+  padding: 8px 12px 10px;
+  border-top: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
-    gap: 6px;
+  gap: 6px;
     background: #fafafa;
 }
 
@@ -371,11 +378,12 @@ const getTipoBadgeClass = (tipo) => {
   text-align: center;
   border-radius: 8px !important;
 }
+
 .btn-add {
   flex: 1;
   font-size: 0.8rem;
   border-radius: 8px;
-    font-weight: 600;
+  font-weight: 600;
 }
 
 .btn-remove,
