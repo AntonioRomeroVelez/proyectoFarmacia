@@ -9,19 +9,12 @@
           {{ producto.PrincipioActivo.replaceAll('+', ' + ') }}
         </p>
 
-
-
-
-
-
         <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-
 
           <!-- Presentacion -->
           <span class="badge badge-subtle-presentation">
             Presentación: {{ producto.Presentacion }}
           </span>
-
 
           <!-- Precios -->
           <div class="precio-linea  badge-subtle-p_farmacia">
@@ -32,13 +25,9 @@
             </strong>
           </div>
 
-
           <span v-if="producto.PVP" class="badge badge-subtle-pvp">
             PVP: ${{ producto.PVP }}
           </span>
-
-
-
 
           <!-- Descuento -->
           <span v-if="producto.Descuento" class="badge badge-subtle-discount">
@@ -49,19 +38,16 @@
             IVA: {{ producto.IVA }}%
           </span>
 
-
-
-
           <!-- Promoción -->
           <span v-if="producto.Promocion" class="badge badge-subtle-promo">
             Promoción: {{ producto.Promocion }}
           </span>
-         <div class="badge badge-subtle-observation" v-if="producto.Observacion"><strong>Observación:</strong>
+         <div class="badge badge-subtle-observation" v-if="producto.Observacion">
+            <strong>Observación:</strong>
             {{
               producto.Observacion
             }}
-          </div>
-
+         </div>
         </div>
        <hr style="margin: 10px  0;">
 
