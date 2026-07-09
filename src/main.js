@@ -87,6 +87,14 @@ const initNotifications = async () => {
 // Inicializar notificaciones después de montar la app
 initNotifications();
 
+// Bloquear orientación a portrait (vertical) en dispositivos móviles
+// Evita que la app rote a landscape aunque el OS tenga auto-rotación activa
+if (screen?.orientation?.lock) {
+  screen.orientation.lock('portrait').catch(() => {
+    // Silenciar error: algunos navegadores solo lo permiten en pantalla completa
+  });
+}
+
 // Montar app
 app.mount("#app");
 
