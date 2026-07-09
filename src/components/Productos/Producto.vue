@@ -1,89 +1,72 @@
 <template>
-  <b-card :class="['producto-card fw-bold', { 'producto-agregado': esAgregado }]" :header="producto.NombreProducto">
-    <!-- Información del producto -->
-    <b-card-body>
-      <div class="producto-info">
+  <div :class="['producto-card', { 'producto-agregado': esAgregado }]">
 
-        <!-- Principio Activo -->
-        <p class="producto-principio text-muted small">
-          {{ producto.PrincipioActivo.replaceAll('+', ' + ') }}
-        </p>
+    <!-- ── Header: nombre + marca ── -->
+    <div class="card-header-custom">
+      <h6 class="product-name">{{ producto.NombreProducto }}</h6>
+      <span class="brand-chip">{{ producto.Marca }}</span>
+    </div>
 
-        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+    <!-- ── Cuerpo ── -->
+    <div class="card-body-custom">
 
-          <!-- Presentacion -->
-          <span class="badge badge-subtle-presentation">
-            Presentación: {{ producto.Presentacion }}
-          </span>
+      <!-- Principio activo -->
+      <p class="principio-activo">
+        {{ producto.PrincipioActivo.replaceAll('+', ' + ') }}
+      </p>
 
-          <!-- Precios -->
-          <div class="precio-linea  badge-subtle-p_farmacia">
-            <span class="precio-label-inline">Precio:</span>
-            <strong class="precio-valor-inline">
-              ${{ getParteEntera(producto.PrecioFarmacia) }}<span class="precio-decimales">.{{
-                getParteDecimal(producto.PrecioFarmacia) }}</span>
-            </strong>
-          </div>
-
-          <span v-if="producto.PVP" class="badge badge-subtle-pvp">
-            PVP: ${{ producto.PVP }}
-          </span>
-
-          <!-- Descuento -->
-          <span v-if="producto.Descuento" class="badge badge-subtle-discount">
-            Descuento: {{ producto.Descuento }}%
-          </span>
-          <!--IVA -->
-          <span v-if="producto.IVA" class="badge badge-subtle-tax">
-            IVA: {{ producto.IVA }}%
-          </span>
-
-          <!-- Promoción -->
-          <span v-if="producto.Promocion" class="badge badge-subtle-promo">
-            Promoción: {{ producto.Promocion }}
-          </span>
-         <div class="badge badge-subtle-observation" v-if="producto.Observacion">
-            <strong>Observación:</strong>
-            {{
-              producto.Observacion
-            }}
-         </div>
+      <!-- ── Precio destacado ── -->
+      <div class="price-block">
+        <div class="price-main">Precio Farmacia
+          <span class="price-currency">$</span>
+          <span class="price-integer">{{ getParteEntera(producto.PrecioFarmacia) }}</span>
+          <span class="price-decimals">.{{ getParteDecimal(producto.PrecioFarmacia) }}</span>
         </div>
-       <hr style="margin: 10px  0;">
+        <span v-if="producto.PVP" class="pvp-tag">PVP ${{ producto.PVP }}</span>
+      </div>
 
-        <!-- Marca -->
-        <div class="badge badge-subtle-brand small d-text flex-wrap">
-          <b>Marca:</b> {{ producto.Marca }}
-        </div>
+      <!-- ── Chips de atributos ── -->
+      <div class="chips-row">
+        <span class="chip chip-presentacion">{{ producto.Presentacion }}</span>
 
-        <p v-if="producto.Tipo" :class="['producto-tipo badge mb-2 text-capitalize', getTipoBadgeClass(producto.Tipo)]"
-          style="margin-top: 10px;"> <b>Tipo:</b>
+        <span v-if="producto.Tipo" :class="['chip', getTipoBadgeClass(producto.Tipo)]">
           {{ producto.Tipo }}
-        </p>
+        </span>
+
+        <span v-if="producto.IVA" class="chip chip-iva">IVA {{ producto.IVA }}%</span>
+
+        <span v-if="producto.Descuento" class="chip chip-descuento">-{{ producto.Descuento }}%</span>
+
+        <span v-if="producto.Promocion" class="chip chip-promo">🎁 {{ producto.Promocion }}</span>
       </div>
-    </b-card-body>
 
-    <!-- Acciones -->
-    <template #footer>
-      <div class="d-flex flex-column gap-2">
-        <div v-if="!estaEnCarrito" class="d-flex align-items-center gap-2">
-          <b-form-input v-model.number="cantidad" type="number" min="1" size="sm" class="w-50"
-            placeholder="Cant."></b-form-input>
-          <b-button variant="success" size="sm" class="w-50" @click="agregarAlCarrito">
-            <i class="bi bi-cart-plus"></i> Agregar
-          </b-button>
-        </div>
+      <!-- Observación -->
+      <div v-if="producto.Observacion" class="observacion-box">
+        <span class="obs-label">Obs.</span>
+        {{ producto.Observacion }}
+      </div>
 
-        <b-button v-else variant="outline-danger" size="sm" class="w-100" @click="quitarDelCarrito">
-          <i class="bi bi-cart-dash me-1"></i> Quitar del carrito
-        </b-button>
+    </div>
 
-        <b-button variant="outline-primary" size="sm" class="w-100" @click="verDetalle">
-          <i class="bi bi-eye me-1"></i> Detalle
+    <!-- ── Footer: acciones ── -->
+    <div class="card-footer-custom">
+      <div v-if="!estaEnCarrito" class="action-row">
+        <b-form-input v-model.number="cantidad" type="number" min="1" size="sm" class="qty-input" placeholder="Cant." />
+        <b-button variant="success" size="sm" class="btn-add" @click="agregarAlCarrito">
+          <i class="bi bi-cart-plus"></i> Agregar
         </b-button>
       </div>
-    </template>
-  </b-card>
+
+      <b-button v-else variant="outline-danger" size="sm" class="w-100 btn-remove" @click="quitarDelCarrito">
+        <i class="bi bi-cart-dash me-1"></i> Quitar del carrito
+      </b-button>
+
+      <b-button variant="outline-secondary" size="sm" class="w-100 btn-detail" @click="verDetalle">
+        <i class="bi bi-eye me-1"></i> Ver detalle
+      </b-button>
+    </div>
+
+  </div>
 </template>
 
 <script setup>
@@ -148,242 +131,261 @@ const verDetalle = () => {
 };
 
 const getTipoBadgeClass = (tipo) => {
-  if (!tipo) return 'badge-subtle-tipo';
+  if (!tipo) return 'chip-tipo';
   const t = tipo.toLowerCase().trim();
-  if (t === 'medicamento') return 'badge-subtle-medicamento';
-  if (t === 'insumo') return 'badge-subtle-insumo';
-  return 'badge-subtle-tipo';
+  if (t === 'medicamento') return 'chip-medicamento';
+  if (t === 'insumo') return 'chip-insumo';
+  return 'chip-tipo';
 };
 </script>
 
 <style scoped>
+/* ═══════════════════════════════════════
+   CARD BASE
+═══════════════════════════════════════ */
 .producto-card {
+  display: flex;
+    flex-direction: column;
   height: 100%;
-  transition: all 0.3s ease;
-  /* border: solid 1px rgb(153, 204, 224) !important; */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
 }
 
 .producto-card:hover {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
 }
 
 .producto-agregado {
-  border: 2px solid #28a745;
-  background-color: #f8fff9;
+  border: 2px solid #22c55e;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
 }
 
-.producto-principio {
-  word-break: break-word;
-  overflow-wrap: break-word;
-  line-height: 1.4;
-}
-
-.precios-container {
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+.card-header-custom {
+  padding: 10px 12px 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 10px 0;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.precio-farmacia,
-.pvp {
-  text-align: center;
-}
-
-.precio-farmacia strong {
-  font-size: 1.3rem;
-}
-
-.pvp del {
-  font-size: 0.9rem;
-}
-
-.promocion {
-  text-align: center;
-}
-
-.badge {
-  margin: 2px;
-  font-weight: 500;
-  font-size: 0.8rem;
-  padding: 0.4em 0.8em;
-}
-
-/* Badges Sutiles - Tema Farmacéutico */
-.badge-subtle-brand {
-  background-color: #e1f5fe;
-  /* Azul Médico Claro */
-  color: #0277bd;
-  /* Azul Médico Oscuro */
-  border: 1px solid #b3e5fc;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.badge-subtle-presentation {
-  background-color: #f5f5f5;
-  /* Gris Clínico Claro */
-  color: #424242;
-  /* Gris Oscuro */
-  border: 1px solid #e0e0e0;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-
-
-.badge-subtle-p_farmacia {
-  background-color: #f4fff5;
-  /* Gris Clínico Claro */
-  color: #424242;
-  /* Gris Oscuro */
-  border: 1px solid #8ec755;
-  border-radius: 5px;
-  padding: 0px 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.badge-subtle-discount {
-  background-color: #fff3e0;
-  /* Naranja Suave */
-  color: #ef6c00;
-  /* Naranja Fuerte */
-  border: 1px solid #ffe0b2;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.badge-subtle-tax {
-  background-color: rgb(252, 204, 192);
-  /* Azul Grisáceo */
-  color: #455a64;
-  /* Azul Grisáceo Oscuro */
-  border: 1px solid #dcd2cf;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.badge-subtle-pvp {
-  background-color: rgb(255, 225, 225);
-  /* Azul Grisáceo */
-  color: #373a3b;
-  /* Azul Grisáceo Oscuro */
-  border: 1px solid #ffa6a6;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-.badge-subtle-promo {
-  background-color: #e0f2f1;
-  /* Teal/Verde Agua */
-  color: #00695c;
-  /* Teal Oscuro */
-  border: 1px solid #b2dfdb;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-}
-
-/* Asegurar que los iconos se vean bien */
-.bi {
-  font-size: 0.9em;
-}
-
-/* Estilos para precio en línea simple */
-.precio-linea {
-  text-align: center;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.precio-label-inline {
-  font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.precio-valor-inline {
-  font-size: 1.5rem;
-  color: #606462;
+.product-name {
+  margin: 0;
+  font-size: 0.85rem;
   font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.brand-chip {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0277bd;
+  background: #e1f5fe;
+  border: 1px solid #b3e5fc;
+  border-radius: 20px;
+  padding: 1px 8px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ═══════════════════════════════════════
+   BODY
+═══════════════════════════════════════ */
+.card-body-custom {
+  flex: 1;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.principio-activo {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* ── Precio ── */
+.price-block {
   display: flex;
   align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.precio-decimales {
-  font-size: 0.8em;
-  /* 75% del tamaño de la fuente padre */
-  opacity: 0.85;
+.price-main {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 3px 20px;
+  color: #15803d;
 }
 
-.badge-subtle-observation {
-  background-color: #fff8e1;
-  /* Amber 50 - Amarillo Muy Claro */
-  color: #5d4037;
-  /* Brown 700 - Marrón para contraste */
-  border: 1px solid #ffecb3;
-  border-radius: 5px;
-  padding: 5px;
-  white-space: normal;
-  word-wrap: break-word;
-  max-width: 100%;
-  text-align: left;
+.price-currency {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #15803d;
+  margin-left: 10px;
 }
-.badge-subtle-tipo {
-  background-color: #f3e5f5;
-  /* Light Purple */
-  color: #7b1fa2;
-  /* Dark Purple */
-  border: 1px solid #e1bee7;
+
+.price-integer {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #15803d;
+  line-height: 1;
+}
+
+.price-decimals {
+  font-size: 0.90rem;
+  font-weight: 600;
+  color: #15803d;
+  opacity: 0.8;
+}
+
+.pvp-tag {
+  font-size: 0.7rem;
+  color: #dc2626;
+  background: #fff1f2;
+  border: 1px solid #fecaca;
   border-radius: 5px;
-  padding: 5px;
+  padding: 3px 15px;
+  font-weight: 500;
+}
+
+/* ── Chips row ── */
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 3px 15px;
+    white-space: nowrap;
 }
 
-.badge-subtle-medicamento {
-  background-color: #fdfae3;
-  /* Light Blue */
-  color: #1565c0;
-  /* Dark Blue */
-  border: 1px solid #bbdefb;
-  border-radius: 5px;
-  padding: 5px;
-  display: inline-block;
-  font-size: 0.8rem;
+.chip-presentacion {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
 }
 
-.badge-subtle-insumo {
-  background-color: #edffe6;
-  /* Light Blue */
-  color: #1565c0;
-  /* Dark Blue */
-  border: 1px solid #bbdefb;
-  border-radius: 5px;
-  padding: 5px;
-  display: inline-block;
+.chip-iva {
+  background: #fce7f3;
+  color: #9d174d;
+  border: 1px solid #fbcfe8;
+}
+
+.chip-descuento {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.chip-promo {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.chip-tipo {
+  background: #faf5ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+.chip-medicamento {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.chip-insumo {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+/* ── Observación ── */
+.observacion-box {
+  font-size: 0.7rem;
+  color: #78350f;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 3px solid #f59e0b;
+  border-radius: 6px;
+  padding: 5px 8px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.obs-label {
+  font-weight: 700;
+  margin-right: 3px;
+    color: #92400e;
+  }
+  
+  /* ═══════════════════════════════════════
+                         FOOTER / ACCIONES
+                      ═══════════════════════════════════════ */
+  .card-footer-custom {
+    padding: 8px 12px 10px;
+    border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+    gap: 6px;
+    background: #fafafa;
+}
+
+.action-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.qty-input {
+  width: 70px !important;
+  min-width: 0;
+  font-size: 0.82rem;
+  text-align: center;
+  border-radius: 8px !important;
+}
+.btn-add {
+  flex: 1;
   font-size: 0.8rem;
+  border-radius: 8px;
+    font-weight: 600;
+}
+
+.btn-remove,
+.btn-detail {
+  font-size: 0.78rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.bi {
+  font-size: 0.85em;
 }
 </style>
