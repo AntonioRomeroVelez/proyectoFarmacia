@@ -273,7 +273,7 @@ const { userName, isAdmin, logout } = useAuth();
 const { documents } = useHistorial();
 import { onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
-const versionFecha = "08/07/2026 - v1.0.1";
+const versionFecha = "v1.0.1";
 
 const toast = useToast();
 const isSidebarOpen = ref(false);

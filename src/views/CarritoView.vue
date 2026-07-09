@@ -478,7 +478,7 @@ const generarPedidoExcel = () => {
     return {
       "Cantidad": item.quantity,
       "Bonificación": bonus > 0 ? bonus : "",
-      "Producto": `${item.NombreProducto} - ${item.Presentacion}`,
+      "Producto": `${item.NombreProducto} - ${item.Presentacion}${item.Marca ? ` - ${item.Marca}` : ""}`,
       // Mostrar Observacion solo si NO tiene promoción aplicada
       "Observación": tienePromocionAplicada ? "" : (item.Observacion || ""),
       "Lote": "", // Campo vacío para que el usuario lo complete
