@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
 import { useToast } from "vue-toastification";
+import { saveOrShareFile } from "./downloadHelper";
 
 export const usePDFGenerator = () => {
   const toast = useToast();
@@ -37,15 +38,15 @@ export const usePDFGenerator = () => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(filename);
-      toast.success("PDF generado correctamente");
+      const pdfBlob = pdf.output("blob");
+      await saveOrShareFile(pdfBlob, filename, toast);
     } catch (error) {
       toast.error("Error al generar el PDF");
       throw error;
     }
   };
 
-  const generatePDFFromData = (data, filename = "reporte.pdf", options = {}) => {
+  const generatePDFFromData = async (data, filename = "reporte.pdf", options = {}) => {
     try {
       if (!data || data.length === 0) {
         toast.error("No hay datos para generar el PDF");
@@ -232,10 +233,10 @@ export const usePDFGenerator = () => {
         });
       }
 
-      // Guardar el PDF
-      pdf.save(filename);
-      console.log("PDF guardado:", filename);
-      toast.success(`✅ PDF generado: ${filename}`);
+      // Guardar o compartir el PDF
+      const pdfBlob = pdf.output("blob");
+      await saveOrShareFile(pdfBlob, filename, toast);
+      console.log("PDF procesado:", filename);
     } catch (error) {
       console.error("Error al generar PDF:", error);
       toast.error("❌ Error al generar el PDF");
@@ -243,7 +244,7 @@ export const usePDFGenerator = () => {
     }
   };
 
-  const exportCobros = (cobrosData, filtros = {}) => {
+  const exportCobros = async (cobrosData, filtros = {}) => {
     try {
       if (!cobrosData || cobrosData.length === 0) {
         toast.error("No hay datos para exportar");
@@ -378,8 +379,8 @@ export const usePDFGenerator = () => {
       const fecha = new Date().toISOString().split('T')[0];
       const filename = `Cobros-${fecha}.pdf`;
 
-      pdf.save(filename);
-      toast.success(`✅ PDF generado: ${filename}`);
+      const pdfBlob = pdf.output('blob');
+      await saveOrShareFile(pdfBlob, filename, toast);
     } catch (error) {
       console.error('Error al generar PDF de cobros:', error);
       toast.error('❌ Error al generar el PDF');
@@ -387,7 +388,7 @@ export const usePDFGenerator = () => {
     }
   };
 
-  const exportCobrosImagenes = (cobrosData, action = 'save') => {
+  const exportCobrosImagenes = async (cobrosData, action = 'save') => {
     try {
       if (!cobrosData || cobrosData.length === 0) {
         toast.error("No hay datos para exportar");
@@ -470,8 +471,8 @@ export const usePDFGenerator = () => {
       const filename = `Cobros-Imagenes-${fecha}.pdf`;
 
       if (action === 'save') {
-        pdf.save(filename);
-        toast.success(`✅ PDF guardado: ${filename}`);
+        const pdfBlob = pdf.output('blob');
+        await saveOrShareFile(pdfBlob, filename, toast);
       } else if (action === 'print') {
         const pdfBlob = pdf.output('blob');
         const blobUrl = URL.createObjectURL(pdfBlob);
@@ -491,7 +492,7 @@ export const usePDFGenerator = () => {
   };
 
   // Export images from pre-selected list (from ImageSelectionModal)
-  const exportCobrosImagenesFromSelection = (selectedImages, action = 'save') => {
+  const exportCobrosImagenesFromSelection = async (selectedImages, action = 'save') => {
     try {
       if (!selectedImages || selectedImages.length === 0) {
         toast.error("No hay imágenes seleccionadas para exportar");
@@ -549,8 +550,8 @@ export const usePDFGenerator = () => {
       const filename = `Cobros-Imagenes-${fecha}.pdf`;
 
       if (action === 'save') {
-        pdf.save(filename);
-        toast.success(`✅ PDF guardado: ${filename}`);
+        const pdfBlob = pdf.output('blob');
+        await saveOrShareFile(pdfBlob, filename, toast);
       } else if (action === 'print') {
         const pdfBlob = pdf.output('blob');
         const blobUrl = URL.createObjectURL(pdfBlob);

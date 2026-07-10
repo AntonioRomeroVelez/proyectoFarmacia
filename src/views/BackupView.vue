@@ -267,6 +267,7 @@ import { useAutoBackup } from '@/composables/useAutoBackup';
 import { dbService } from '@/services/db';
 import JSZip from 'jszip';
 import alertify from 'alertifyjs';
+import { saveOrShareFile } from '@/utils/downloadHelper';
 
 // Composable de backup automático
 const {
@@ -471,21 +472,14 @@ async function downloadJSON(data, filename = "backup.json") {
     // Nombre final del archivo .zip
     const zipFilename = filename.replace(".json", ".zip");
 
-    // Crear enlace invisible para descargar
-    const url = URL.createObjectURL(zipBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = zipFilename;
-    document.body.appendChild(link);
-    link.click();
+    // Descargar o compartir usando utilidad central
+    const toastAdapter = {
+      success: (msg) => showToast(msg, 'success'),
+      error: (msg) => showToast(msg, 'error')
+    };
 
-    // Limpieza
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 100);
-
-    console.log("✅ Archivo ZIP descargado correctamente");
+    await saveOrShareFile(zipBlob, zipFilename, toastAdapter);
+    console.log("✅ Archivo ZIP procesado correctamente");
   } catch (error) {
     console.error("❌ Error al generar ZIP:", error);
   }

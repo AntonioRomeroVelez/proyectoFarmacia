@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import ExcelJS from "exceljs";
 import { useToast } from "vue-toastification";
+import { saveOrShareFile } from "./downloadHelper";
 
 export const useExcelHandler = () => {
   const toast = useToast();
@@ -34,13 +35,15 @@ export const useExcelHandler = () => {
   };
 
   // Keep exportToExcel for simple exports if needed, or just for compatibility
-  const exportToExcel = (data, filename = "datos.xlsx") => {
+  const exportToExcel = async (data, filename = "datos.xlsx") => {
     try {
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
-      XLSX.writeFile(workbook, filename);
-      toast.success("Archivo Excel exportado correctamente");
+      
+      const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      await saveOrShareFile(blob, filename, toast);
     } catch (error) {
       toast.error("Error al exportar el archivo Excel");
       throw error;
@@ -152,19 +155,11 @@ export const useExcelHandler = () => {
         });
       }
 
-      // --- 4. Download ---
+      // --- 4. Download or Share ---
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 
-      // Create download link
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      toast.success("Archivo Excel generado con éxito");
+      await saveOrShareFile(blob, filename, toast);
     } catch (error) {
       console.error("Error exporting custom excel:", error);
       toast.error("Error al generar el Excel");

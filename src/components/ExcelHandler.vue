@@ -244,6 +244,7 @@ import { useExcelHandler } from "@/utils/excelHandler";
 import { useToast } from "vue-toastification";
 import alertify from "alertifyjs";
 import { useProductos } from '@/composables/useProductos';
+import { saveOrShareFile } from "@/utils/downloadHelper";
 
 const { readExcelHandler } = useExcelHandler();
 const toast = useToast();
@@ -822,14 +823,10 @@ const descargarProductosExcel = async () => {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
 
-    // Descargar
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    // Descargar o compartir
     const fecha = new Date().toISOString().split('T')[0];
-    link.download = `Productos_${fecha}.xlsx`;
-    link.click();
-
-    toast.success(`📥 ${productosGuardados.length} productos descargados en Excel`);
+    const filename = `Productos_${fecha}.xlsx`;
+    await saveOrShareFile(blob, filename, toast);
   } catch (error) {
     console.error('Error al descargar Excel:', error);
     toast.error('❌ Error al generar el archivo Excel');

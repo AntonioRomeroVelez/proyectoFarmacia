@@ -290,6 +290,7 @@ import { useEstadisticas } from '@/composables/useEstadisticas';
 import { usePDFGenerator } from '@/utils/pdfGenerator';
 import { useToast } from 'vue-toastification';
 import { useHistorial } from '@/composables/useHistorial';
+import { saveOrShareFile } from '@/utils/downloadHelper';
 import { useCobros } from '@/composables/useCobros';
 import { useVisitas } from '@/composables/useVisitas';
 import { BIconCardList, BIconFileEarmarkPdf } from 'bootstrap-icons-vue';
@@ -723,12 +724,9 @@ const exportarReporteExcel = async () => {
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `Reporte_General_Farmacia_${new Date().toISOString().split('T')[0]}.xlsx`;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
+    const fecha = new Date().toISOString().split('T')[0];
+    const filename = `Reporte_General_Farmacia_${fecha}.xlsx`;
+    await saveOrShareFile(blob, filename, toast);
 
   } catch (e) {
     console.error('Error al exportar Excel detallado:', e);

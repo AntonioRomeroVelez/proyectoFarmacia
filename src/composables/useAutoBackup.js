@@ -2,6 +2,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import JSZip from 'jszip';
 import { dbService } from '@/services/db';
+import { saveOrShareFile } from '@/utils/downloadHelper';
 
 const BACKUP_STORAGE_KEY = 'farmacia_auto_backups';
 const LAST_BACKUP_KEY = 'farmacia_last_backup_date';
@@ -236,19 +237,7 @@ export function useAutoBackup() {
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const zipFilename = jsonFilename.replace('.json', '.zip');
 
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = zipFilename;
-      document.body.appendChild(link);
-      link.click();
-
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-
-      toast.success('✅ Backup comprimido descargado (.zip)');
+      await saveOrShareFile(zipBlob, zipFilename, toast);
     } catch (error) {
       console.error('Error generando ZIP:', error);
       toast.error('❌ Error al generar el archivo ZIP');

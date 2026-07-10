@@ -343,6 +343,7 @@ import alertify from 'alertifyjs';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { useProductos } from '@/composables/useProductos';
+import { saveOrShareFile } from '@/utils/downloadHelper';
 
 const toast = useToast();
 const { productos: allProductos } = useProductos();
@@ -805,15 +806,10 @@ const descargarExcel = async () => {
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    // Descargar
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    // Descargar o compartir
     const fecha = new Date().toISOString().split('T')[0];
-    link.download = `Reporte_Comparacion_${fecha}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-
-    toast.success(`✅ Reporte descargado: ${productosParaExportar.length} productos totales`);
+    const filename = `Reporte_Comparacion_${fecha}.xlsx`;
+    await saveOrShareFile(blob, filename, toast);
   } catch (error) {
     console.error('Error exportar:', error);
     toast.error('Error al generar reporte');
