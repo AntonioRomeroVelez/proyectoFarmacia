@@ -376,7 +376,7 @@ const toast = useToast();
 const { cobros, addCobro, updateCobro, deleteCobro, clearAllCobros, getTotalCobros } = useCobros();
 const { documents } = useHistorial();
 const { clientes, buscarClientes } = useClientes(); // Usar composable de clientes
-const { exportCobros } = usePDFGenerator();
+const { exportCobros, exportCobrosImagenesFromSelection } = usePDFGenerator();
 
 const showRegistroModal = ref(false);
 const editingId = ref(null); 
@@ -769,7 +769,6 @@ const handleImageExport = (selectedImages) => {
     return;
   }
 
-  const { exportCobrosImagenesFromSelection } = usePDFGenerator();
   exportCobrosImagenesFromSelection(selectedImages);
 };
 
