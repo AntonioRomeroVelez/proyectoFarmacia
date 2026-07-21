@@ -98,39 +98,39 @@ export const saveOrShareFile = async (blob, filename, toast = null) => {
   }
 
   // 2. Mostrar cuadro de diálogo para dar la opción de abrir el PDF o Excel descargado
-  const lowerName = filename.toLowerCase();
-  const isPdf = lowerName.endsWith('.pdf');
-  const isExcel = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls');
+  // const lowerName = filename.toLowerCase();
+  // const isPdf = lowerName.endsWith('.pdf');
+  // const isExcel = lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls');
 
-  const fileIcon = isPdf ? '📄' : (isExcel ? '📊' : '📁');
-  const fileTypeLabel = isPdf ? 'PDF' : (isExcel ? 'Excel' : 'archivo');
+  // const fileIcon = isPdf ? '📄' : (isExcel ? '📊' : '📁');
+  // const fileTypeLabel = isPdf ? 'PDF' : (isExcel ? 'Excel' : 'archivo');
 
-  try {
-    alertify.confirm(
-      `📥 ${fileTypeLabel} Descargado`,
-      `<div style="text-align: center; padding: 10px 0;">
-         <div style="font-size: 2.5rem; margin-bottom: 8px;">${fileIcon}</div>
-         <div style="font-weight: bold; font-size: 1.05rem; word-break: break-word; color: #1e293b; margin-bottom: 6px;">${filename}</div>
-         <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 12px;">El archivo se ha descargado correctamente en tu dispositivo.</p>
-         <p style="margin-bottom: 0; font-weight: 600; color: #0f172a;">¿Deseas abrir el ${fileTypeLabel} ahora?</p>
-       </div>`,
-      async () => {
-        await openDownloadedFile(blob, filename);
-      },
-      () => {
-        // Usuario eligió "Cerrar" o no abrir
-      }
-    ).set({
-      labels: {
-        ok: `${fileIcon} Abrir ${fileTypeLabel}`,
-        cancel: 'Cerrar'
-      },
-      closable: true,
-      movable: false,
-      transition: 'fade'
-    });
-  } catch (dialogError) {
-    console.warn('No se pudo mostrar el diálogo de confirmación:', dialogError);
-  }
+  // try {
+  //   alertify.confirm(
+  //     `📥 ${fileTypeLabel} Descargado`,
+  //     `<div style="text-align: center; padding: 10px 0;">
+  //        <div style="font-size: 2.5rem; margin-bottom: 8px;">${fileIcon}</div>
+  //        <div style="font-weight: bold; font-size: 1.05rem; word-break: break-word; color: #1e293b; margin-bottom: 6px;">${filename}</div>
+  //        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 12px;">El archivo se ha descargado correctamente en tu dispositivo.</p>
+  //        <p style="margin-bottom: 0; font-weight: 600; color: #0f172a;">¿Deseas abrir el ${fileTypeLabel} ahora?</p>
+  //      </div>`,
+  //     async () => {
+  //       await openDownloadedFile(blob, filename);
+  //     },
+  //     () => {
+  //       // Usuario eligió "Cerrar" o no abrir
+  //     }
+  //   ).set({
+  //     labels: {
+  //       ok: `${fileIcon} Abrir ${fileTypeLabel}`,
+  //       cancel: 'Cerrar'
+  //     },
+  //     closable: true,
+  //     movable: false,
+  //     transition: 'fade'
+  //   });
+  // } catch (dialogError) {
+  //   console.warn('No se pudo mostrar el diálogo de confirmación:', dialogError);
+  // }
 };
 
